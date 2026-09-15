@@ -6,11 +6,10 @@ using UnityEngine.UI;
 
 namespace CoastRun
 {
-    /// 30차: 집 화면(방 꾸미기 v2) — 전체 화면 오버레이.
-    ///   [방]     가구·장식을 방 안에 자유 배치(끌어서 이동), 주인공이 방 안을 돌아다니고 바닥을 탭하면 걸어간다. 러닝머신 탭 → 운동.
-    ///   [베란다] 화분 4개: 씨앗 심기(G) → 페이즈마다 물 주기 → 꽃이 피면 팔기(G).
-    ///   [놀이]   윷놀이·구슬치기·공기놀이 미니게임(주 3회 보상, 그 뒤는 연습).
-    /// 다른 방꾸미기 모바일 게임(플레이투게더·동물의숲 포켓캠프·헬로키티 아일랜드)의 '트레이에서 꺼내 놓고 끌어 옮기기' 문법을 따른다.
+    /// 집 화면 — 전체 화면 오버레이.
+    ///   [방]     주인공·선택 펫 2D 표시, 하단에서 펫만 선택. (가구 트레이 배치 제거)
+    ///   [텃밭]   화분 4개: 씨앗 심기(G) → 물 주기 → 수확/판매.
+    ///   [놀이]   스토리 미션과 같은 놀이(구슬치기·윷·투호·딱지·무궁화).
     public class HomeUI : MonoBehaviour
     {
         public enum Tab { Room, Balcony, Play }
@@ -50,9 +49,6 @@ namespace CoastRun
         private int _selectedPot = -1;
         private readonly List<RectTransform> _potRoots = new List<RectTransform>();
 
-        // 미니게임
-        private GameObject _miniRoot;
-
         private SaveData Save => _gm != null ? _gm.Save : null;
         private MetaProfile Profile => _gm != null ? _gm.Profile : null;
 
@@ -87,10 +83,10 @@ namespace CoastRun
             Rect(_money.rectTransform, Vector2.zero, Vector2.one, new Vector2(200f, 0f), new Vector2(-150f, 0f));
             Button(head.transform, "Close", Loc.T("나가기", "Leave"), Grey, new Vector2(1f, 0.5f), new Vector2(-12f, 0f), new Vector2(124f, 46f), Close);
 
-            // 탭
+            // 탭 — 헤더 바로 아래, 클릭 보장(Fill에도 raycast)
             _tabBar = new GameObject("Tabs", typeof(RectTransform)).GetComponent<RectTransform>();
             _tabBar.SetParent(_root, false);
-            Rect(_tabBar, new Vector2(0f, 0.868f), new Vector2(1f, 0.92f), new Vector2(4f, 0f), new Vector2(-4f, 0f));
+            Rect(_tabBar, new Vector2(0f, 0.855f), new Vector2(1f, 0.918f), new Vector2(4f, 0f), new Vector2(-4f, 0f));
             string[] names = { Loc.T("방", "Room"), Loc.T("텃밭", "Garden"), Loc.T("놀이", "Play") };
             for (int i = 0; i < 3; i++)
             {
@@ -98,28 +94,33 @@ namespace CoastRun
                 var pill = CoastUiArt.CutePill(_tabBar, "Tab" + i, Grey, 16, 3);
                 Rect(pill.rectTransform, new Vector2(i / 3f, 0f), new Vector2((i + 1) / 3f, 1f), new Vector2(i == 0 ? 0f : 4f, 0f), new Vector2(i == 2 ? 0f : -4f, 0f));
                 pill.raycastTarget = true;
+                foreach (var im in pill.GetComponentsInChildren<Image>(true)) im.raycastTarget = true;
                 var b = pill.gameObject.AddComponent<Button>(); b.transition = Selectable.Transition.None;
-                b.onClick.AddListener(() => SetTab((Tab)idx));
-                var t = Text(pill.transform, "T", names[i], 19, Color.white, TextAnchor.MiddleCenter);
+                b.targetGraphic = pill;
+                b.onClick.AddListener(() => { CoastPrefs.Vibrate(); SetTab((Tab)idx); });
+                var t = Text(pill.transform, "T", names[i], 20, Color.white, TextAnchor.MiddleCenter);
+                t.raycastTarget = false;
                 CoastUiArt.OutlineText(t, new Color(0f, 0f, 0f, 0.35f), 1.5f);
                 _tabImgs[i] = pill;
             }
+            _tabBar.SetAsLastSibling();
 
-            // 본문(장면) + 트레이 — 트레이는 기존 대비 70% 높이
+            // 본문(장면) + 트레이 — 탭과 겹치지 않게 본문 상단을 살짝 내림
             var bodyFrame = CoastUiArt.CutePill(_root, "BodyFrame", new Color(0.95f, 0.85f, 0.70f), 22, 4);
-            Rect(bodyFrame.rectTransform, new Vector2(0f, 0.215f), new Vector2(1f, 0.862f), new Vector2(4f, 0f), new Vector2(-4f, 0f));
+            Rect(bodyFrame.rectTransform, new Vector2(0f, 0.248f), new Vector2(1f, 0.848f), new Vector2(4f, 0f), new Vector2(-4f, 0f));
             _body = new GameObject("Body", typeof(RectTransform), typeof(RectMask2D)).GetComponent<RectTransform>();
             _body.SetParent(bodyFrame.transform, false);
             Rect(_body, Vector2.zero, Vector2.one, new Vector2(7f, 10f), new Vector2(-7f, -7f));
 
             var trayFrame = CoastUiArt.CutePill(_root, "TrayFrame", new Color(1f, 0.97f, 0.90f), 22, 4);
-            Rect(trayFrame.rectTransform, new Vector2(0f, 0.015f), new Vector2(1f, 0.208f), new Vector2(4f, 0f), new Vector2(-4f, 0f));
+            Rect(trayFrame.rectTransform, new Vector2(0f, 0.012f), new Vector2(1f, 0.240f), new Vector2(4f, 0f), new Vector2(-4f, 0f));
             _tray = new GameObject("Tray", typeof(RectTransform)).GetComponent<RectTransform>();
             _tray.SetParent(trayFrame.transform, false);
             Rect(_tray, Vector2.zero, Vector2.one, new Vector2(6f, 6f), new Vector2(-6f, -6f));
             _trayScroll = null;
 
             SetTab(Tab.Room);
+            _tabBar.SetAsLastSibling();
         }
 
         private void SetTab(Tab t)
@@ -135,6 +136,7 @@ namespace CoastRun
             }
             Clear(_body); Clear(_tray);
             _placed.Clear(); _potRoots.Clear(); _selectedPot = -1; _progress = null; _progressFill = null;
+            _petRt = null; _petImg = null; _charRt = null; _charImg = null;
             switch (t)
             {
                 case Tab.Room: BuildRoom(); BuildRoomTray(); break;
@@ -142,6 +144,7 @@ namespace CoastRun
                 case Tab.Play: BuildPlay(); BuildPlayTray(); break;
             }
             RefreshMoney();
+            if (_tabBar != null) _tabBar.SetAsLastSibling();
         }
 
         private void RefreshMoney()
@@ -208,13 +211,21 @@ namespace CoastRun
                 _charImg = new GameObject("Img", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
                 _charImg.transform.SetParent(_charRt, false);
                 Rect(_charImg.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-                _charImg.sprite = _charSprite; _charImg.preserveAspect = true; _charImg.raycastTarget = false;
-                if (_charSprite == null) _charImg.color = new Color(1f, 0.8f, 0.6f);
+                _charImg.preserveAspect = true; _charImg.raycastTarget = false;
+                // 2D 스프라이트만 (육성 포즈 / Raise_Girl)
+                if (_charSprite != null) _charImg.sprite = _charSprite;
+                else
+                {
+                    var girlTex = ArtAssets.LoadTexture("Raise_Girl_Normal")
+                                  ?? ArtAssets.LoadTexture("Raise_Girl_Happy")
+                                  ?? ArtAssets.LoadTexture("UI_Face_Girl");
+                    if (girlTex != null) _charImg.sprite = CoastUiArt.AsSprite(RaisingUI.ChromaKeyed(girlTex));
+                    else _charImg.color = new Color(1f, 0.8f, 0.6f);
+                }
                 _charPos = _charTarget = new Vector2(0.5f, 0.12f);
-                // 53차: 장착한 펫이 옆에서 따라다닌다
+                // 장착 펫 — 2D UI_Pet / Obs_Pet 만
                 var petKind = Save != null ? Save.equippedPet : PetKind.None;
-                var petTex = petKind != PetKind.None ? (ArtAssets.LoadTexture("UI_Pet_" + petKind) ?? ArtAssets.LoadTexture("Obs_Pet_" + petKind)) : null;   // 66차: 시안 초상
-                if (petTex != null)
+                if (petKind != PetKind.None)
                 {
                     _petRt = new GameObject("Pet", typeof(RectTransform)).GetComponent<RectTransform>();
                     _petRt.SetParent(_roomHost, false);
@@ -225,7 +236,9 @@ namespace CoastRun
                     _petImg = new GameObject("Img", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
                     _petImg.transform.SetParent(_petRt, false);
                     Rect(_petImg.rectTransform, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-                    _petImg.sprite = CoastUiArt.AsSprite(RaisingUI.ChromaKeyed(petTex)); _petImg.preserveAspect = true; _petImg.raycastTarget = false;
+                    _petImg.preserveAspect = true; _petImg.raycastTarget = false;
+                    var petTex = ArtAssets.LoadTexture("UI_Pet_" + petKind) ?? ArtAssets.LoadTexture("Obs_Pet_" + petKind);
+                    if (petTex != null) _petImg.sprite = CoastUiArt.AsSprite(RaisingUI.ChromaKeyed(petTex));
                     _petPos = new Vector2(0.62f, 0.10f);
                 }
             }
@@ -295,19 +308,6 @@ namespace CoastRun
                 };
                 _placed[h.id] = rt;
             }
-            // 31차(Dreamy Room 오마주): 보유했지만 아직 안 놓은 장식의 '제자리' 실루엣 — 점선 느낌의 반투명 알약 + 글자
-            foreach (var d in HomeData.All)
-            {
-                if (!HomeData.IsActive(d) || !HomeData.Owns(p, d) || HomeData.IsPlaced(p, d)) continue;
-                var sp = HomeData.Spot(d.id); var size = HomeData.Size(d);
-                var g = CoastUiArt.CutePill(_decoLayer, "Ghost_" + d.id, new Color(1f, 1f, 1f, 0.22f), 16, 3);
-                var grt = g.rectTransform; grt.anchorMin = grt.anchorMax = sp; grt.pivot = new Vector2(0.5f, 0f);
-                grt.anchoredPosition = Vector2.zero; grt.sizeDelta = size * 0.9f;
-                foreach (var im in g.GetComponentsInChildren<Image>()) { im.raycastTarget = false; im.color = new Color(im.color.r, im.color.g, im.color.b, 0.22f); }
-                var t = Text(g.transform, "T", d.tag, Mathf.RoundToInt(size.y * 0.26f), new Color(1f, 1f, 1f, 0.55f), TextAnchor.MiddleCenter);
-                g.gameObject.AddComponent<GhostPulse>();
-                grt.SetAsFirstSibling();
-            }
             if (_charRt != null) _charRt.SetParent(_decoLayer, false);
             if (_petRt != null) _petRt.SetParent(_decoLayer, false);
             ReorderDepth();
@@ -371,75 +371,81 @@ namespace CoastRun
             foreach (var s in sparks) if (s != null) Destroy(s.gameObject);
         }
 
-        private class GhostPulse : MonoBehaviour
-        {
-            private float _t; private readonly List<Graphic> _g = new List<Graphic>();
-            private void Awake() { _g.AddRange(GetComponentsInChildren<Graphic>()); }
-            private void Update()
-            {
-                _t += Time.unscaledDeltaTime;
-                float a = 0.16f + 0.14f * (0.5f + 0.5f * Mathf.Sin(_t * 2.5f));
-                foreach (var g in _g) if (g != null) g.color = new Color(g.color.r, g.color.g, g.color.b, g is Text ? a * 2.2f : a);
-            }
-        }
-
+        /// 방 탭 하단 — 펫 선택 + 조리 버튼.
         private void BuildRoomTray()
         {
-            var p = Profile;
-            _hint = Text(_tray, "Hint", Loc.T("네모를 방으로 끌어다 놓기 · 탭하면 제자리 · 다 채우면 보너스", "Drag tiles into the room · tap to snap to spot · fill for a bonus"), 12, Ink, TextAnchor.MiddleCenter);
-            Rect(_hint.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -20f), new Vector2(0f, 0f));
-            _trayScroll = MakeHScroll(_tray, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(0f, 0f), new Vector2(0f, -22f), out var content);
-            const float cw = 105f, gap = 6f;   // 기존 150의 70%
-            var list = new List<DecoDef>();
-            foreach (var d in HomeData.All) if (HomeData.IsActive(d)) list.Add(d);
-            int Rank(DecoDef d) => HomeData.IsNew(p, d) ? 0 : HomeData.IsPlaced(p, d) ? 2 : HomeData.Owns(p, d) ? 1 : d.FromRun ? 4 : 3;
-            list.Sort((a, b) => { int c = Rank(a).CompareTo(Rank(b)); return c != 0 ? c : HomeData.IndexOf(a.id).CompareTo(HomeData.IndexOf(b.id)); });
-            for (int i = 0; i < list.Count; i++)
+            _hint = Text(_tray, "Hint", Loc.T("같이 다닐 펫 · 오른쪽에서 재료 조리", "Pick a pet · cook ingredients on the right"), 13, Ink, TextAnchor.MiddleCenter);
+            Rect(_hint.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(8f, -28f), new Vector2(-8f, -4f));
+            _hint.fontStyle = FontStyle.Bold;
+
+            // 조리 버튼(우측)
+            var cook = CoastUiArt.CutePill(_tray, "Cook", new Color(1f, 0.72f, 0.42f), 14, 3);
+            cook.raycastTarget = true;
+            foreach (var im in cook.GetComponentsInChildren<Image>(true)) im.raycastTarget = true;
+            Rect(cook.rectTransform, new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(-118f, 6f), new Vector2(-8f, -34f));
+            var ct = Text(cook.transform, "T", Loc.T("🍳 조리", "🍳 Cook"), 14, Navy, TextAnchor.MiddleCenter);
+            ct.fontStyle = FontStyle.Bold; ct.raycastTarget = false;
+            var cb = cook.gameObject.AddComponent<Button>(); cb.transition = Selectable.Transition.None; cb.targetGraphic = cook;
+            cb.onClick.AddListener(() => { CoastPrefs.Vibrate(); InventoryUI.Open(_gm, () => { if (_tab == Tab.Room) { Clear(_tray); BuildRoomTray(); RefreshMoney(); } }, cookMode: true); });
+
+            _trayScroll = MakeHScroll(_tray, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(4f, 4f), new Vector2(-124f, -32f), out var content);
+            const float cw = 108f, gap = 10f;
+            float x = 4f;
+            int n = 0;
+            foreach (var k in PetShop.ForSale)
             {
-                var d = list[i];
-                bool owned = HomeData.Owns(p, d), placed = HomeData.IsPlaced(p, d), isNew = HomeData.IsNew(p, d);
-                Color fill = placed ? new Color(0.72f, 0.90f, 0.86f) : owned ? new Color(0.92f, 0.97f, 0.90f) : d.FromRun ? new Color(0.90f, 0.88f, 0.94f) : new Color(1f, 0.94f, 0.85f);
-                var card = CoastUiArt.CutePill(content, "C_" + d.id, fill, 12, 2);
-                card.rectTransform.anchorMin = new Vector2(0f, 0f); card.rectTransform.anchorMax = new Vector2(0f, 1f); card.rectTransform.pivot = new Vector2(0f, 0.5f);
-                card.rectTransform.anchoredPosition = new Vector2(i * (cw + gap), 0f); card.rectTransform.sizeDelta = new Vector2(cw, 0f);
-                // 네모 타일(아이콘 + 이름)
-                var frame = CoastUiArt.Panel(card.transform, "Frame", d.color, 12);
-                Rect(frame.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), Vector2.zero, Vector2.zero);
-                frame.rectTransform.pivot = new Vector2(0.5f, 1f); frame.rectTransform.anchoredPosition = new Vector2(0f, -4f); frame.rectTransform.sizeDelta = new Vector2(88f, 88f);
-                frame.raycastTarget = true;
-                var vis = DecoVisual(frame.transform, d, new Vector2(72f, 56f), false);
-                var vrt = vis.GetComponent<RectTransform>();
-                vrt.anchorMin = new Vector2(0.5f, 1f); vrt.anchorMax = new Vector2(0.5f, 1f); vrt.pivot = new Vector2(0.5f, 1f);
-                vrt.anchoredPosition = new Vector2(0f, -4f); vrt.sizeDelta = new Vector2(72f, 52f);
-                if (!owned) foreach (var g in vis.GetComponentsInChildren<Graphic>()) g.color = new Color(g.color.r * 0.7f, g.color.g * 0.7f, g.color.b * 0.72f, g.color.a);
-                var nm = Text(frame.transform, "Name", d.Name + (isNew ? " ●" : ""), 11, Color.white, TextAnchor.MiddleCenter);
-                nm.fontStyle = FontStyle.Bold;
-                nm.resizeTextForBestFit = true; nm.resizeTextMinSize = 8; nm.resizeTextMaxSize = 12;
-                nm.horizontalOverflow = HorizontalWrapMode.Wrap;
-                CoastUiArt.OutlineText(nm, new Color(0f, 0f, 0f, 0.55f), 1.2f);
-                Rect(nm.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(3f, 2f), new Vector2(-3f, 28f));
-                // 상태 작은 버튼(치우기/가격) — 놓기는 드래그·탭으로
-                string label; Color col; bool enabled = true;
-                if (placed) { label = Loc.T("치우기", "Remove"); col = Grey; }
-                else if (owned) { label = Loc.T("탭·끌기", "Tap/Drag"); col = Sky; }
-                else if (d.FromRun) { label = Loc.T("러닝", "Run"); col = Grey; enabled = false; }
-                else { label = $"{d.price:N0}G"; col = Save.stats.money >= d.price ? Coral : Grey; enabled = Save.stats.money >= d.price; }
-                var b = Button(card.transform, "Act", label, col, new Vector2(0.5f, 0f), new Vector2(0f, 4f), new Vector2(92f, 28f), () => RoomAct(d));
-                b.GetComponentInChildren<Text>().fontSize = CoastHudLayout.Scaled(11);
-                b.interactable = enabled;
-                // 방으로 드래그앤드롭 (보유·구매 가능 / 이미 놓은 건 제외)
-                bool canDrag = !placed && (owned || (!d.FromRun && enabled));
-                if (canDrag)
-                {
-                    var drag = frame.gameObject.AddComponent<TrayDecoDrag>();
-                    drag.Scroll = _trayScroll;
-                    DecoDef def = d;
-                    drag.OnBegin = () => BeginTrayGhost(def);
-                    drag.OnMove = pos => MoveTrayGhost(pos);
-                    drag.OnEnd = pos => EndTrayGhost(def, pos);
-                }
+                if (Save == null || !PetShop.Owns(Save, k)) continue;
+                var tex = ArtAssets.LoadTexture("UI_Pet_" + k) ?? ArtAssets.LoadTexture("Obs_Pet_" + k);
+                AddPetCard(content, x, k, PetCompanion.Names[(int)k], tex, cw);
+                x += cw + gap;
+                n++;
             }
-            content.sizeDelta = new Vector2(list.Count * (cw + gap), 0f);
+            if (n == 0)
+            {
+                var empty = Text(_tray, "Empty", Loc.T("상점에서 펫을 데려오세요", "Get a pet from the shop"), 14, Grey, TextAnchor.MiddleCenter);
+                Rect(empty.rectTransform, Vector2.zero, Vector2.one, new Vector2(12f, 8f), new Vector2(-130f, -36f));
+            }
+            content.sizeDelta = new Vector2(Mathf.Max(x, cw), 0f);
+        }
+
+        private void AddPetCard(RectTransform content, float x, PetKind k, string name, Texture2D tex, float cw)
+        {
+            bool on = (Save != null ? Save.equippedPet : PetKind.None) == k;
+            var chip = CoastUiArt.CutePill(content, "Pet_" + k, on ? new Color(1f, 0.86f, 0.45f) : new Color(0.94f, 0.92f, 0.96f), 14, 3);
+            chip.raycastTarget = true;
+            foreach (var im in chip.GetComponentsInChildren<Image>(true)) im.raycastTarget = true;
+            var crt = chip.rectTransform;
+            crt.anchorMin = new Vector2(0f, 0f); crt.anchorMax = new Vector2(0f, 1f); crt.pivot = new Vector2(0f, 0.5f);
+            crt.anchoredPosition = new Vector2(x, 0f); crt.sizeDelta = new Vector2(cw, 0f);
+            if (crt.GetComponent<RectMask2D>() == null) crt.gameObject.AddComponent<RectMask2D>();
+            if (tex != null)
+            {
+                var pi = new GameObject("I", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
+                pi.transform.SetParent(crt, false);
+                pi.sprite = CoastUiArt.AsSprite(RaisingUI.ChromaKeyed(tex));
+                // AspectRatioFitter(EnvelopeParent)는 RectMask2D/스트레치 부모와 레이아웃 루프를 일으켜 에디터·플레이가 멈출 수 있음
+                pi.preserveAspect = false; pi.raycastTarget = false;
+                Rect(pi.rectTransform, Vector2.zero, Vector2.one, new Vector2(4f, 22f), new Vector2(-4f, -4f));
+            }
+            var t = Text(crt, "T", on ? "★ " + name : name, 12, Navy, TextAnchor.MiddleCenter);
+            t.fontStyle = FontStyle.Bold; t.raycastTarget = false;
+            CoastUiArt.OutlineText(t, new Color(1f, 1f, 1f, 0.85f), 1.5f);
+            Rect(t.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(2f, 3f), new Vector2(-2f, 22f));
+            var pk = k;
+            var b = chip.gameObject.AddComponent<Button>(); b.transition = Selectable.Transition.None; b.targetGraphic = chip;
+            b.onClick.AddListener(() => SelectPet(pk));
+        }
+
+        private void SelectPet(PetKind k)
+        {
+            if (Save == null) return;
+            if (k == PetKind.None || !PetShop.Owns(Save, k)) { CoastToast.Show(Loc.T("아직 없는 펫이야.", "You don't own that pet.")); return; }
+            PetShop.Equip(Save, k);
+            PetCompanion.Selected = k;
+            RunTuning.Pet = k;
+            _gm.Persist();
+            CoastToast.Show(Loc.T($"{PetCompanion.Names[(int)k]} 선택! 러닝에 같이 나와.", $"{PetCompanion.Names[(int)k]} selected — joins runs."));
+            if (_tab == Tab.Room) SetTab(Tab.Room);
         }
 
         private void BeginTrayGhost(DecoDef d)
@@ -521,22 +527,24 @@ namespace CoastRun
 
         // ── 베란다 ───────────────────────────────────────────────────────
 
-        // ── 텃밭(56차, 사용자 시안): 쿼터뷰 방 안에 화분 4개 — 작물 4종(토마토·감자·쌀·장미), 2~3주 자라고 수확 때 성공 확률 ──
-        private static readonly Vector2[] PotSpots = { new Vector2(0.16f, 0.30f), new Vector2(0.40f, 0.20f), new Vector2(0.64f, 0.22f), new Vector2(0.86f, 0.32f) };
+        // ── 텃밭: 집앞 마당(UI_Tama_Yard) 위 화분 4개 — 작물 4종, 2~3주 자라고 수확 때 성공 확률 ──
+        private static readonly Vector2[] PotSpots = { new Vector2(0.18f, 0.14f), new Vector2(0.40f, 0.10f), new Vector2(0.62f, 0.10f), new Vector2(0.84f, 0.14f) };
         private void BuildBalcony()
         {
-            // 방 그림(쿼터뷰) 그대로
+            // 집앞 텃밭/마당 배경
             var bgMask = new GameObject("BgMask", typeof(RectTransform), typeof(Image), typeof(Mask));
             bgMask.transform.SetParent(_body, false);
             Rect(bgMask.GetComponent<RectTransform>(), Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-            bgMask.GetComponent<Image>().color = new Color(0.22f, 0.16f, 0.14f);
+            bgMask.GetComponent<Image>().color = new Color(0.35f, 0.55f, 0.40f);
             bgMask.GetComponent<Mask>().showMaskGraphic = true;
             var bg = new GameObject("Bg", typeof(RectTransform), typeof(Image), typeof(AspectRatioFitter)).GetComponent<Image>();
             bg.transform.SetParent(bgMask.transform, false);
             var brt = bg.rectTransform; brt.anchorMin = Vector2.zero; brt.anchorMax = Vector2.one; brt.offsetMin = brt.offsetMax = Vector2.zero;
             var fit = bg.GetComponent<AspectRatioFitter>(); fit.aspectMode = AspectRatioFitter.AspectMode.EnvelopeParent;
-            var iso = ArtAssets.LoadTexture("UI_Room_Iso") ?? ArtAssets.LoadTexture("UI_Raising_Room");
-            if (iso != null) { fit.aspectRatio = (float)iso.width / Mathf.Max(1, iso.height); bg.sprite = CoastUiArt.AsSprite(iso); }
+            var yard = ArtAssets.LoadTexture("UI_Tama_Yard")
+                       ?? ArtAssets.LoadTexture("BG_OrangeFarm")
+                       ?? ArtAssets.LoadTexture("UI_Raising_Room");
+            if (yard != null) { fit.aspectRatio = (float)yard.width / Mathf.Max(1, yard.height); bg.sprite = CoastUiArt.AsSprite(yard); }
             bg.raycastTarget = false;
             var head = Text(_body, "Head", Loc.T("🌱 텃밭 · 심으면 주마다 자라고, 다 자라면 수확(성공 확률!)", "🌱 Garden · grows weekly, harvest when ripe (chance!)"), 13, Color.white, TextAnchor.MiddleCenter);
             Rect(head.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(10f, -34f), new Vector2(-10f, -6f));
@@ -547,7 +555,7 @@ namespace CoastRun
                 var root = new GameObject("Pot" + i, typeof(RectTransform), typeof(Image)).GetComponent<RectTransform>();
                 root.SetParent(_body, false);
                 root.anchorMin = root.anchorMax = PotSpots[i]; root.pivot = new Vector2(0.5f, 0f);
-                root.anchoredPosition = Vector2.zero; root.sizeDelta = new Vector2(150f, 230f);
+                root.anchoredPosition = Vector2.zero; root.sizeDelta = new Vector2(120f, 180f);
                 root.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0f); root.GetComponent<Image>().raycastTarget = true;
                 int pi = i;
                 var b = root.gameObject.AddComponent<Button>(); b.transition = Selectable.Transition.None; b.onClick.AddListener(() => PotTapped(pi));
@@ -721,59 +729,205 @@ namespace CoastRun
             content.sizeDelta = new Vector2(HomeData.Seeds.Length * (cw + gap), 0f);
         }
 
-        // ── 놀이 ─────────────────────────────────────────────────────────
+        // ── 놀이 (시안: 파스텔 카드 + MG 아이콘 + 하기) ───────────────────
+
+        private static readonly Color[] PlayCardCols =
+        {
+            new Color(0.78f, 0.90f, 0.98f), // 구슬 — 하늘
+            new Color(0.98f, 0.84f, 0.88f), // 윷 — 분홍
+            new Color(0.84f, 0.94f, 0.78f), // 투호 — 연두
+            new Color(0.99f, 0.92f, 0.72f), // 딱지 — 노랑
+            new Color(0.90f, 0.82f, 0.96f), // 무궁화 — 보라
+        };
+        private static readonly Color[] PlayTitleCols =
+        {
+            new Color(0.18f, 0.32f, 0.62f),
+            new Color(0.62f, 0.22f, 0.32f),
+            new Color(0.22f, 0.48f, 0.28f),
+            new Color(0.55f, 0.32f, 0.12f),
+            new Color(0.42f, 0.22f, 0.58f),
+        };
+        private static readonly string[] PlayIcons = { "UI_MG_Marbles", "UI_MG_Yut", "UI_MG_Tuho", "UI_MG_Ddakji", "UI_MG_Mugunghwa" };
+        private static readonly string[] PlayBlurbsKo =
+        {
+            "(방향 선택) → [발사]로 원 구슬을 쳐요. 3번 안에 상대편 구슬 2개 이하로 남기면 승리!",
+            "윷을 던져 3칸! 먼저 도착하면 승리",
+            "(방향 선택) → 한 게이지로 화살 던져 5번 중 3번 항아리에 넣으면 승리",
+            "한 게이지로 위로 던져 노란 구역에서 뒤집기! 3번 안에 한 번 뒤집으면 승리",
+            "[달리기]를 누르면 앞으로! 술래가 돌아보면 멈춰, 3번 안에 도달하면 승리",
+        };
+        private static readonly string[] PlayBlurbsEn =
+        {
+            "Aim → [Shoot] the cue marble. Leave 2 or fewer opponent marbles in 3 turns!",
+            "Throw yut — first to finish wins!",
+            "Aim → throw with the gauge. Land 3 of 5 in the jar to win!",
+            "Hit the yellow zone on the gauge to flip! Once in 3 tries wins.",
+            "Hold [Run]! Freeze when the tagger turns — reach them in 3 tries.",
+        };
+        private static readonly Color[] PlayFlowerCols =
+        {
+            new Color(0.45f, 0.72f, 0.95f),
+            new Color(0.95f, 0.55f, 0.70f),
+            new Color(0.45f, 0.78f, 0.48f),
+            new Color(0.98f, 0.78f, 0.28f),
+            new Color(0.72f, 0.52f, 0.92f),
+        };
 
         private void BuildPlay()
         {
-            var bg = CoastHudLayout.MakeImage(_body, "Bg", Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, new Color(0.98f, 0.93f, 0.82f));
-            (string, string, string, int, HomeMiniGames.Kind)[] games =
+            // 크림 바탕 + 컨페티·코너 꽃 (시안)
+            CoastHudLayout.MakeImage(_body, "Bg", Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, new Color(0.99f, 0.96f, 0.90f));
+            SprinklePlayDecor(_body);
+
+            var defs = ChapterMission.All;
+            float gap = 0.012f;
+            float rowH = (0.96f - gap * (defs.Length - 1)) / Mathf.Max(1, defs.Length);
+            for (int i = 0; i < defs.Length; i++)
             {
-                (Loc.T("윷놀이", "Yut Nori"), Loc.T("윷 네 개를 던져 도담이보다 먼저 20칸을 돌아와. 윷·모는 한 번 더!", "Throw four sticks and get around 20 cells before Dodam. Yut/Mo = throw again!"), "윷", 60, HomeMiniGames.Kind.Yut),
-                (Loc.T("구슬치기", "Marbles"), Loc.T("구슬을 끌어서 쏘고, 마당 밖으로 밀어낸 구슬마다 +8G. 3발.", "Drag to shoot; each marble knocked out of the yard is +8G. 3 shots."), "●", 40, HomeMiniGames.Kind.Marbles),
-                (Loc.T("공기놀이", "Gonggi"), Loc.T("움직이는 손이 노란 구간에 왔을 때 잡아! 5번 중 성공한 만큼 +10G.", "Catch when the moving hand is in the yellow zone! +10G per success, 5 tries."), "✋", 50, HomeMiniGames.Kind.Gonggi),
-            };
-            for (int i = 0; i < games.Length; i++)
-            {
-                var g = games[i];
-                var card = CoastUiArt.CutePill(_body, "G" + i, i == 0 ? new Color(0.98f, 0.80f, 0.70f) : i == 1 ? new Color(0.75f, 0.88f, 0.98f) : new Color(0.98f, 0.92f, 0.65f), 18, 4);
-                Rect(card.rectTransform, new Vector2(0.03f, 0.68f - i * 0.325f), new Vector2(0.97f, 0.98f - i * 0.325f), Vector2.zero, Vector2.zero);
-                var glyph = Text(card.transform, "Glyph", g.Item3, 34, Navy, TextAnchor.MiddleCenter);
-                Rect(glyph.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 1f), new Vector2(10f, 0f), new Vector2(100f, 0f));
-                var nm = Text(card.transform, "Name", g.Item1, 22, Navy, TextAnchor.MiddleLeft);
-                Rect(nm.rectTransform, new Vector2(0f, 0.55f), new Vector2(1f, 1f), new Vector2(104f, 0f), new Vector2(-150f, -6f));
-                var desc = Text(card.transform, "Desc", g.Item2, 12, Ink, TextAnchor.UpperLeft);
+                var d = defs[i];
+                float top = 0.98f - i * (rowH + gap);
+                float bot = top - rowH;
+                var card = CoastUiArt.CutePill(_body, "G" + i, PlayCardCols[i % PlayCardCols.Length], 18, 3);
+                Rect(card.rectTransform, new Vector2(0.025f, bot), new Vector2(0.975f, top), Vector2.zero, Vector2.zero);
+
+                // 왼쪽: 꽃 테두리 원형 아이콘
+                BuildPlayIcon(card.transform, i);
+
+                var nm = Text(card.transform, "Name", Loc.T(d.nameKo, d.nameEn), 18, PlayTitleCols[i % PlayTitleCols.Length], TextAnchor.MiddleLeft);
+                Rect(nm.rectTransform, new Vector2(0f, 0.52f), new Vector2(1f, 1f), new Vector2(108f, 2f), new Vector2(-128f, -2f));
+                nm.fontStyle = FontStyle.Bold;
+                nm.resizeTextForBestFit = true; nm.resizeTextMinSize = 12; nm.resizeTextMaxSize = CoastHudLayout.Scaled(20);
+
+                string blurb = Loc.T(PlayBlurbsKo[i % PlayBlurbsKo.Length], PlayBlurbsEn[i % PlayBlurbsEn.Length]);
+                var desc = Text(card.transform, "Desc", blurb, 11, Ink, TextAnchor.UpperLeft);
                 desc.horizontalOverflow = HorizontalWrapMode.Wrap;
-                Rect(desc.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0.58f), new Vector2(104f, 8f), new Vector2(-150f, 0f));
-                var kind = g.Item5;
-                Button(card.transform, "Play", Loc.T("하기", "Play"), Coral, new Vector2(1f, 0.5f), new Vector2(-12f, 0f), new Vector2(124f, 52f), () => StartMini(kind));
+                desc.verticalOverflow = VerticalWrapMode.Truncate;
+                desc.resizeTextForBestFit = true; desc.resizeTextMinSize = 9; desc.resizeTextMaxSize = CoastHudLayout.Scaled(12);
+                Rect(desc.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0.58f), new Vector2(108f, 6f), new Vector2(-128f, 0f));
+
+                var kind = d.kind;
+                Button(card.transform, "Play", Loc.T("하기", "Play"), Coral, new Vector2(1f, 0.5f), new Vector2(-12f, 0f), new Vector2(112f, 46f), () => StartMini(kind));
             }
+        }
+
+        private static void BuildPlayIcon(Transform card, int i)
+        {
+            Color flower = PlayFlowerCols[i % PlayFlowerCols.Length];
+            // 꽃잎 4장 (아이콘 원 둘레)
+            const float cx = 50f;
+            for (int p = 0; p < 4; p++)
+            {
+                float ang = p * 90f + 45f;
+                float rad = ang * Mathf.Deg2Rad;
+                float px = cx + Mathf.Cos(rad) * 30f;
+                float py = Mathf.Sin(rad) * 30f;
+                var petal = CoastHudLayout.MakeImage(card, "Petal" + p, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
+                    new Vector2(px - 11f, py - 11f), new Vector2(px + 11f, py + 11f), flower);
+                petal.raycastTarget = false;
+                petal.sprite = CoastUiArt.RoundedRect(32);
+                petal.color = new Color(flower.r, flower.g, flower.b, 0.92f);
+            }
+            var ring = CoastHudLayout.MakeImage(card, "IcoRing", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f),
+                new Vector2(12f, -38f), new Vector2(88f, 38f), Color.white);
+            ring.raycastTarget = false;
+            ring.sprite = CoastUiArt.RoundedRect(40);
+            ring.color = new Color(1f, 1f, 1f, 0.98f);
+            if (ring.gameObject.GetComponent<Mask>() == null)
+            {
+                var m = ring.gameObject.AddComponent<Mask>();
+                m.showMaskGraphic = true;
+            }
+            string iconName = PlayIcons[i % PlayIcons.Length];
+            var tex = ArtAssets.LoadTexture(iconName);
+            if (tex != null)
+            {
+                var im = new GameObject("I", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
+                im.transform.SetParent(ring.transform, false);
+                im.sprite = CoastUiArt.AsSprite(RaisingUI.ChromaKeyed(tex));
+                im.preserveAspect = true; im.raycastTarget = false;
+                Rect(im.rectTransform, Vector2.zero, Vector2.one, new Vector2(6f, 6f), new Vector2(-6f, -6f));
+            }
+        }
+
+        private static void SprinklePlayDecor(RectTransform host)
+        {
+            Color[] dots =
+            {
+                new Color(1f, 0.55f, 0.70f, 0.55f), new Color(0.55f, 0.75f, 1f, 0.50f),
+                new Color(0.95f, 0.80f, 0.30f, 0.50f), new Color(0.55f, 0.88f, 0.55f, 0.45f),
+                new Color(0.78f, 0.55f, 0.95f, 0.50f),
+            };
+            Vector2[] spots =
+            {
+                new Vector2(0.06f, 0.92f), new Vector2(0.94f, 0.90f), new Vector2(0.08f, 0.08f), new Vector2(0.92f, 0.10f),
+                new Vector2(0.04f, 0.55f), new Vector2(0.96f, 0.48f), new Vector2(0.50f, 0.97f), new Vector2(0.72f, 0.05f),
+                new Vector2(0.28f, 0.04f), new Vector2(0.15f, 0.75f), new Vector2(0.85f, 0.70f), new Vector2(0.60f, 0.95f),
+            };
+            for (int i = 0; i < spots.Length; i++)
+            {
+                float s = (i % 3 == 0) ? 14f : 8f;
+                var c = dots[i % dots.Length];
+                var d = CoastHudLayout.MakeImage(host, "Dot" + i, spots[i], spots[i],
+                    new Vector2(-s, -s), new Vector2(s, s), c);
+                d.raycastTarget = false;
+                d.sprite = CoastUiArt.RoundedRect(32);
+            }
+            // 코너 꽃 뭉치
+            PlaceCornerFlower(host, new Vector2(0.02f, 0.02f), new Color(0.92f, 0.45f, 0.70f));
+            PlaceCornerFlower(host, new Vector2(0.98f, 0.02f), new Color(0.70f, 0.50f, 0.95f));
+            PlaceCornerFlower(host, new Vector2(0.02f, 0.98f), new Color(0.45f, 0.78f, 0.95f));
+            PlaceCornerFlower(host, new Vector2(0.98f, 0.98f), new Color(0.98f, 0.72f, 0.35f));
+        }
+
+        private static void PlaceCornerFlower(RectTransform host, Vector2 anchor, Color col)
+        {
+            for (int i = 0; i < 5; i++)
+            {
+                float ang = i * 72f * Mathf.Deg2Rad;
+                var p = CoastHudLayout.MakeImage(host, "F", anchor, anchor,
+                    new Vector2(Mathf.Cos(ang) * 10f - 7f, Mathf.Sin(ang) * 10f - 7f),
+                    new Vector2(Mathf.Cos(ang) * 10f + 7f, Mathf.Sin(ang) * 10f + 7f),
+                    new Color(col.r, col.g, col.b, 0.85f));
+                p.raycastTarget = false;
+                p.sprite = CoastUiArt.RoundedRect(28);
+            }
+            var center = CoastHudLayout.MakeImage(host, "FC", anchor, anchor, new Vector2(-5f, -5f), new Vector2(5f, 5f), new Color(1f, 0.92f, 0.45f, 0.95f));
+            center.raycastTarget = false;
+            center.sprite = CoastUiArt.RoundedRect(24);
         }
 
         private void BuildPlayTray()
         {
             int left = HomeData.RewardPlaysLeft(Save);
-            var t = Text(_tray, "Info", Loc.T($"이번 주 보상 남은 횟수 {left}/{HomeData.MiniGameRewardPerWeek}\n횟수가 다 되면 연습(보상 없음)으로 놀 수 있어. 주차가 바뀌면 다시 채워져.",
-                $"Reward plays left this week: {left}/{HomeData.MiniGameRewardPerWeek}\nAfter that it's practice (no reward). Refills each week."), 15, Ink, TextAnchor.MiddleCenter);
+            int max = HomeData.MiniGameRewardPerWeek;
+            string ko = left > 0
+                ? $"스토리와 같은 놀이예요 · 이번 주 보상 {left}/{max}회\n다 쓰면 연습(보상 없음). 주차가 바뀌면 다시 채워져."
+                : $"스토리와 같은 놀이예요 · 이번 주 보상 {max}/{max}회 다 씀 · 연습(보상 없음).\n주차가 바뀌면 다시 채워져.";
+            string en = left > 0
+                ? $"Same games as story · rewards {left}/{max} this week\nThen practice (no reward). Refills each week."
+                : $"Same games as story · {max}/{max} rewards used · practice only.\nRefills each week.";
+            var t = Text(_tray, "Info", Loc.T(ko, en), 14, Ink, TextAnchor.MiddleCenter);
             t.horizontalOverflow = HorizontalWrapMode.Wrap;
             Rect(t.rectTransform, Vector2.zero, Vector2.one, new Vector2(10f, 10f), new Vector2(-10f, -10f));
         }
 
-        private void StartMini(HomeMiniGames.Kind kind)
+        private void StartMini(ChapterMission.Kind kind)
         {
-            if (_miniRoot != null) Destroy(_miniRoot);
-            _miniRoot = new GameObject("Mini", typeof(RectTransform), typeof(Image));
-            _miniRoot.transform.SetParent(_root, false);
-            var rt = _miniRoot.GetComponent<RectTransform>();
-            Rect(rt, Vector2.zero, Vector2.one, new Vector2(-CoastUiCanvas.HudPad, -CoastUiCanvas.HudPad), new Vector2(CoastUiCanvas.HudPad, CoastUiCanvas.HudPad));
-            var im = _miniRoot.GetComponent<Image>(); im.color = new Color(0.12f, 0.08f, 0.12f, 0.96f); im.raycastTarget = true;
+            if (ChapterMissionUI.IsOpen) return;
             bool rewardable = HomeData.RewardPlaysLeft(Save) > 0;
-            HomeMiniGames.Start(kind, rt, rewardable, reward =>
+            // replay=true: 스토리 게이트와 무관하게 언제든 플레이(미션 클리어 비트는 안 건드림)
+            ChapterMissionUI.Play(kind, true, won =>
             {
-                int given = HomeData.GiveReward(Save, reward);
-                if (given > 0) { _gm.Persist(); CoastToast.Show(Loc.T($"+{given}G!", $"+{given}G!")); }
-                else if (reward > 0) CoastToast.Show(Loc.T("연습 게임 — 보상은 없어.", "Practice — no reward."));
-                if (_miniRoot != null) Destroy(_miniRoot); _miniRoot = null;
-                RefreshMoney(); Clear(_tray); BuildPlayTray();
+                if (won && rewardable)
+                {
+                    int pay = ChapterMission.Reward(_gm);
+                    int given = HomeData.GiveReward(Save, pay);
+                    if (given > 0) { _gm.Persist(); CoastToast.Show(Loc.T($"+{given}G!", $"+{given}G!")); }
+                }
+                else if (won && !rewardable)
+                    CoastToast.Show(Loc.T("연습 게임 — 보상은 없어.", "Practice — no reward."));
+                RefreshMoney();
+                if (_tab == Tab.Play) { Clear(_tray); BuildPlayTray(); }
             });
         }
 
@@ -842,7 +996,7 @@ namespace CoastRun
 
         // ── 장식 그림(공용) ────────────────────────────────────────────────
 
-        /// Resources/CoastRun/UI_Deco_<id>(마젠타 키 가능)가 있으면 그 그림, 없으면 색 알약 + 글자 플레이스홀더.
+        /// Resources/CoastRun/UI_Deco_<id>(마젠타 키 가능)가 있으면 그 그림, 없으면 색 알약(한자 없음).
         public static GameObject DecoVisual(Transform parent, DecoDef d, Vector2 size, bool shadow)
         {
             var root = new GameObject("Deco_" + d.id, typeof(RectTransform));
@@ -866,14 +1020,14 @@ namespace CoastRun
                 var pill = CoastUiArt.CutePill(root.transform, "Ph", d.color, 16, 3);
                 pill.raycastTarget = false;
                 Rect(pill.rectTransform, Vector2.zero, Vector2.one, new Vector2(size.x * 0.08f, size.y * 0.12f), new Vector2(-size.x * 0.08f, -size.y * 0.06f));
-                var tag = Text(pill.transform, "Tag", d.tag, Mathf.RoundToInt(size.y * 0.30f), new Color(1f, 1f, 1f, 0.95f), TextAnchor.MiddleCenter);
-                CoastUiArt.OutlineText(tag, new Color(0f, 0f, 0f, 0.35f), 1.5f);
-                if (size.y >= 100f)
+                // 한자 tag 대신 짧은 이름만(공간 있을 때)
+                if (size.y >= 72f)
                 {
-                    tag.rectTransform.offsetMin = new Vector2(0f, size.y * 0.14f);
-                    var nm = Text(pill.transform, "Name", d.Name, 11, new Color(0.25f, 0.15f, 0.12f), TextAnchor.MiddleCenter);
-                    nm.resizeTextForBestFit = true; nm.resizeTextMinSize = 9; nm.resizeTextMaxSize = 14;
-                    Rect(nm.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(-6f, 4f), new Vector2(6f, 26f));
+                    var nm = Text(pill.transform, "Name", d.Name, Mathf.Clamp(Mathf.RoundToInt(size.y * 0.14f), 10, 16), new Color(0.18f, 0.12f, 0.10f), TextAnchor.MiddleCenter);
+                    nm.fontStyle = FontStyle.Bold;
+                    nm.resizeTextForBestFit = true; nm.resizeTextMinSize = 8; nm.resizeTextMaxSize = 16;
+                    nm.horizontalOverflow = HorizontalWrapMode.Wrap;
+                    Rect(nm.rectTransform, new Vector2(0.08f, 0.12f), new Vector2(0.92f, 0.88f), Vector2.zero, Vector2.zero);
                 }
             }
             return root;

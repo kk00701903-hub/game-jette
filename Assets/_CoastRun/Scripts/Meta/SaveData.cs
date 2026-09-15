@@ -117,18 +117,23 @@ namespace CoastRun
         public int affinityShown;            // 사이드 씬 본 비트 (npc*3+level-1)
         public int endingVariant;            // 엔딩 변형(0 기본 / 1 / 2)
         public bool trueEndingPending;       // 진엔딩 조건 충족(양쪽 엔딩을 본 뒤의 만남)
+        public int clueMask;                 // 85차(대본 v4): 단서 6비트 — ClueSystem.Clue(이름·편지·하트·머리띠·돌·라디오). 엔딩 분기.
+        public string pendingEndingId;       // 85차: ResolveEnding 이 고른 시네마 id(END_A/END_B/END_TRUE) — 엔딩 화면·갤러리 표기용
         public PotState[] pots = new PotState[HomeData.PotCount];   // 30차: 베란다 화분
         public int treadmillStamp = -1;      // 30차: 러닝머신 마지막 사용 (week*4+phase)
         public int miniGameWeek, miniGamePlays;   // 30차: 미니게임 보상 횟수(주 3회)
         public int flowersSold;              // 30차: 판 꽃 수(통계)
         // ── 55차(사용자): 생존 생태계(다마고치) — 식료품·옷·허기·수면·컨디션·죽음 ──
-        public int rice = 2;                 // 쌀 재고(주 단위) — 주마다 1 소비
-        public int sideDish = 2;             // 반찬 재고(주 단위) — 주마다 1 소비(텃밭 수확으로도)
+        public int rice = 2;                 // 레거시 미러(LifeItems.SyncLegacy) — 재료+주식 합
+        public int sideDish = 2;             // 레거시 미러 — 채소·고기·반찬 합
+        public LifeStack[] bag = new LifeStack[0]; // 생활 인벤(재료·요리·약·케어)
+        public bool invMigrated;             // rice/sideDish → bag 이관 완료
+        public bool ateThisWeek;             // 이번 주 「밥」으로 요리를 먹었는가
         public int hunger = 80;              // 배부름 0~100 (0 = 굶주림)
         public int clothesWeeks = 12;        // 옷 남은 주(3개월 = 12주, 0 이면 낡아서 못 입음)
         public int condition = 80;           // 컨디션 0~100 — 0이 이어지면 죽는다
         public int sleepDebt;                // 잠(밥·휴식 행동)을 안 한 연속 주
-        public int starveWeeks;              // 쌀 없이 지낸 연속 주
+        public int starveWeeks;              // 식사 없이 지낸 연속 주
         public int dangerWeeks;              // 컨디션 0 인 연속 주(2주 = 사망)
         public int deaths;                   // 쓰러진 횟수(통계)
         public bool restedThisWeek;          // 이번 주 밥/휴식 행동을 했는가

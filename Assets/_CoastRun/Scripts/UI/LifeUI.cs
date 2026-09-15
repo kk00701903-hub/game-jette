@@ -47,16 +47,16 @@ namespace CoastRun
             Close();
             bool done = false;
             Action finish = () => { if (done) return; done = true; Close(); onDone?.Invoke(); };
-            _canvas = LifeUiKit.Dim("WeekPassCanvas", 466, out var root, finish);
+            // 딤은 배경만 — 실수로 바로 닫히지 않게 클릭 닫기 없음. ✕ 또는 2초 후 자동.
+            _canvas = LifeUiKit.Dim("WeekPassCanvas", 466, out var root, null);
             UnityEngine.Object.DontDestroyOnLoad(_canvas.gameObject);
             var card = CoastUiArt.CutePill(root, "Card", LifeUiKit.Cream, 34, 6);
             var crt = card.rectTransform; crt.anchorMin = crt.anchorMax = new Vector2(0.5f, 0.5f); crt.pivot = new Vector2(0.5f, 0.5f);
             bool hasNote = !string.IsNullOrEmpty(nextNote);
             int rows = 4 + (rep != null && rep.harvested > 0 ? 1 : 0);
             float listH = 26f + rows * 52f;
-            float h = 250f + listH + 24f + 2 * 104f + (hasNote ? 62f : 0f) + 34f;   // 65차: 아래 단추 없음
+            float h = 250f + listH + 24f + 2 * 104f + (hasNote ? 62f : 0f) + 34f;
             crt.anchoredPosition = new Vector2(0f, 10f); crt.sizeDelta = new Vector2(640f, h); card.raycastTarget = true;
-            var cb = card.gameObject.AddComponent<Button>(); cb.transition = Selectable.Transition.None; cb.onClick.AddListener(() => finish());
 
             // 달·해
             var moon = CoastHudLayout.MakeText(crt, "Moon", "☾", 40, TextAnchor.MiddleCenter, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-70f, -66f), new Vector2(-10f, -16f));
@@ -84,11 +84,17 @@ namespace CoastRun
             if (rep != null)
             {
                 float ry = -13f;
-                Row(lrt, ref ry, "WK_Rice", rep.ateRice ? Loc.T($"쌀 1주분 먹었다 · 남은 쌀 {rep.riceLeft}주분", $"Ate rice · {rep.riceLeft}w left") : Loc.T("쌀이 없어 굶었다…", "No rice — went hungry…"), !rep.ateRice);
-                Row(lrt, ref ry, "WK_Side", rep.ateSide ? Loc.T($"반찬 먹었다 · 남은 반찬 {rep.sideLeft}", $"Side dish · {rep.sideLeft} left") : Loc.T("반찬 없이 밥만", "Rice only, no side dish"), !rep.ateSide);
+                Row(lrt, ref ry, "WK_Rice", rep.ateRice ? Loc.T($"이번 주 식사함 · 남은 주식 미러 {rep.riceLeft}", $"Ate this week · stock mirror {rep.riceLeft}") : Loc.T("식사를 안 했다… 「밥」으로 요리를 먹자", "No meal… eat a dish with Feed"), !rep.ateRice);
+                Row(lrt, ref ry, "WK_Side", rep.ateSide ? Loc.T($"요리·반찬 효과 반영", $"Meals/sides counted") : Loc.T("요리가 부족하거나 안 먹음", "Few/no dishes eaten"), !rep.ateSide);
                 Row(lrt, ref ry, "WK_Sleep", rep.slept ? Loc.T("잘 잤다", "Slept well") : Loc.T("잠을 못 잤다", "Didn't sleep"), !rep.slept);
                 Row(lrt, ref ry, "WK_Shirt", rep.clothesWorn ? Loc.T("옷이 낡았다 — 새 옷을 사자", "Clothes worn out — buy new") : Loc.T($"옷 {rep.clothesLeft}주 남음", $"Clothes {rep.clothesLeft}w left"), rep.clothesWorn);
-                if (rep.harvested > 0) Row(lrt, ref ry, "WK_Side", Loc.T($"텃밭에 다 자란 작물 {rep.harvested}개 — 마이룸에서 수확", $"{rep.harvested} crop(s) ready in the garden"), false);
+                if (rep.harvested > 0)
+                {
+                    string crops = rep.harvestNames != null && rep.harvestNames.Count > 0
+                        ? string.Join(", ", rep.harvestNames)
+                        : Loc.T($"{rep.harvested}개", $"{rep.harvested}");
+                    Row(lrt, ref ry, "WK_Side", Loc.T($"텃밭에 다 자람: {crops} — 마이룸에서 수확", $"Garden ready: {crops} — harvest in My Room"), false);
+                }
             }
             y -= listH + 20f;
             // 배부름(하트) · 컨디션(별)
@@ -110,12 +116,19 @@ namespace CoastRun
                 nt.color = new Color(0.48f, 0.29f, 0f); nt.fontStyle = FontStyle.Bold; nt.horizontalOverflow = HorizontalWrapMode.Wrap;
                 nt.resizeTextForBestFit = true; nt.resizeTextMinSize = 11; nt.resizeTextMaxSize = CoastHudLayout.Scaled(15);
             }
-            // 65차(사용자): 「터치해서 다음으로」 단추 삭제 — 1초 뒤 자동으로 닫힌다. 빨리 닫으려면 우상단 ✕(또는 카드 터치).
-            var x = CoastUiArt.GlossyPill(crt, "X", new Color(0.55f, 0.58f, 0.66f), 18, 5);
-            var xrt = x.rectTransform; xrt.anchorMin = xrt.anchorMax = new Vector2(1f, 1f); xrt.pivot = new Vector2(1f, 1f); xrt.anchoredPosition = new Vector2(-12f, -12f); xrt.sizeDelta = new Vector2(52f, 52f); x.raycastTarget = true;
-            var xb = x.gameObject.AddComponent<Button>(); xb.transition = Selectable.Transition.None; xb.onClick.AddListener(() => { CoastPrefs.Vibrate(); finish(); });
-            var xt = CoastHudLayout.MakeText(xrt, "T", "✕", 26, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(0f, 3f), Vector2.zero);
-            xt.color = Color.white; xt.fontStyle = FontStyle.Bold; CoastUiArt.OutlineText(xt, new Color(0f, 0f, 0f, 0.4f), 1.5f);
+            // ✕ — 카드 위(root)에 두어 클릭이 막히지 않게. 2초 자동 닫힘 또는 ✕로 닫기.
+            var x = CoastUiArt.GlossyPill(root, "X", new Color(0.55f, 0.58f, 0.66f), 18, 5);
+            var xrt = x.rectTransform; xrt.anchorMin = xrt.anchorMax = new Vector2(1f, 1f); xrt.pivot = new Vector2(1f, 1f);
+            xrt.anchoredPosition = new Vector2(-CoastUiCanvas.HudPad - 16f, -CoastUiCanvas.HudPad - 16f); xrt.sizeDelta = new Vector2(56f, 56f);
+            x.raycastTarget = true;
+            foreach (var im in x.GetComponentsInChildren<Image>(true)) im.raycastTarget = true;
+            var xb = x.gameObject.AddComponent<Button>(); xb.transition = Selectable.Transition.None;
+            xb.targetGraphic = x;
+            xb.onClick.AddListener(() => { CoastPrefs.Vibrate(); finish(); });
+            var xt = CoastHudLayout.MakeText(xrt, "T", "✕", 28, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(0f, 3f), Vector2.zero);
+            xt.color = Color.white; xt.fontStyle = FontStyle.Bold; xt.raycastTarget = false;
+            CoastUiArt.OutlineText(xt, new Color(0f, 0f, 0f, 0.4f), 1.5f);
+            xrt.SetAsLastSibling();
             var ac = _canvas.gameObject.AddComponent<AutoCloser>(); ac.delay = AutoCloseSeconds; ac.act = finish;
             foreach (var (sx, sy, sz) in new[] { (-286f, 110f, 26), (300f, 40f, 22), (-300f, 30f, 16), (290f, 118f, 18) })
             {
@@ -160,8 +173,8 @@ namespace CoastRun
             y -= 104f;
         }
 
-        public static float AutoCloseSeconds = 1.0f;   // 65차(사용자): 1초 뒤 자동 닫힘
-        private class AutoCloser : MonoBehaviour { public Action act; public float delay = 1f; private System.Collections.IEnumerator Start() { yield return new WaitForSecondsRealtime(delay); act?.Invoke(); } }
+        public static float AutoCloseSeconds = 2.0f;   // 2초 보이게 한 뒤 자동 닫힘 (✕로 더 빨리 닫기 가능)
+        private class AutoCloser : MonoBehaviour { public Action act; public float delay = 2f; private System.Collections.IEnumerator Start() { yield return new WaitForSecondsRealtime(delay); act?.Invoke(); } }
         private class TapPulse : MonoBehaviour { public Text t; private void Update() { if (t != null) { var c = t.color; c.a = 0.55f + 0.45f * Mathf.Abs(Mathf.Sin(Time.unscaledTime * 2.5f + t.rectTransform.anchoredPosition.x * 0.01f)); t.color = c; } } }
 
         public static void Close() { if (_canvas != null) UnityEngine.Object.Destroy(_canvas.gameObject); _canvas = null; }

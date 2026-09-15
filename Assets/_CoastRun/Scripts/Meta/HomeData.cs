@@ -252,9 +252,11 @@ namespace CoastRun
             bool ok = UnityEngine.Random.value < seed.chance;
             if (ok)
             {
-                s.sideDish += seed.food; s.rice += seed.rice;
+                if (seed.rice > 0) LifeItems.Add(s, "ing_rice", seed.rice);
+                if (seed.food > 0) LifeItems.Add(s, "ing_veg", seed.food);
                 if (seed.rose) s.stats.stress = 0;
                 s.flowersSold++;
+                LifeItems.SyncLegacy(s);
             }
             return ok;
         }
