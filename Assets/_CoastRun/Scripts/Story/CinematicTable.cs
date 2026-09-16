@@ -460,8 +460,8 @@ namespace CoastRun
             {
                 new Cut(null, "Cut_T_V7_N8_01", "스무 살 생일. 노을이 탑 아래로 내려앉았다. 도윤이가 우유 두 병을 들고 서 있었다. 여덟 해 만의 약속 자리에.", 6.5f, false, null, "Cut_T_N8_01", 0),
                 new Cut(null, "Cut_T_V7_N8_01", "나는 늦지 않았다. 도윤이 앞에 섰다. 「나 왔어.」 도윤이는 내 어깨 너머 언덕길만 봤다.", 6.5f, false, null, null, 1),
-                new Cut(null, "Cut_T_N8_05", "「5분 지나면 화낼 거야.」 도윤이가 애써 웃으며 혼잣말을 했다.", 6.5f, false, null, null, 2),
-                new Cut(null, "Cut_T_N8_05", "「10분 지나면 더 오래 기다릴 거야. 그러니까 빨리 와.」 나는 바로 앞에 있었다.", 6.5f, false, null, null, 3),
+                new Cut(null, "Cut_T_V7_N8_03", "「5분 지나면 화낼 거야.」 도윤이가 애써 웃으며 혼잣말을 했다.", 6.5f, false, null, "Cut_T_V7_N8_01", 2),
+                new Cut(null, "Cut_T_V7_N8_03", "「10분 지나면 더 오래 기다릴 거야. 그러니까 빨리 와.」 나는 바로 앞에 있었다.", 6.5f, false, null, null, 3),
                 new Cut(null, "Cut_T_V7_N8_05", "그때 엄마가 언덕을 올라왔다. 품에 흰 국화를 안고 있었다. 걸음이 휘청거렸다.", 6.5f, false, null, "Cut_T_N8_07", 1),
                 new Cut(null, "Cut_T_V7_N8_06", "엄마는 초소에서 받은 팩스 종이를 도윤이에게 내밀었다. 『오늘 새벽. 탑 남쪽 폐그물 아래. 시신 인양.』", 6.5f, false, null, "Cut_T_N8_03", 0),
                 new Cut(null, "Cut_T_N8_05", "종이를 읽은 도윤이가 우유 두 병을 끌어안은 채 바닥으로 무너졌다.", 6.5f, false, null, null, 3),
