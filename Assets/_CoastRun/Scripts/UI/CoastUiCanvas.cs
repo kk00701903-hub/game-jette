@@ -9,9 +9,26 @@ namespace CoastRun
     {
         public const string SafeAreaName = "PortraitSafeArea";
         public const string InsetName = "HudInset";
+        public const string BgName = "BgFullBleed";
         public const float HudPad = 28f;
         /// 배치 코드의 단위(720×1280) → 캔버스 기준(1080×1920) 배율
         public const float DesignScale = 1.5f;
+
+        // ── 79차(사용자) 캔버스 전략 ───────────────────────────────────────────────
+        // 제작 기준   1080×2400 (20:9) — 배경은 이 크기로 길게 그려 두고 화면을 덮는다.
+        // S25 대응    1080×2340 — 제작 기준보다 60px 짧으니 위아래 30px씩만 잘린다.
+        // 세이프존    1080×1920 (16:9) 중앙 — 스토리 모드·더보기·Play 는 반드시 이 안.
+        /// 배경 제작 기준(디자인 단위). 1080×2400 ÷ DesignScale.
+        public const float BgDesignWidth = 720f;
+        public const float BgDesignHeight = 1600f;
+        /// 필수 UI 세이프존(디자인 단위). 1080×1920 ÷ DesignScale.
+        public const float SafeZoneWidth = 720f;
+        public const float SafeZoneHeight = 1280f;
+        /// CanvasScaler match — 0 = 가로(1080) 고정. 세로 여유는 UI 축소가 아니라
+        /// 배경 노출로 흡수한다(전엔 0.5여서 S25에서 UI가 10% 쪼그라들었다).
+        public const float ScalerMatch = 0f;
+        /// 배경 안에서 세이프존이 시작되는 높이 — 제작 기준 대비 위아래 여유(=160 디자인 = 240px).
+        public static float BgSafeZoneMarginY => (BgDesignHeight - SafeZoneHeight) * 0.5f;
 
         /// Every scene in the flow is an empty shell — the world, the canvases and the
         /// buttons are all built at runtime. Nothing was building the one object Unity UI
@@ -49,11 +66,14 @@ namespace CoastRun
 
             var scaler = go.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-            // 18차-3: 기준 해상도 1080×1920(FHD 9:16), Match 0.5 — 16:9~22:9 대응 표준 설정.
-            // 화면 배치 코드는 720×1280 단위로 쓰여 있으므로 HudInset을 1.5배로 두어 그대로 맞춘다(DesignScale).
+            // 18차-3: 기준 해상도 1080×1920(FHD 9:16). 화면 배치 코드는 720×1280 단위로 쓰여 있으므로
+            //   HudInset을 1.5배로 두어 그대로 맞춘다(DesignScale).
+            // 79차(사용자 캔버스 전략): Match 0.5 → 0(가로 기준). 0.5 에서는 세로가 길어질수록 배율이
+            //   올라가 UI 가 통째로 작아졌다(S25에서 0.898). 가로를 1080 으로 고정하면 세이프존(720×1280)이
+            //   19.5:9~20:9 에서 언제나 원래 크기로 들어가고, 남는 세로는 배경이 채운다.
             scaler.referenceResolution = new Vector2(1080f, 1920f);
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
-            scaler.matchWidthOrHeight = 0.5f;
+            scaler.matchWidthOrHeight = ScalerMatch;
 
             var safeGo = new GameObject(SafeAreaName, typeof(RectTransform));
             safeGo.transform.SetParent(canvas.transform, false);
@@ -100,8 +120,10 @@ namespace CoastRun
         /// 같은 기준의 높이(1280−2×HudPad). 9:16보다 **짧은** 비율(16:9 게임뷰·태블릿·폴더블 펼침)에서
         /// 절대 좌표 배치가 위아래로 잘리던 것을 막기 위해 세로도 이 값을 기준으로 축소한다.
         public const float HudDesignHeight = 1224f;
-        /// 축소 하한 — 여기까지는 잘리지 않고 줄어들고, 더 극단적인 비율에서는 잘린다.
-        public const float MinFitScale = 0.45f;
+        /// 축소 하한 — 여기까지는 잘리지 않고 줄어든다. 79차: Match 0 으로 바꾸면서 가로 화면
+        /// (1920×1080 에디터 게임뷰)에 필요한 배율이 0.285 까지 내려가므로 하한도 함께 내렸다.
+        /// 세로 기기는 0.55 아래로 내려가는 경우가 없다.
+        public const float MinFitScale = 0.28f;
 
         /// 절대 좌표(664×1224) 배치를 화면에 맞춰 통째로 축소하는 상자. 배경처럼 꽉 차야 하는 것은
         /// 이 상자 **바깥**(인셋)에 먼저 붙이고, 좌표로 놓는 UI만 이 상자의 자식으로 둔다.
@@ -137,7 +159,7 @@ namespace CoastRun
         {
             float lw = Mathf.Log(Mathf.Max(1f, screenW) / 1080f, 2f);
             float lh = Mathf.Log(Mathf.Max(1f, screenH) / 1920f, 2f);
-            float scale = Mathf.Pow(2f, Mathf.Lerp(lw, lh, 0.5f));
+            float scale = Mathf.Pow(2f, Mathf.Lerp(lw, lh, ScalerMatch));
             var sz = new Vector2(safeW, safeH) / scale / DesignScale;
             float iw = Mathf.Max(100f, sz.x - 2f * HudPad);
             float ih = Mathf.Max(100f, sz.y - 2f * HudPad);
@@ -161,6 +183,194 @@ namespace CoastRun
             frt.anchoredPosition = Vector2.zero;
             go.GetComponent<CoastHudNarrowFit>().ApplyNow();
             return frt;
+        }
+
+        /// 79차: 배경 자리 — **안전 영역이 아니라 캔버스 전체**를 덮는 상자(노치 아래까지). 디자인 단위로
+        /// 캔버스 크기를 그대로 들고 있어, 자식 배경을 제작 기준(720×1600)으로 놓으면 남는 쪽이 잘린다.
+        public static RectTransform BgRoot(Canvas canvas)
+        {
+            if (canvas == null) return null;
+            var crt = canvas.GetComponent<RectTransform>();
+            var existing = crt.Find(BgName) as RectTransform;
+            if (existing != null) return existing;
+            var go = new GameObject(BgName, typeof(RectTransform), typeof(CoastUiCanvasBox));
+            go.transform.SetParent(crt, false);
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = Vector2.zero;
+            rt.SetAsFirstSibling();   // 배경은 늘 맨 뒤
+            go.GetComponent<CoastUiCanvasBox>().ApplyNow();
+            return rt;
+        }
+
+        /// 제작 기준(1080×2400)으로 그린 배경을 화면에 깐다. 20:9 에서 딱 맞고, S25(19.5:9)에선
+        /// 위아래 30px 씩 잘리고, 16:9 에선 위아래 240px 씩 잘려 옛 16:9 구도가 그대로 보인다.
+        /// 16:9 보다 **짧은** 화면(태블릿·가로)에서는 세이프존이 다 보이도록 배경을 축소하고,
+        /// 그때 생기는 좌우 여백은 같은 그림을 늘려 깐 판으로 메운다.
+        /// 반환값은 제작 기준 좌표계를 가진 배경 이미지 — 그림에 그려진 버튼의 히트 영역을
+        /// 이 이미지의 자식으로 두면 어떤 비율에서도 그림과 어긋나지 않는다.
+        public static Image FullBleedBackground(Canvas canvas, string name, Sprite sprite)
+        {
+            var root = BgRoot(canvas);
+            if (root == null) return null;
+            var fillGo = new GameObject(name + "Fill", typeof(RectTransform), typeof(Image));
+            fillGo.transform.SetParent(root, false);
+            var fill = fillGo.GetComponent<Image>();
+            var frt = fill.rectTransform;
+            frt.anchorMin = Vector2.zero; frt.anchorMax = Vector2.one;
+            frt.offsetMin = Vector2.zero; frt.offsetMax = Vector2.zero;
+            fill.sprite = sprite; fill.preserveAspect = false; fill.raycastTarget = false;
+            fill.color = new Color(0.72f, 0.72f, 0.72f, 1f);   // 여백 채움은 살짝 어둡게 — 본 그림과 구분
+
+            var go = new GameObject(name, typeof(RectTransform), typeof(Image), typeof(CoastUiBgCover));
+            go.transform.SetParent(root, false);
+            var img = go.GetComponent<Image>();
+            var rt = img.rectTransform;
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = Vector2.zero;
+            rt.sizeDelta = new Vector2(BgDesignWidth, BgDesignHeight);
+            img.sprite = sprite; img.preserveAspect = false; img.raycastTarget = false;
+            go.GetComponent<CoastUiBgCover>().ApplyNow();
+            return img;
+        }
+
+        /// 79차: 필수 UI 세이프존 — 언제나 화면 안에 다 들어가는 중앙 16:9 상자(720×1280 좌표계).
+        /// 스토리 모드·더보기·Play 처럼 못 누르면 게임이 막히는 버튼은 이 상자의 자식으로 둔다.
+        public static RectTransform SafeZoneRoot(Canvas canvas, string name = "SafeZone")
+            => SafeZoneBox(Root(canvas), name);
+
+        /// 같은 세이프존 상자를 임의의 부모(예: 타이틀 UI) 안에 만든다.
+        public static RectTransform SafeZoneBox(RectTransform inset, string name = "SafeZone")
+        {
+            if (inset == null) return null;
+            var existing = inset.Find(name) as RectTransform;
+            if (existing != null) return existing;
+            var go = new GameObject(name, typeof(RectTransform), typeof(CoastUiSafeZoneFit));
+            go.transform.SetParent(inset, false);
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = Vector2.zero;
+            rt.sizeDelta = new Vector2(HudDesignWidth, HudDesignHeight);
+            go.GetComponent<CoastUiSafeZoneFit>().ApplyNow();
+            return rt;
+        }
+
+        /// 시안 좌표(720×1280, 좌하단 원점)로 찍은 사각형을 제작 기준 배경(720×1600) 안의
+        /// 앵커 비율로 바꾼다 — 그림에 그려진 버튼 위에 히트 영역을 얹을 때 쓴다.
+        public static void SafeZoneRectToBgAnchors(Vector2 center, Vector2 size, out Vector2 aMin, out Vector2 aMax)
+        {
+            float y0 = BgSafeZoneMarginY + center.y - size.y * 0.5f;
+            float y1 = BgSafeZoneMarginY + center.y + size.y * 0.5f;
+            aMin = new Vector2((center.x - size.x * 0.5f) / BgDesignWidth, y0 / BgDesignHeight);
+            aMax = new Vector2((center.x + size.x * 0.5f) / BgDesignWidth, y1 / BgDesignHeight);
+        }
+
+        /// 시안 그림 픽셀(1080×1920, 좌상단 원점)로 찍은 사각형 → 제작 기준 배경(1080×2400) 앵커 비율.
+        /// 그림에 박힌 요소 위에 칩·버튼을 얹을 때. 세로만 위아래 240px 만큼 밀린다.
+        public static void MockPixelRectToBgAnchors(float left, float top, float right, float bottom,
+                                                    out Vector2 aMin, out Vector2 aMax)
+        {
+            float wpx = SafeZoneWidth * DesignScale;        // 1080
+            float hpx = BgDesignHeight * DesignScale;       // 2400
+            float marginPx = BgSafeZoneMarginY * DesignScale;   // 240
+            aMin = new Vector2(left / wpx, 1f - (marginPx + bottom) / hpx);
+            aMax = new Vector2(right / wpx, 1f - (marginPx + top) / hpx);
+        }
+
+        /// 화면 → 배경 배율·상하 잘림(px)·세이프존이 다 보이는지. 에디터 점검 메뉴와 식을 공유한다.
+        ///   bgScale       : 제작 기준(720×1600) 배경에 걸리는 배율(1 = 원본 크기로 가로 꽉)
+        ///   bgCropPerEdge : 배경이 위아래로 잘리는 양(px, 한쪽). 20:9 = 0, S25(19.5:9) ≈ 30, 16:9 = 360
+        ///   safeZoneFits  : 중앙 16:9(1080×1920) 안의 그림·UI 가 한 점도 안 잘리는지
+        public static void SafeZoneMetrics(float screenW, float screenH,
+                                           out float bgScale, out float bgCropPerEdge, out bool safeZoneFits)
+        {
+            float lw = Mathf.Log(Mathf.Max(1f, screenW) / 1080f, 2f);
+            float lh = Mathf.Log(Mathf.Max(1f, screenH) / 1920f, 2f);
+            float scale = Mathf.Pow(2f, Mathf.Lerp(lw, lh, ScalerMatch));
+            float designW = screenW / scale / DesignScale;   // 화면을 디자인 단위로 (가로는 늘 720)
+            float designH = screenH / scale / DesignScale;
+            bgScale = Mathf.Min(1f, designH / SafeZoneHeight);
+            bgCropPerEdge = Mathf.Max(0f, (BgDesignHeight * bgScale - designH) * 0.5f) * DesignScale * scale;
+            // 세이프존이 실제로 다 보이는가 — 가로·세로 둘 다 본다(가로 화면에서는 가로가 먼저 걸린다).
+            float need = Mathf.Min(designW / SafeZoneWidth, designH / SafeZoneHeight);
+            safeZoneFits = Mathf.Min(1f, need) * SafeZoneHeight <= designH + 0.5f
+                        && Mathf.Min(1f, need) * SafeZoneWidth <= designW + 0.5f;
+        }
+    }
+
+    /// 캔버스 전체를 디자인 단위로 들고 있는 상자(배경 자리). 자식이 제작 기준(720×1600)으로
+    /// 놓이면 화면이 짧은 쪽에서 저절로 잘린다.
+    public class CoastUiCanvasBox : MonoBehaviour
+    {
+        private RectTransform _self, _parent;
+        private float _lastW = -1f, _lastH = -1f;
+
+        private void LateUpdate() => ApplyNow();
+
+        public void ApplyNow()
+        {
+            if (_self == null) _self = transform as RectTransform;
+            if (_parent == null) _parent = _self != null ? _self.parent as RectTransform : null;
+            if (_self == null || _parent == null) return;
+            float rw = _parent.rect.width, rh = _parent.rect.height;
+            if (rw < 8f || rh < 8f) return;
+            if (Mathf.Abs(rw - _lastW) < 0.25f && Mathf.Abs(rh - _lastH) < 0.25f) return;
+            _lastW = rw; _lastH = rh;
+            _self.localScale = new Vector3(CoastUiCanvas.DesignScale, CoastUiCanvas.DesignScale, 1f);
+            _self.sizeDelta = new Vector2(rw / CoastUiCanvas.DesignScale, rh / CoastUiCanvas.DesignScale);
+        }
+    }
+
+    /// 제작 기준 배경(720×1600)을 화면에 맞춘다. 기본은 1배(가로 꽉 차고 남는 세로가 잘림),
+    /// 16:9 보다 짧은 화면에서는 세이프존(720×1280)이 다 보이는 배율까지만 줄인다.
+    public class CoastUiBgCover : MonoBehaviour
+    {
+        private RectTransform _self, _parent;
+        private float _lastH = -1f;
+
+        private void LateUpdate() => ApplyNow();
+
+        public void ApplyNow()
+        {
+            if (_self == null) _self = transform as RectTransform;
+            if (_parent == null) _parent = _self != null ? _self.parent as RectTransform : null;
+            if (_self == null || _parent == null) return;
+            float rh = _parent.rect.height;
+            if (rh < 8f) return;
+            if (Mathf.Abs(rh - _lastH) < 0.25f) return;
+            _lastH = rh;
+            float s = Mathf.Min(1f, rh / CoastUiCanvas.SafeZoneHeight);
+            _self.localScale = new Vector3(s, s, 1f);
+            _self.sizeDelta = new Vector2(CoastUiCanvas.BgDesignWidth, CoastUiCanvas.BgDesignHeight);
+        }
+    }
+
+    /// 중앙 16:9 세이프존 상자 — 화면이 좁거나 짧으면 비율 유지로 줄여, 안에 놓인 필수 버튼이
+    /// 절대 화면 밖으로 나가지 않게 한다.
+    public class CoastUiSafeZoneFit : MonoBehaviour
+    {
+        private RectTransform _self, _parent;
+        private float _lastW = -1f, _lastH = -1f;
+
+        private void LateUpdate() => ApplyNow();
+
+        public void ApplyNow()
+        {
+            if (_self == null) _self = transform as RectTransform;
+            if (_parent == null) _parent = _self != null ? _self.parent as RectTransform : null;
+            if (_self == null || _parent == null) return;
+            float rw = _parent.rect.width, rh = _parent.rect.height;
+            if (rw < 8f || rh < 8f) return;
+            if (Mathf.Abs(rw - _lastW) < 0.25f && Mathf.Abs(rh - _lastH) < 0.25f) return;
+            _lastW = rw; _lastH = rh;
+            // 인셋(안전영역 − HudPad) 기준 배율. CoastUiDesignFit 과 달리 상자를 늘리지 않아,
+            // 세로가 긴 화면에서도 자식 UI 가 중앙 16:9 밖으로 나가지 않는다.
+            float s = CoastUiCanvas.FitScale(rw, rh);
+            _self.localScale = new Vector3(s, s, 1f);
+            _self.sizeDelta = new Vector2(CoastUiCanvas.HudDesignWidth, CoastUiCanvas.HudDesignHeight);
         }
     }
 

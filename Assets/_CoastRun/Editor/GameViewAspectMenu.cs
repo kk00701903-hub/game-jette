@@ -172,12 +172,20 @@ namespace CoastRun.Editor
             };
 
             var sb = new System.Text.StringBuilder();
-            sb.Append($"[화면 비율 점검] 배치 기준 {CoastUiCanvas.HudDesignWidth}×{CoastUiCanvas.HudDesignHeight}, 축소 하한 {CoastUiCanvas.MinFitScale:0.00}\n");
+            // 79차(사용자 캔버스 전략): 제작 1080×2400(20:9) / 세이프존 1080×1920(16:9) / S25 상하 30px 허용.
+            //   「배경잘림」은 제작 기준 배경이 한쪽에서 잘려 나가는 양(px) — 20:9 = 0, S25 ≈ 30, 16:9 = 360.
+            //   「세이프존」이 OK 면 중앙 16:9 안의 필수 UI(스토리 모드·더보기·Play)가 한 점도 안 잘린다.
+            sb.Append($"[화면 비율 점검] 제작 {CoastUiCanvas.BgDesignWidth * CoastUiCanvas.DesignScale:0}×{CoastUiCanvas.BgDesignHeight * CoastUiCanvas.DesignScale:0}"
+                    + $" · 세이프존 {CoastUiCanvas.SafeZoneWidth * CoastUiCanvas.DesignScale:0}×{CoastUiCanvas.SafeZoneHeight * CoastUiCanvas.DesignScale:0}"
+                    + $" · 배치 기준 {CoastUiCanvas.HudDesignWidth:0}×{CoastUiCanvas.HudDesignHeight:0} · 축소 하한 {CoastUiCanvas.MinFitScale:0.00}\n");
             foreach (var c in cases)
             {
                 CoastUiCanvas.DesignMetrics(c.w, c.h, c.w, c.h, out var inset, out float fit);
+                CoastUiCanvas.SafeZoneMetrics(c.w, c.h, out float bgScale, out float crop, out bool safeOk);
                 bool ok = inset.x >= CoastUiCanvas.HudDesignWidth - 0.5f && inset.y >= CoastUiCanvas.HudDesignHeight - 0.5f;
-                sb.Append($"  {(ok ? "OK  " : "CROP")} {c.name,-28} 화면비 {(float)c.w / c.h:0.000}  인셋 {inset.x:0}×{inset.y:0}  배율 {fit:0.000}\n");
+                sb.Append($"  {(ok ? "OK  " : "CROP")} {c.name,-28} 화면비 {(float)c.w / c.h:0.000}"
+                        + $"  인셋 {inset.x:0}×{inset.y:0}  배율 {fit:0.000}"
+                        + $"  배경 {bgScale:0.000}(잘림 {crop:0}px)  세이프존 {(safeOk ? "OK" : "잘림!")}\n");
             }
             Debug.Log(sb.ToString());
         }

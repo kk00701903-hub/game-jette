@@ -436,7 +436,8 @@ namespace CoastRun
             BuildRecordPanel(root);
             _root = root;
             // 52차(사용자): 우상단 「기부부탁」 아이콘 — 메인(타이틀)에서만 보이고 더보기·다른 페이지·팝업 중엔 숨는다.
-            DonateUI.AttachIcon(ui.transform, () => _ready && !_moreOpen && !DonateUI.IsOpen && !KpopChapterSelect.IsOpen && !CollectionUI.IsOpen && !ChapterMissionUI.IsOpen && !PolicyUI.IsOpen
+            // 79차: 세이프존(중앙 16:9) 안에 — 세로가 긴 폰에서 화면 맨 위로 올라가 타이틀 글자와 겹쳤다.
+            DonateUI.AttachIcon(CoastUiCanvas.SafeZoneBox(ui.GetComponent<RectTransform>()), () => _ready && !_moreOpen && !DonateUI.IsOpen && !KpopChapterSelect.IsOpen && !CollectionUI.IsOpen && !ChapterMissionUI.IsOpen && !PolicyUI.IsOpen
                                                   && !(_settingsPanel != null && _settingsPanel.activeSelf) && !(_galleryPanel != null && _galleryPanel.activeSelf)
                                                   && !(_creditsPanel != null && _creditsPanel.activeSelf) && !(_recordPanel != null && _recordPanel.activeSelf), OpenDonate);
         }
@@ -450,11 +451,19 @@ namespace CoastRun
             // 그림을 통째로 깔고 버튼은 투명 히트 영역으로. 제목·부제도 그림에 있으니 글자 라벨은 생략. CH 칩만 실제 챕터로 덮어 그린다.
             var mockArt = Resources.Load<Texture2D>(ArtAssets.ResourceRoot + "UI_Title_Mock");
             bool useMock = mockArt != null;
-            var bg = CoastHudLayout.MakeImage(root, "GateArt", Vector2.zero, Vector2.one, new Vector2(-pad, -pad), new Vector2(pad, pad), Color.white);
-            bg.sprite = CoastUiArt.AsSprite(useMock ? mockArt : _gateArt, 100f);
+            // 79차(사용자 캔버스 전략): 타이틀 키아트는 제작 기준 1080×2400(20:9)으로 그려 두고
+            //   **안전 영역이 아니라 화면 전체**를 덮는다. 20:9 에서 딱 맞고 S25(19.5:9)는 위아래 30px,
+            //   16:9 는 위아래 240px 이 잘린다 — 잘리는 곳은 하늘·꽃밭뿐이고 그림의 중앙 16:9(로고·버튼)는
+            //   어느 비율에서도 온전히 보인다. 전엔 안전영역에 늘여 붙여(preserveAspect=false) 20:9 폰에서
+            //   인물이 세로로 늘어났다.
+            var sprite = CoastUiArt.AsSprite(useMock ? mockArt : _gateArt, 100f);
+            var canvas = root.GetComponentInParent<Canvas>();
+            var bg = canvas != null
+                ? CoastUiCanvas.FullBleedBackground(canvas, "GateArt", sprite)
+                : CoastHudLayout.MakeImage(root, "GateArt", Vector2.zero, Vector2.one, new Vector2(-pad, -pad), new Vector2(pad, pad), Color.white);
+            if (bg.sprite == null) bg.sprite = sprite;
             bg.preserveAspect = false;
             bg.raycastTarget = false;
-            bg.transform.SetAsFirstSibling();
 
             var ui = new GameObject("TitleUI", typeof(RectTransform), typeof(CanvasGroup));
             ui.transform.SetParent(root, false);
@@ -489,15 +498,16 @@ namespace CoastRun
             }
             else
             {
-                // 시안 좌표(1184×2096 → 720×1280 ×0.608) — 인셋(28 패딩) 기준 좌하단 앵커. 히트 영역은 RunHudChrome.HitButton(투명).
                 // 67차-4/5(사용자): 배경 그림은 화면 비율대로 늘어나므로 히트 영역도 **그림 좌표 비율**로 앵커(그림의 자식) — 19.5:9·20:9 폰에서
                 //   버튼 그림과 터치 영역이 어긋나 「빈 곳을 눌렀는데 러닝이 시작」되던 문제의 진짜 원인. c = 720×1280 좌하단 기준 중심, sz = 크기.
+                // 79차: 그림이 제작 기준 720×1600(20:9)으로 길어졌다 — 시안 좌표(720×1280)는 그 중앙에
+                //   들어가므로 SafeZoneRectToBgAnchors 로 옮긴다. 세 버튼 모두 세이프존 안이라 절대 안 잘린다.
                 System.Func<string, Vector2, Vector2, System.Action, Button> hit = (n, c, sz, a) =>
                 {
                     var b = RunHudChrome.HitButton(bg.transform, n, Vector2.zero, Vector2.zero, a);
                     var r = b.GetComponent<RectTransform>();
-                    r.anchorMin = new Vector2((c.x - sz.x * 0.5f) / 720f, (c.y - sz.y * 0.5f) / 1280f);
-                    r.anchorMax = new Vector2((c.x + sz.x * 0.5f) / 720f, (c.y + sz.y * 0.5f) / 1280f);
+                    CoastUiCanvas.SafeZoneRectToBgAnchors(c, sz, out var aMin, out var aMax);
+                    r.anchorMin = aMin; r.anchorMax = aMax;
                     r.pivot = new Vector2(0.5f, 0.5f); r.anchoredPosition = Vector2.zero; r.sizeDelta = Vector2.zero;
                     _gateHits.Add(b);
                     return b;
@@ -547,7 +557,9 @@ namespace CoastRun
                 //   CHAPTER 칩은 배경 그림의 자식으로 그림 좌표 비율(664~872 / 1405~1482 of 1080×1920)에 앵커 → 어떤 비율에서도 같은 자리.
                 var chip = CoastUiArt.GlossyPill(bg.transform, "ChapterChip", new Color(0.22f, 0.58f, 0.97f), 21, 5);
                 var crt = chip.rectTransform;
-                crt.anchorMin = new Vector2(656f / 1080f, 1f - 1486f / 1920f); crt.anchorMax = new Vector2(880f / 1080f, 1f - 1396f / 1920f);
+                // 79차: 그림이 1080×2400 으로 길어졌으니 시안 픽셀(1080×1920) 자리를 그대로 옮겨 준다.
+                CoastUiCanvas.MockPixelRectToBgAnchors(656f, 1396f, 880f, 1486f, out var chipMin, out var chipMax);
+                crt.anchorMin = chipMin; crt.anchorMax = chipMax;
                 crt.pivot = new Vector2(0.5f, 0.5f); crt.anchoredPosition = Vector2.zero; crt.sizeDelta = Vector2.zero;
                 chip.raycastTarget = true;
                 _chapterChipCg = chip.gameObject.AddComponent<CanvasGroup>();   // 타이틀 UI(스플래시·챕터 화면·페이드)와 같이 보였다 숨는다
@@ -744,7 +756,8 @@ namespace CoastRun
             System.Func<bool> onMain = () => _ready && !_moreOpen && !DonateUI.IsOpen && !KpopChapterSelect.IsOpen && !CollectionUI.IsOpen && !ChapterMissionUI.IsOpen && !PolicyUI.IsOpen
                                                   && !(_settingsPanel != null && _settingsPanel.activeSelf) && !(_galleryPanel != null && _galleryPanel.activeSelf)
                                                   && !(_creditsPanel != null && _creditsPanel.activeSelf) && !(_recordPanel != null && _recordPanel.activeSelf);
-            DonateUI.AttachIcon(ui.transform, onMain, OpenDonate);   // 38차: 캐릭터 선택 페이지 삭제(BuildCharacterSelect 미호출)
+            // 79차: 세이프존(중앙 16:9) 안에 — 20:9 폰에서 컵이 화면 맨 위로 붙어 타이틀 글자와 겹쳤다.
+            DonateUI.AttachIcon(CoastUiCanvas.SafeZoneBox(ui.GetComponent<RectTransform>()), onMain, OpenDonate);   // 38차: 캐릭터 선택 페이지 삭제(BuildCharacterSelect 미호출)
             // BuildSettingsIcon(ui.transform, onMain);   // 65차(사용자): 톱니 아이콘 대신 더보기 「설정」
         }
 
