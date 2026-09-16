@@ -29,6 +29,14 @@ namespace CoastRun.Editor
         [MenuItem("Coast Run/Debug/Game view 갤럭시 S25 Ultra 1440x3120")]
         public static void SetGalaxyS25Ultra() => Select("Galaxy S25 Ultra 1440x3120", 1440, 3120);
 
+        /// 99차-2(사용자: 「화면 사이즈 멋대로 바꾸지 마라 · 20:9 로 고정」): 작업 기본 크기는
+        ///   제작 기준인 20:9(1080×2400) 하나로 둔다. 다른 프리셋은 확인할 때만 잠깐 쓰고,
+        ///   점검 도구(CanvasCaptureRunner)도 끝나면 반드시 이 크기로 되돌린다.
+        [MenuItem("Coast Run/Debug/Game view 20:9 1080x2400 (제작 기준 · 기본)")]
+        public static void SetDesign209() => Select(Design209Label, 1080, 2400);
+
+        public const string Design209Label = "Design 20:9 1080x2400";
+
         // 74차(사용자: 갤럭시 16:9에서 상하 잘림) — 확인용 프리셋. 갤럭시 S7·J·A 세대가 16:9(=세로 9:16, 위 FHD와 같다),
         // S10 이후는 19:9~19.5:9 다. 잘림 점검은 9:16보다 **짧은** 비율(태블릿·폴더블)로 한다.
         [MenuItem("Coast Run/Debug/Game view 갤럭시 19.3:9 1440x3088")]
@@ -61,6 +69,14 @@ namespace CoastRun.Editor
             Debug.Log("[Coast Run] 다음 스크립트 컴파일에 게임뷰를 9:16 으로 되돌립니다.");
         }
 
+        /// 99차-2: 제작 기준 20:9 로 되돌리기 예약 — 깃발 기본값도 이쪽이다.
+        [MenuItem("Coast Run/Debug/Game view 20:9 고정 예약(다음 컴파일)")]
+        public static void ArmNormalize209()
+        {
+            System.IO.File.WriteAllText(NormalizeFlag, "20:9");
+            Debug.Log("[Coast Run] 다음 스크립트 컴파일에 게임뷰를 제작 기준 20:9(1080×2400)로 고정합니다.");
+        }
+
         [UnityEditor.Callbacks.DidReloadScripts]
         private static void NormalizeOnReload()
         {
@@ -68,10 +84,12 @@ namespace CoastRun.Editor
             // 배치 모드(외부 컴파일 점검)에서는 Game 뷰가 없고 delayCall 도 돌지 않는다 —
             // 깃발을 그대로 남겨 다음에 에디터를 열 때 적용되게 한다.
             if (Application.isBatchMode) return;
-            string want = "9:16";
-            try { want = System.IO.File.ReadAllText(NormalizeFlag).Trim(); } catch { /* 못 읽으면 9:16 */ }
+            // 99차-2: 적어 둔 목표가 없으면 제작 기준 20:9 (전엔 9:16 이 기본이라 크기가 멋대로 바뀌어 보였다).
+            string want = "20:9";
+            try { want = System.IO.File.ReadAllText(NormalizeFlag).Trim(); } catch { /* 못 읽으면 20:9 */ }
             try { System.IO.File.Delete(NormalizeFlag); } catch { /* 지우기 실패해도 아래는 한 번은 돈다 */ }
             bool s25 = want.IndexOf("S25", StringComparison.OrdinalIgnoreCase) >= 0;
+            bool p916 = want.IndexOf("9:16", StringComparison.Ordinal) >= 0;
             EditorApplication.delayCall += () =>
             {
                 var gv = FindGameView();
@@ -82,10 +100,15 @@ namespace CoastRun.Editor
                     SetGalaxyS25();
                     Debug.Log($"[Coast Run] 게임뷰를 갤럭시 S25(1080×2340, 비율 {1080f / 2340f:0.000})로 맞췄습니다. (직전 창 비율 {now:0.000})");
                 }
-                else
+                else if (p916)
                 {
                     SetPortraitFhd();
                     Debug.Log($"[Coast Run] 게임뷰를 9:16(1080×1920, 비율 {Portrait916:0.000})으로 정상화했습니다. (직전 창 비율 {now:0.000})");
+                }
+                else
+                {
+                    SetDesign209();
+                    Debug.Log($"[Coast Run] 게임뷰를 제작 기준 20:9(1080×2400, 비율 {1080f / 2400f:0.000})로 고정했습니다. (직전 창 비율 {now:0.000})");
                 }
             };
         }

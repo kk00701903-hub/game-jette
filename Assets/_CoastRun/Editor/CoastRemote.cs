@@ -34,6 +34,10 @@ namespace CoastRun.Editor
 
         static CoastRemote()
         {
+            // 96차: AssetImportWorker(-adb2 -batchMode) 도 Editor 어셈블리를 로드해 이 정적 생성자가 돌고 47001 을
+            // ReuseAddress 로 같이 물었다(netstat 에 LISTENING 이 Unity.exe 두 개). 워커는 EditorApplication.update 가
+            // 안 돌아 연결이 그쪽으로 가면 응답 없이 timed out → 워커/배치 프로세스에서는 리스너를 띄우지 않는다.
+            if (Application.isBatchMode || AssetDatabase.IsAssetImportWorkerProcess()) return;
             Application.logMessageReceivedThreaded += OnLog;
             CompilationPipeline.compilationStarted += _ => { _compiling = true; lock (_lock) _compileErrors.Clear(); };
             CompilationPipeline.assemblyCompilationFinished += (asm, msgs) =>

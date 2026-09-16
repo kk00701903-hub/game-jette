@@ -79,6 +79,9 @@ namespace CoastRun.Editor
 
         public static void Finish(string report)
         {
+            // 99차-2(사용자: 「화면 사이즈 멋대로 바꾸지 마라 · 20:9 로 고정」):
+            //   점검하느라 바꾼 해상도를 반드시 제작 기준 20:9(1080×2400)로 되돌린다.
+            try { SetGameViewSize(1080, 2400); } catch { /* 게임 뷰가 없으면 넘어간다 */ }
             Directory.CreateDirectory(OutDir);
             File.WriteAllText(Path.Combine(OutDir, "canvas_report.txt"), report, new UTF8Encoding(false));
             if (File.Exists(FlagPath)) File.Delete(FlagPath);
