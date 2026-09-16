@@ -180,8 +180,8 @@ namespace CoastRun
                     ckr.anchoredPosition = new Vector2(8f, 0f); ckr.sizeDelta = new Vector2(13f, 13f);
                     textL = 20f;
                 }
-                var st = CoastHudLayout.MakeText(prt0, "St", stateTxt, 9, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(textL, 0f), new Vector2(-4f, 0f));
-                st.resizeTextForBestFit = true; st.resizeTextMinSize = 7; st.resizeTextMaxSize = CoastHudLayout.Scaled(9);
+                var st = CoastHudLayout.MakeText(prt0, "St", stateTxt, 10, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(textL, 0f), new Vector2(-4f, 0f));
+                st.resizeTextForBestFit = true; st.resizeTextMinSize = 10; st.resizeTextMaxSize = CoastHudLayout.Scaled(10);
                 st.color = Color.white; st.fontStyle = FontStyle.Bold;
 
                 int pick = n;

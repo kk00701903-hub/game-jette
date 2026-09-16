@@ -659,7 +659,7 @@ namespace CoastRun
                 Stretch(fill.rectTransform, 2f, 2f, -2f, -2f);
                 _slotChipBg[i] = fill;
                 _slotChip[i] = Label(chip.transform, "Text", (i + 1) + "  비어 있음", 15, Ink);
-                _slotChip[i].resizeTextForBestFit = true; _slotChip[i].resizeTextMinSize = 9; _slotChip[i].resizeTextMaxSize = 15;   // 21차: 긴 이름이 칩 밖으로 새지 않게
+                _slotChip[i].resizeTextForBestFit = true; _slotChip[i].resizeTextMinSize = 10; _slotChip[i].resizeTextMaxSize = 15;   // 21차: 긴 이름이 칩 밖으로 새지 않게
                 _slotChip[i].horizontalOverflow = HorizontalWrapMode.Wrap; _slotChip[i].verticalOverflow = VerticalWrapMode.Truncate;
                 AddHit(chip.gameObject, () => { _selectedSlot = slot; ToggleSheet(true); });
             }
@@ -755,7 +755,7 @@ namespace CoastRun
                 Place(_slotGlyph[i].rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(40f, 0f), new Vector2(50f, 40f), new Vector2(0f, 0.5f));
                 _slotName[i] = Label(card.transform, "Name", "비어 있음", 15, Ink);
                 _slotName[i].alignment = TextAnchor.MiddleLeft;
-                _slotName[i].resizeTextForBestFit = true; _slotName[i].resizeTextMinSize = 9; _slotName[i].resizeTextMaxSize = 15;
+                _slotName[i].resizeTextForBestFit = true; _slotName[i].resizeTextMinSize = 10; _slotName[i].resizeTextMaxSize = 15;
                 _slotName[i].horizontalOverflow = HorizontalWrapMode.Wrap; _slotName[i].verticalOverflow = VerticalWrapMode.Truncate;
                 Place(_slotName[i].rectTransform, new Vector2(0f, 0f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero, new Vector2(0.5f, 0.5f));
                 _slotName[i].rectTransform.offsetMin = new Vector2(92f, 0f);

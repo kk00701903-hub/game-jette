@@ -47,10 +47,10 @@ namespace CoastRun
 
             // 글자 두 줄
             var top = CoastHudLayout.MakeText(rt, "Top", "NOW PLAYING ♫", 10, TextAnchor.MiddleLeft, new Vector2(0f, 0.5f), new Vector2(1f, 1f), new Vector2(62f, -2f), new Vector2(-30f, -6f));
-            top.color = new Color(1f, 0.95f, 1f); top.fontStyle = FontStyle.Bold; top.resizeTextForBestFit = true; top.resizeTextMinSize = 8; top.resizeTextMaxSize = CoastHudLayout.Scaled(10);
+            top.color = new Color(1f, 0.95f, 1f); top.fontStyle = FontStyle.Bold; top.resizeTextForBestFit = true; top.resizeTextMinSize = 10; top.resizeTextMaxSize = CoastHudLayout.Scaled(10);
             CoastUiArt.OutlineText(top, new Color(0.30f, 0.10f, 0.45f, 0.8f), 1f);
             var title = CoastHudLayout.MakeText(rt, "Title", credit, 13, TextAnchor.MiddleLeft, new Vector2(0f, 0f), new Vector2(1f, 0.5f), new Vector2(62f, 5f), new Vector2(-18f, 2f));
-            title.color = Color.white; title.fontStyle = FontStyle.Bold; title.resizeTextForBestFit = true; title.resizeTextMinSize = 9; title.resizeTextMaxSize = CoastHudLayout.Scaled(13);
+            title.color = Color.white; title.fontStyle = FontStyle.Bold; title.resizeTextForBestFit = true; title.resizeTextMinSize = 10; title.resizeTextMaxSize = CoastHudLayout.Scaled(13);
             title.horizontalOverflow = HorizontalWrapMode.Wrap; title.verticalOverflow = VerticalWrapMode.Truncate;
             CoastUiArt.OutlineText(title, new Color(0.30f, 0.10f, 0.45f, 0.9f), 1.2f);
 

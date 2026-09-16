@@ -139,7 +139,7 @@ namespace CoastRun
             var s = CoastHudLayout.MakeText(crt, "S", e.Sub, 12, TextAnchor.MiddleLeft,
                 new Vector2(0f, 0f), new Vector2(1f, 0.32f), new Vector2(textLeft, 8f), new Vector2(-16f, 0f));
             s.color = e.Unlocked ? Color.Lerp(fill, Color.black, 0.45f) : new Color(0.30f, 0.30f, 0.36f);
-            s.resizeTextForBestFit = true; s.resizeTextMinSize = 9; s.resizeTextMaxSize = CoastHudLayout.Scaled(12);
+            s.resizeTextForBestFit = true; s.resizeTextMinSize = 10; s.resizeTextMaxSize = CoastHudLayout.Scaled(12);
             if (!e.Opening && !ending && e.Unlocked && (isEv ? StoryProgress.EventSeen(e.Event) : StoryProgress.CutsceneRead(e.Index)))
             {
                 var chk = CoastHudLayout.MakeText(crt, "Read", "✓", 26, TextAnchor.MiddleCenter, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-44f, -16f), new Vector2(-12f, 16f));

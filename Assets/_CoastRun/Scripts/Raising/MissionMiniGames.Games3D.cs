@@ -295,7 +295,7 @@ namespace CoastRun
                 _resultWho = Txt(who.transform, "Who", Loc.T("✦ 도1 개2 걸3 윷4 모5", "✦ 1·2·3·4·5"), 11, Color.white, TextAnchor.MiddleCenter);
                 Rect(_resultWho.rectTransform, Vector2.zero, Vector2.one, new Vector2(4f, 2f), new Vector2(-4f, 0f)); _resultWho.fontStyle = FontStyle.Bold;
                 CoastUiArt.OutlineText(_resultWho, new Color(0.5f, 0.1f, 0.25f, 0.6f), 1.2f);
-                _resultWho.resizeTextForBestFit = true; _resultWho.resizeTextMinSize = 8; _resultWho.resizeTextMaxSize = CoastHudLayout.Scaled(12);
+                _resultWho.resizeTextForBestFit = true; _resultWho.resizeTextMinSize = 10; _resultWho.resizeTextMaxSize = CoastHudLayout.Scaled(12);
 
                 var prog = CoastUiArt.CutePill(foot, "ProgCard", new Color(1f, 0.99f, 0.96f), 18, 3); prog.raycastTarget = false;
                 Rect(prog.rectTransform, new Vector2(0.32f, 0.03f), new Vector2(0.64f, 0.76f), Vector2.zero, Vector2.zero);
@@ -307,7 +307,7 @@ namespace CoastRun
                 Rect(hintPill.rectTransform, new Vector2(0.08f, 0.03f), new Vector2(0.92f, 0.17f), Vector2.zero, Vector2.zero);
                 var hint = Txt(hintPill.transform, "Hint", Loc.T("✓ 같은 칸 = 잡기!", "✓ Same cell = catch!"), 11, Color.white, TextAnchor.MiddleCenter);
                 Rect(hint.rectTransform, Vector2.zero, Vector2.one, new Vector2(2f, 2f), new Vector2(-2f, 0f)); hint.fontStyle = FontStyle.Bold; CoastUiArt.OutlineText(hint, new Color(0f, 0.3f, 0.1f, 0.5f), 1.2f);
-                hint.resizeTextForBestFit = true; hint.resizeTextMinSize = 8; hint.resizeTextMaxSize = CoastHudLayout.Scaled(12);
+                hint.resizeTextForBestFit = true; hint.resizeTextMinSize = 10; hint.resizeTextMaxSize = CoastHudLayout.Scaled(12);
 
                 var fb = BigButton(foot, 0.66f, 0.98f, Loc.T("펑!!\n던지기!!", "BAM!!\nTHROW!!"), OnThrowTap, out _btnLabel, out _btnArrow, new Color(0.96f, 0.36f, 0.14f));
                 Rect(BigRect, new Vector2(0.66f, 0.03f), new Vector2(0.98f, 0.76f), Vector2.zero, Vector2.zero);
@@ -432,7 +432,7 @@ namespace CoastRun
             {
                 lbl = Txt(card, "L", label, 11, Ink, TextAnchor.MiddleLeft);
                 Rect(lbl.rectTransform, new Vector2(0.06f, y + 0.07f), new Vector2(0.56f, y + 0.21f), Vector2.zero, Vector2.zero); lbl.fontStyle = FontStyle.Bold;
-                lbl.resizeTextForBestFit = true; lbl.resizeTextMinSize = 8; lbl.resizeTextMaxSize = CoastHudLayout.Scaled(11);
+                lbl.resizeTextForBestFit = true; lbl.resizeTextMinSize = 10; lbl.resizeTextMaxSize = CoastHudLayout.Scaled(11);
                 // 65차 시안: 바퀴 표시 = 하트(나) / 별(꼬마) 글리프 3개(돌 때마다 진해짐)
                 for (int i = 0; i < Laps; i++)
                 {

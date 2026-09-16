@@ -109,7 +109,7 @@ namespace CoastRun
                     var pp = CoastUiArt.GlossyPill(row.transform, "PricePill", new Color(1f, 0.82f, 0.30f), 14, 5); pp.raycastTarget = false;
                     var pprt = pp.rectTransform; pprt.anchorMin = pprt.anchorMax = new Vector2(1f, 1f); pprt.pivot = new Vector2(1f, 1f); pprt.anchoredPosition = new Vector2(-12f, -10f); pprt.sizeDelta = new Vector2(150f, 34f);
                     var price = CoastHudLayout.MakeText(pprt, "T", priceTxt, 15, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(4f, 2f), Vector2.zero);
-                    price.color = new Color(0.45f, 0.24f, 0f); price.fontStyle = FontStyle.Bold; price.resizeTextForBestFit = true; price.resizeTextMinSize = 9; price.resizeTextMaxSize = CoastHudLayout.Scaled(15);
+                    price.color = new Color(0.45f, 0.24f, 0f); price.fontStyle = FontStyle.Bold; price.resizeTextForBestFit = true; price.resizeTextMinSize = 10; price.resizeTextMaxSize = CoastHudLayout.Scaled(15);
                     string label = !owned ? Loc.T("구매", "Buy") : equipped ? Loc.T("장착 중", "Equipped") : Loc.T("장착", "Equip");
                     Color col = !owned ? (PetShop.CanAfford(save, k) ? new Color(0.30f, 0.62f, 1f) : new Color(0.55f, 0.57f, 0.64f)) : equipped ? new Color(0.55f, 0.57f, 0.64f) : new Color(0.30f, 0.62f, 1f);
                     var btn = CoastUiArt.GlossyPill(row.transform, "Act", col, 22, 8);

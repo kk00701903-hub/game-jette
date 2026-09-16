@@ -325,7 +325,7 @@ namespace CoastRun
             float w = Mathf.Max(52f, 17f * Mathf.Max(2, who.Length) + 20f);
             le.preferredWidth = w; le.minWidth = w; le.preferredHeight = 32f; le.minHeight = 32f; le.flexibleWidth = 0f;
             var n = CoastHudLayout.MakeText(pill.rectTransform, "T", who, 15, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(2f, 1f), new Vector2(-2f, 0f));
-            n.color = Navy; n.fontStyle = FontStyle.Bold; n.resizeTextForBestFit = true; n.resizeTextMinSize = 9; n.resizeTextMaxSize = CoastHudLayout.Scaled(15);
+            n.color = Navy; n.fontStyle = FontStyle.Bold; n.resizeTextForBestFit = true; n.resizeTextMinSize = 10; n.resizeTextMaxSize = CoastHudLayout.Scaled(15);
             var t = MakeBody(go.transform, "「" + s + "」", 20, Ink, TextAnchor.UpperLeft);
             var tle = t.gameObject.AddComponent<LayoutElement>(); tle.flexibleWidth = 1f; tle.minWidth = 100f;
         }

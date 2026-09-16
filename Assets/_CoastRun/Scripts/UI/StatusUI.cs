@@ -97,7 +97,7 @@ namespace CoastRun
             nm.resizeTextForBestFit = true; nm.resizeTextMinSize = 14; nm.resizeTextMaxSize = CoastHudLayout.Scaled(26);
             var chip = CoastUiArt.Panel(page, "TitleChip", new Color(0.62f, 0.56f, 0.92f), 16); Place(chip.rectTransform, 574f, 163f, 682f, 199f);
             var chipT = CoastHudLayout.MakeText(chip.transform, "T", LevelSystem.Title(lv), 13, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(4f, 1f), new Vector2(-4f, 0f));
-            chipT.color = Color.white; chipT.fontStyle = FontStyle.Bold; chipT.resizeTextForBestFit = true; chipT.resizeTextMinSize = 9; chipT.resizeTextMaxSize = CoastHudLayout.Scaled(13);
+            chipT.color = Color.white; chipT.fontStyle = FontStyle.Bold; chipT.resizeTextForBestFit = true; chipT.resizeTextMinSize = 10; chipT.resizeTextMaxSize = CoastHudLayout.Scaled(13);
             // EXP
             int need = LevelSystem.Need(lv);
             var el = CoastHudLayout.MakeText(page, "ExpL", "EXP", 14, TextAnchor.MiddleLeft, Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero); Place(el.rectTransform, 220f, 214f, 320f, 240f); el.color = Navy; el.fontStyle = FontStyle.Bold;

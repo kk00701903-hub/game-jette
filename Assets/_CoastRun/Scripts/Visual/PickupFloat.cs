@@ -180,7 +180,7 @@ namespace CoastRun
                 }
                 var nt = CoastHudLayout.MakeText(srt, "N", row[2 + i * 2], 13, TextAnchor.MiddleCenter, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(x - 6f, y - 96f), new Vector2(x + 106f, y - 70f));
                 nt.color = new Color(1f, 0.96f, 0.90f); nt.fontStyle = FontStyle.Bold; nt.raycastTarget = false; CoastUiArt.OutlineText(nt, new Color(0f, 0f, 0f, 0.5f), 1.2f);
-                nt.resizeTextForBestFit = true; nt.resizeTextMinSize = 8; nt.resizeTextMaxSize = CoastHudLayout.Scaled(13);
+                nt.resizeTextForBestFit = true; nt.resizeTextMinSize = 10; nt.resizeTextMaxSize = CoastHudLayout.Scaled(13);
             }
             float t = 0f;
             while (t < seconds && strip != null)

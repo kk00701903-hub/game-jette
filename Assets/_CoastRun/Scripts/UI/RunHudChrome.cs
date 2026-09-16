@@ -222,7 +222,7 @@ namespace CoastRun
             _sunLabel.color = new Color(1f, 1f, 1f, 0.9f);
             CoastUiArt.OutlineText(_sunLabel, new Color(0.05f, 0.07f, 0.18f, 0.9f), 1.2f);
             // 56차-2: 「노을까지 1:51」이 상자보다 5px 넓어 별 아이콘에 걸렸다 → 상자에 맞춰 줄어들기
-            _sunLabel.resizeTextForBestFit = true; _sunLabel.resizeTextMinSize = 9; _sunLabel.resizeTextMaxSize = CoastHudLayout.Scaled(13);
+            _sunLabel.resizeTextForBestFit = true; _sunLabel.resizeTextMinSize = 10; _sunLabel.resizeTextMaxSize = CoastHudLayout.Scaled(13);
             _sunLabel.rectTransform.offsetMin = new Vector2(6f, 0f); _sunLabel.rectTransform.offsetMax = new Vector2(-6f, 0f);
         }
 
@@ -1408,7 +1408,7 @@ namespace CoastRun
                 EventCardKit.IconButton(crt, "Retry", "Icon_Refresh", Loc.T("다시 시작", "Restart"), new Color(1f, 0.52f, 0.10f), new Vector2(0.5f, 1f), new Vector2(0f, -284f), new Vector2(440f, 88f), () => retry(), 28);
                 EventCardKit.IconButton(crt, "Home", "Icon_Home", Loc.T("육성으로 돌아가기", "Back to raising"), new Color(0.30f, 0.55f, 0.95f), new Vector2(0.5f, 1f), new Vector2(0f, -392f), new Vector2(440f, 88f), () => toTitle(), 26);
                 var note = CoastHudLayout.MakeText(crt, "Note", Loc.T("육성으로 가면 이 대회는 미달 — 이 주를 다시 키운다", "Leaving fails this contest — redo this week"), 14, TextAnchor.MiddleCenter, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(20f, 18f), new Vector2(-20f, 52f));
-                note.color = new Color(0.45f, 0.40f, 0.38f); note.resizeTextForBestFit = true; note.resizeTextMinSize = 9; note.resizeTextMaxSize = CoastHudLayout.Scaled(14);
+                note.color = new Color(0.45f, 0.40f, 0.38f); note.resizeTextForBestFit = true; note.resizeTextMinSize = 10; note.resizeTextMaxSize = CoastHudLayout.Scaled(14);
                 return;
             }
 

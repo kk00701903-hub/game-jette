@@ -43,7 +43,7 @@ namespace CoastRun
             var aiPill = CoastUiArt.CutePill(aiRt, "Pill", new Color(0.99f, 0.95f, 0.84f), 16, 3); aiPill.raycastTarget = false;
             Stretch(aiPill.rectTransform);
             var aiL = CoastOrnate.Label(aiPill.transform, "T", Loc.T("유튜브 뮤직, 스포티파이, 아이튠즈에서 OST (Our frequency) 많은 사랑해주세요", "Please support our OST (Our frequency) on YouTube Music, Spotify & iTunes"), 12, new Color(0.45f, 0.28f, 0.12f)); aiL.fontStyle = FontStyle.Bold;
-            Stretch(aiL.rectTransform); aiL.horizontalOverflow = HorizontalWrapMode.Wrap; aiL.resizeTextForBestFit = true; aiL.resizeTextMinSize = 9; aiL.resizeTextMaxSize = CoastHudLayout.Scaled(13); aiL.lineSpacing = 1.1f;
+            Stretch(aiL.rectTransform); aiL.horizontalOverflow = HorizontalWrapMode.Wrap; aiL.resizeTextForBestFit = true; aiL.resizeTextMinSize = 10; aiL.resizeTextMaxSize = CoastHudLayout.Scaled(13); aiL.lineSpacing = 1.1f;
 
             // 52차(사용자): 홈으로 가기 버튼. 72차(사용자): 「돌아가기」는 없애고 홈 하나로 — 시안에 박힌 좌상단 「<」 동그라미 자리를
             //   파란 둥근 홈 버튼(새 집 아이콘)으로 덮는다(제목 글자와 안 겹치는 유일한 빈 자리).

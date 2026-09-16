@@ -150,7 +150,7 @@ namespace CoastRun
                 prt.anchoredPosition = new Vector2(14f + i * (chipW + 5f), -HeaderShift - 214f); prt.sizeDelta = new Vector2(chipW, 42f); pill.raycastTarget = true;
                 var t = CoastHudLayout.MakeText(prt, "T", LifeItems.CatLabel(cat), 12, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
                 t.color = on ? new Color(0.40f, 0.22f, 0.04f) : Navy; t.fontStyle = FontStyle.Bold;
-                t.resizeTextForBestFit = true; t.resizeTextMinSize = 8; t.resizeTextMaxSize = 12;
+                t.resizeTextForBestFit = true; t.resizeTextMinSize = 10; t.resizeTextMaxSize = 12;
                 var b = pill.gameObject.AddComponent<Button>(); b.transition = Selectable.Transition.None;
                 LifeItemCat pick = cat;
                 b.onClick.AddListener(() => { if (_cat == pick) return; CoastPrefs.Vibrate(); _cat = pick; _pickId = null; _qty = 1; Build(); });
@@ -163,7 +163,7 @@ namespace CoastRun
                     : Loc.T("약·케어는 보유 가방에서 바로 사용.", "Medicine/care — use from your bag.");
             var ht = CoastHudLayout.MakeText(crt, "Hint", hint, 12, TextAnchor.MiddleCenter, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(16f, -HeaderShift - 290f), new Vector2(-16f, -HeaderShift - 260f));
             ht.color = new Color(0.45f, 0.32f, 0.18f); ht.horizontalOverflow = HorizontalWrapMode.Wrap;
-            ht.resizeTextForBestFit = true; ht.resizeTextMinSize = 8; ht.resizeTextMaxSize = CoastHudLayout.Scaled(12);
+            ht.resizeTextForBestFit = true; ht.resizeTextMinSize = 10; ht.resizeTextMaxSize = CoastHudLayout.Scaled(12);
 
             var items = new List<LifeItemDef>();
             foreach (var d in LifeItems.ShopOf(_cat)) items.Add(d);
@@ -386,7 +386,7 @@ namespace CoastRun
             var pprt = pp.rectTransform; pprt.anchorMin = pprt.anchorMax = new Vector2(1f, 1f); pprt.pivot = new Vector2(1f, 1f);
             pprt.anchoredPosition = new Vector2(-12f, -10f); pprt.sizeDelta = new Vector2(haveTxt != null ? 190f : 150f, 34f);
             var price = CoastHudLayout.MakeText(pprt, "T", "◆ " + priceTxt + (haveTxt != null ? " · " + haveTxt : "") + " ◆", 15, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(4f, 2f), Vector2.zero);
-            price.color = new Color(0.45f, 0.24f, 0f); price.fontStyle = FontStyle.Bold; price.resizeTextForBestFit = true; price.resizeTextMinSize = 8; price.resizeTextMaxSize = CoastHudLayout.Scaled(15);
+            price.color = new Color(0.45f, 0.24f, 0f); price.fontStyle = FontStyle.Bold; price.resizeTextForBestFit = true; price.resizeTextMinSize = 10; price.resizeTextMaxSize = CoastHudLayout.Scaled(15);
             var btn = CoastUiArt.GlossyPill(row.transform, "Act", can ? new Color(0.30f, 0.62f, 1f) : new Color(0.55f, 0.57f, 0.64f), 22, 8);
             var brt = btn.rectTransform; brt.anchorMin = brt.anchorMax = new Vector2(1f, 0f); brt.pivot = new Vector2(1f, 0f);
             brt.anchoredPosition = new Vector2(-12f, 10f); brt.sizeDelta = new Vector2(150f, 56f); btn.raycastTarget = true;

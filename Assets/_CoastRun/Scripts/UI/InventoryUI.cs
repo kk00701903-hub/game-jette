@@ -64,7 +64,7 @@ namespace CoastRun
                 var prt = pill.rectTransform; prt.anchorMin = prt.anchorMax = new Vector2(0f, 1f); prt.pivot = new Vector2(0f, 1f);
                 prt.anchoredPosition = new Vector2(18f + i * (chipW + 6f), -78f); prt.sizeDelta = new Vector2(chipW, 40f); pill.raycastTarget = true;
                 var t = CoastHudLayout.MakeText(prt, "T", LifeItems.CatLabel(cat), 13, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
-                t.color = Navy; t.fontStyle = FontStyle.Bold; t.resizeTextForBestFit = true; t.resizeTextMinSize = 9; t.resizeTextMaxSize = 13;
+                t.color = Navy; t.fontStyle = FontStyle.Bold; t.resizeTextForBestFit = true; t.resizeTextMinSize = 10; t.resizeTextMaxSize = 13;
                 var b = pill.gameObject.AddComponent<Button>(); b.transition = Selectable.Transition.None;
                 LifeItemCat pick = cat;
                 b.onClick.AddListener(() => { _filter = _filter == pick ? null : pick; if (_cookMode) _filter = LifeItemCat.Ingredient; Build(); });

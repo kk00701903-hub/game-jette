@@ -933,7 +933,7 @@ namespace CoastRun
                 var desc = Text(card.transform, "Desc", blurb, 11, PlayInk, TextAnchor.UpperLeft);
                 desc.horizontalOverflow = HorizontalWrapMode.Wrap;
                 desc.verticalOverflow = VerticalWrapMode.Truncate;
-                desc.resizeTextForBestFit = true; desc.resizeTextMinSize = 9; desc.resizeTextMaxSize = CoastHudLayout.Scaled(12);
+                desc.resizeTextForBestFit = true; desc.resizeTextMinSize = 10; desc.resizeTextMaxSize = CoastHudLayout.Scaled(12);
                 Rect(desc.rectTransform, new Vector2(0f, 0f), new Vector2(1f, 0.58f), new Vector2(108f, 6f), new Vector2(-128f, 0f));
 
                 var kind = d.kind;
@@ -1145,7 +1145,7 @@ namespace CoastRun
                 {
                     var nm = Text(pill.transform, "Name", d.Name, Mathf.Clamp(Mathf.RoundToInt(size.y * 0.14f), 10, 16), new Color(0.18f, 0.12f, 0.10f), TextAnchor.MiddleCenter);
                     nm.fontStyle = FontStyle.Bold;
-                    nm.resizeTextForBestFit = true; nm.resizeTextMinSize = 8; nm.resizeTextMaxSize = 16;
+                    nm.resizeTextForBestFit = true; nm.resizeTextMinSize = 10; nm.resizeTextMaxSize = 16;
                     nm.horizontalOverflow = HorizontalWrapMode.Wrap;
                     Rect(nm.rectTransform, new Vector2(0.08f, 0.12f), new Vector2(0.92f, 0.88f), Vector2.zero, Vector2.zero);
                 }
