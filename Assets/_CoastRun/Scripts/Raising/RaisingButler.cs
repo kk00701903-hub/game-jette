@@ -64,10 +64,12 @@ namespace CoastRun
             int week = save.week;
             if (firstVisit)
                 _lines.Add(Loc.T("아가씨, 기억은 없어도 몸은 기억합니다. 아래 밥·놀기·알바를 눌러 카드를 골라 보세요.", "Miss, your body remembers. Tap Feed, Play or Work and pick a card."));
+            // 74차: 스트레스 구간(0~100) 기준 — 번아웃은 「놀기 한 주」를 권한다(밥 한 칸으로는 못 푼다).
             if (st.Burnout)
-                _lines.Add(Loc.T("지금은 무리입니다. 밥으로 쉬시는 게 좋겠습니다.", "Not now. Rest with Feed."));
-            else if (st.stamina > 0 && st.stress / (float)st.stamina >= 0.7f)
-                _lines.Add(Loc.T("스트레스가 높습니다. 밥(휴식)이나 쓰다듬기로 기운을 돌려 주세요.", "Stress is high. Feed/rest or pet Haneul to recover."));
+                _lines.Add(Loc.T($"번아웃입니다(스트레스 {st.stress}/{st.StressLimit}). 이번 주는 놀기로 푸시는 게 좋겠습니다 — 오름 산책·바다 수영.",
+                                  $"Burnout (stress {st.stress}/{st.StressLimit}). Spend this week playing — a walk or a swim."));
+            else if (st.Stage >= StressStage.Worn)
+                _lines.Add(Loc.T($"스트레스가 {st.stress}까지 왔습니다. 놀기(산책·수영)나 쓰다듬기로 기운을 돌려 주세요.", $"Stress is at {st.stress}. Play or pet Haneul to recover."));
             int need = StoryGate.Required(save);
             int have = StoryGate.Stamina(save);
             bool gateSoon = week >= Timeline.WeekEnd(save.chapter);

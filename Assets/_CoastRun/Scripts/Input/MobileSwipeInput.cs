@@ -34,6 +34,7 @@ namespace CoastRun
         private Vector2 _lastPos;
         private bool _touchActive;
         private bool _touchOnUi;
+        private bool _tapOnUi;        // 탭은 UI 것(피버 제안 등) — 스와이프만 조작으로 쓴다
         private float _touchStart;
         private bool _gestureLocked;   // fired once for this excursion; unlock when the finger pauses
         private float _thresholdPx;
@@ -280,6 +281,10 @@ namespace CoastRun
                 // 18차-3: 일시정지 등 UI 위에서 시작한 터치는 게임 조작으로 쓰지 않는다
                 var es = UnityEngine.EventSystems.EventSystem.current;
                 _touchOnUi = es != null && (t.fingerId < 0 ? es.IsPointerOverGameObject() : es.IsPointerOverGameObject(t.fingerId));
+                // 90차: 피버 제안 얼굴은 화면 오른쪽 탭 영역과 겹친다. 여기서 시작한 **스와이프**는
+                // 조작으로 그대로 쓰고(레인 이동이 씹히던 문제), **탭**만 피버에 넘긴다 → 실수로 피버가 켜지지 않는다.
+                _tapOnUi = _touchOnUi;
+                if (FeverMode.PointerOverOffer(t.position)) { _touchOnUi = false; _tapOnUi = true; }
 #if UNITY_EDITOR
                 if (es != null)
                 {
@@ -301,7 +306,7 @@ namespace CoastRun
                 _touchActive = false;
                 // 18차-3: 탭 폴백 — 스와이프 없이 짧게 톡(0.22 s, 이동 < 임계) 치면 화면 좌 1/3 = 왼쪽 레인,
                 // 우 1/3 = 오른쪽 레인, 가운데 = 점프. 손이 큰 기기·장갑·젖은 손에서도 조작이 먹게.
-                if (t.phase == TouchPhase.Ended && !_gestureLocked && !_touchOnUi
+                if (t.phase == TouchPhase.Ended && !_gestureLocked && !_touchOnUi && !_tapOnUi
                     && Time.unscaledTime - _touchStart < 0.22f && (t.position - _anchor).magnitude < _thresholdPx)
                 {
                     float fx = t.position.x / Mathf.Max(1f, Screen.width);

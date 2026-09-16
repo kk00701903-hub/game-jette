@@ -45,6 +45,18 @@ namespace CoastRun.EditorTools
             }
         }
         [MenuItem("Coast Run/Dev/Boss - Rush")] public static void BossRush() { if (Application.isPlaying) ArcadeRun.StartBossRush(GameManager.I); }
+        // 90차: "피버 안 눌렀는데 돈이 모인다" — 코인을 끌어당기는 값이 지금 무엇인지 한 줄로.
+        [MenuItem("Coast Run/Dev/Run - Log magnet/fever")] public static void LogMagnet()
+        {
+            if (!Application.isPlaying) { Debug.LogWarning("[Magnet] 플레이 모드에서만"); return; }
+            var up = Object.FindAnyObjectByType<UpgradeManager>();
+            float upR = up != null ? up.GetMagnetRadius() : 0f;
+            var pet = PetCompanion.Instance;
+            Debug.LogWarning($"[Magnet] fever={FeverMode.Active} feverBonus={FeverMode.MagnetBonus}m " +
+                             $"pet={(pet != null ? pet.Kind.ToString() : "none")} petMagnet={PetCompanion.MagnetBonus}m coinMul={PetCompanion.CoinBonus} " +
+                             $"upgradeMagnet={upR:0.0}m(Lv{(up != null ? up.GetLevel(UpgradeStat.MagnetRadius) : 0)}) bonusTime={BonusTimeDirector.IsActive} " +
+                             $"kpopChorus={ArcadeRun.KpopChorus} runCoinMul={RunTuning.CoinMul}");
+        }
         [MenuItem("Coast Run/Dev/Fx - Item guide (6s)")] public static void ItemGuide() { if (Application.isPlaying) { PickupFloat.ChapterStart(8, "테스트", "안내 띠 확인", 6f); PickupFloat.ItemGuide(6f); } }
         [MenuItem("Coast Run/Dev/Fx - Weather probe")] public static void WeatherProbe()
         {
@@ -175,6 +187,53 @@ namespace CoastRun.EditorTools
                 n++;
             }
             Debug.LogWarning($"[UIAudit] overflow {n}/{total}: " + sb);
+        }
+        // 95차(사용자: 「화면 위아래로 짤리지 않게」): 지금 게임뷰 크기에서 **실제로 화면 밖으로 나간 UI**를 찾는다.
+        //   배경·딤처럼 일부러 넘치는 것(화면을 거의 다 덮는 것)과 비활성은 뺀다. 위/아래로 나간 양이 큰 것부터.
+        [MenuItem("Coast Run/Dev/UI - Offscreen audit")]
+        public static void OffscreenAudit()
+        {
+            if (!Application.isPlaying) { Debug.Log("[UIAudit] 플레이 중에만 검사합니다."); return; }
+            float sw = Screen.width, sh = Screen.height;
+            var sa = Screen.safeArea;
+            if (sa.width < 8f || sa.height < 8f) sa = new Rect(0f, 0f, sw, sh);
+            CoastUiCanvas.DesignMetrics(sw, sh, sa.width, sa.height, out var inset, out float fit);
+            var hits = new System.Collections.Generic.List<(float over, string line)>();
+            var corners = new Vector3[4];
+            foreach (var g in Object.FindObjectsByType<UnityEngine.UI.Graphic>(FindObjectsSortMode.None))
+            {
+                if (g == null || !g.isActiveAndEnabled || !g.gameObject.activeInHierarchy) continue;
+                var canvas = g.canvas; if (canvas == null) continue;
+                var rt = g.rectTransform;
+                rt.GetWorldCorners(corners);
+                var cam = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
+                Vector2 min = new Vector2(float.MaxValue, float.MaxValue), max = new Vector2(float.MinValue, float.MinValue);
+                for (int i = 0; i < 4; i++)
+                {
+                    var p = RectTransformUtility.WorldToScreenPoint(cam, corners[i]);
+                    min = Vector2.Min(min, p); max = Vector2.Max(max, p);
+                }
+                float w = max.x - min.x, h = max.y - min.y;
+                if (w < 12f || h < 12f) continue;
+                if (w > sw * 0.95f && h > sh * 0.95f) continue;             // 배경·딤·입력 막
+                float outTop = Mathf.Max(0f, max.y - sa.yMax), outBottom = Mathf.Max(0f, sa.yMin - min.y);
+                float outLeft = Mathf.Max(0f, sa.xMin - min.x), outRight = Mathf.Max(0f, max.x - sa.xMax);
+                float over = Mathf.Max(Mathf.Max(outTop, outBottom), Mathf.Max(outLeft, outRight));
+                if (over < 4f) continue;
+                string path = g.name; var p2 = g.transform.parent; int d = 0;
+                while (p2 != null && d++ < 4) { path = p2.name + "/" + path; p2 = p2.parent; }
+                string dir = (outTop > 0f ? $" 위 {outTop:0}" : "") + (outBottom > 0f ? $" 아래 {outBottom:0}" : "")
+                           + (outLeft > 0f ? $" 왼 {outLeft:0}" : "") + (outRight > 0f ? $" 오 {outRight:0}" : "");
+                hits.Add((over, $"\n  {over,5:0}px{dir,-20} {path}  ({w:0}x{h:0}px)"));
+            }
+            hits.Sort((a, b) => b.over.CompareTo(a.over));
+            var sb = new System.Text.StringBuilder();
+            sb.Append($"[UIAudit] 화면 {sw:0}x{sh:0} (비율 {sw / sh:0.000}) · 안전영역 {sa.width:0}x{sa.height:0}"
+                      + $" · 인셋 {inset.x:0}x{inset.y:0} 배율 {fit:0.000} · 기준 {CoastUiCanvas.HudDesignWidth:0}x{CoastUiCanvas.HudDesignHeight:0}");
+            sb.Append(fit > CoastUiCanvas.MinFitScale + 0.001f ? "  → 좌표계는 기준 크기 확보(잘림 없음)" : "  → 축소 하한에 걸림(잘릴 수 있음)");
+            sb.Append($"\n  화면 밖으로 나간 UI {hits.Count}개");
+            for (int i = 0; i < hits.Count && i < 40; i++) sb.Append(hits[i].line);
+            Debug.LogWarning(sb.ToString());
         }
         [MenuItem("Coast Run/Dev/Collection - Unlock all (F9)")] public static void UnlockAll() { if (Application.isPlaying) Collection.DebugUnlockAll(); }
     }

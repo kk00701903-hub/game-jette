@@ -1029,12 +1029,14 @@ namespace CoastRun
         {
             int left = HomeData.RewardPlaysLeft(Save);
             int max = HomeData.MiniGameRewardPerWeek;
+            // 74차: 보상은 돈 + 스트레스 −3(HomeData.MiniGameStressRelief) — 문구도 실제 효과를 말하게.
+            int relief = HomeData.MiniGameStressRelief;
             string ko = left > 0
-                ? $"스트레스와 감정은 놀이예요 · 이번 주 보상 {left}/{max}!!\n다 쓰면 연습(보상 없음). 주차가 바뀌면 다시 채워져."
-                : $"스트레스와 감정은 놀이예요 · 이번 주 보상 0/{max}!!\n연습(보상 없음). 주차가 바뀌면 다시 채워져.";
+                ? $"이기면 돈 + 스트레스 -{relief} · 이번 주 보상 {left}/{max}!!\n다 쓰면 연습(보상 없음). 주차가 바뀌면 다시 채워져."
+                : $"이기면 돈 + 스트레스 -{relief} · 이번 주 보상 0/{max}!!\n연습(보상 없음). 주차가 바뀌면 다시 채워져.";
             string en = left > 0
-                ? $"Play eases stress · rewards {left}/{max} this week!!\nThen practice (no reward). Refills each week."
-                : $"Play eases stress · rewards 0/{max} this week!!\nPractice only. Refills each week.";
+                ? $"Win = money + stress -{relief} · rewards {left}/{max} this week!!\nThen practice (no reward). Refills each week."
+                : $"Win = money + stress -{relief} · rewards 0/{max} this week!!\nPractice only. Refills each week.";
             var panel = CoastUiArt.CutePill(_tray, "InfoBox", new Color(1f, 0.97f, 0.92f), 14, 2);
             Rect(panel.rectTransform, Vector2.zero, Vector2.one, new Vector2(4f, 4f), new Vector2(-4f, -4f));
             PlaceCornerFlower(panel.rectTransform, new Vector2(0.03f, 0.5f), new Color(0.95f, 0.55f, 0.72f));
@@ -1061,7 +1063,11 @@ namespace CoastRun
                 {
                     int pay = ChapterMission.Reward(_gm);
                     int given = HomeData.GiveReward(Save, pay);
-                    if (given > 0) { _gm.Persist(); CoastToast.Show(Loc.T($"+{given}G!", $"+{given}G!")); }
+                    if (given > 0)
+                    {
+                        _gm.Persist();
+                        CoastToast.Show(Loc.T($"+{given}G · 스트레스 -{HomeData.MiniGameStressRelief}!", $"+{given}G · stress -{HomeData.MiniGameStressRelief}!"));
+                    }
                 }
                 else if (won && !rewardable)
                     CoastToast.Show(Loc.T("연습 게임 — 보상은 없어.", "Practice — no reward."));

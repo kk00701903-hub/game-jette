@@ -5,8 +5,9 @@ namespace CoastRun
 {
     public enum ScheduleCategory { Job = 0, SelfDev = 1, Rest = 2, Story = 3, Lesson = 4 }
 
-    /// 스케줄 1종의 정의. 등가교환: 알바 = 돈·체력↑ / 매력·순발력↓, 자기계발 = 스탯↑ / 돈·스트레스↑,
-    /// 휴식 = 스트레스↓만. 어떤 조합도 3스탯이 동시에 오르지 않는다.
+    /// 스케줄 1종의 정의. 등가교환: 알바 = 돈·체력↑ / 매력·순발력↓·스트레스↑↑,
+    /// 자기계발 = ①빡센 연습(스탯↑↑·스트레스↑) ②푸는 놀이(스탯↑·스트레스↓) 둘로 갈린다(74차),
+    /// 휴식(밥) = 스트레스↓·잠·식사. 어떤 조합도 3스탯이 동시에 오르지 않는다.
     [System.Serializable]
     public class ScheduleDef
     {
@@ -87,43 +88,46 @@ namespace CoastRun
             if (_all != null) return;
             _all = new List<ScheduleDef>
             {
-                // ── 알바 ──
-                Job("job_orange", "감귤 농장", "서귀포 귤밭", StatKind.Stamina, 30, st: 2, ag: -1, ch: -1, stress: 12, money: 40,
+                // ── 알바 ── 74차(사용자: 스트레스가 너무 적게 쌓인다) 재밸런스: 스트레스 척도가 0~100 이 되었으니
+                //   「돈 = 스트레스」 교환이 실제로 아프게 — 알바 ×1.5(문턱 73 기준 4~5번이면 번아웃).
+                Job("job_orange", "감귤 농장", "서귀포 귤밭", StatKind.Stamina, 30, st: 2, ag: -1, ch: -1, stress: 18, money: 40,
                     bonus: SeasonKind.Autumn, glyph: "귤"),
-                Job("job_haenyeo", "해녀 삼촌 돕기", "성산 바다", StatKind.Stamina, 50, st: 3, ag: 0, ch: -2, stress: 16, money: 55,
+                Job("job_haenyeo", "해녀 삼촌 돕기", "성산 바다", StatKind.Stamina, 50, st: 3, ag: 0, ch: -2, stress: 24, money: 55,
                     only: SeasonKind.Summer, glyph: "해녀"),
-                Job("job_cafe", "해변 카페", "월정리", StatKind.Charm, 35, st: -1, ag: 0, ch: 2, stress: 10, money: 35, glyph: "카페"),
-                Job("job_delivery", "스쿠터 배달", "구좌읍", StatKind.Agility, 45, st: 0, ag: 2, ch: -1, stress: 14, money: 50, glyph: "배달"),
+                Job("job_cafe", "해변 카페", "월정리", StatKind.Charm, 35, st: -1, ag: 0, ch: 2, stress: 15, money: 35, glyph: "카페"),
+                Job("job_delivery", "스쿠터 배달", "구좌읍", StatKind.Agility, 45, st: 0, ag: 2, ch: -1, stress: 21, money: 50, glyph: "배달"),
                 // v3 추가 알바 (제주 특화)
-                Job("job_salon", "미용실 보조", "세화", StatKind.Charm, 40, st: 0, ag: 1, ch: 3, stress: 12, money: 38, glyph: "미용", trust: 1, condTrust: 15),
-                Job("job_market", "오일장 짐 나르기", "세화 오일장", StatKind.Stamina, 25, st: 2, ag: 1, ch: 0, stress: 10, money: 30, glyph: "장", trust: 1),
-                Job("job_sashimi", "횟집 밤 서빙", "함덕", StatKind.Charm, 45, st: -1, ag: 1, ch: 2, stress: 18, money: 70, glyph: "밤", trust: -1, trouble: 4, condTroubleMax: 60),
-                Job("job_night_delivery", "심야 배달", "제주시", StatKind.Agility, 55, st: -1, ag: 3, ch: 0, stress: 20, money: 80, glyph: "심야", trust: -1, trouble: 5, condAgility: 50),
-                Job("job_hall", "마을회관 봉사", "마을회관", StatKind.Charm, 20, st: 0, ag: 0, ch: 1, stress: 6, money: 10, glyph: "봉사", sense: 1, trust: 3, trouble: -2),
-                Job("job_dangsan", "본향당 준비", "본향당", StatKind.Sense, 30, st: 1, ag: 0, ch: 0, stress: 8, money: 15, glyph: "당", sense: 2, trust: 4, trouble: -3),
-                Job("job_tower_watch", "송전탑 관리소 야간 순찰", "송전탑", StatKind.Stamina, 60, st: 2, ag: 1, ch: -2, stress: 22, money: 65, glyph: "순찰", sense: 2, condStamina: 60),
-                Job("job_lighthouse", "목마등대 청소", "이호테우", StatKind.Stamina, 40, st: 2, ag: 0, ch: 0, stress: 14, money: 45, glyph: "등대", sense: 2, trust: 1),
+                Job("job_salon", "미용실 보조", "세화", StatKind.Charm, 40, st: 0, ag: 1, ch: 3, stress: 18, money: 38, glyph: "미용", trust: 1, condTrust: 15),
+                Job("job_market", "오일장 짐 나르기", "세화 오일장", StatKind.Stamina, 25, st: 2, ag: 1, ch: 0, stress: 15, money: 30, glyph: "장", trust: 1),
+                Job("job_sashimi", "횟집 밤 서빙", "함덕", StatKind.Charm, 45, st: -1, ag: 1, ch: 2, stress: 27, money: 70, glyph: "밤", trust: -1, trouble: 4, condTroubleMax: 60),
+                Job("job_night_delivery", "심야 배달", "제주시", StatKind.Agility, 55, st: -1, ag: 3, ch: 0, stress: 30, money: 80, glyph: "심야", trust: -1, trouble: 5, condAgility: 50),
+                Job("job_hall", "마을회관 봉사", "마을회관", StatKind.Charm, 20, st: 0, ag: 0, ch: 1, stress: 9, money: 10, glyph: "봉사", sense: 1, trust: 3, trouble: -2),
+                Job("job_dangsan", "본향당 준비", "본향당", StatKind.Sense, 30, st: 1, ag: 0, ch: 0, stress: 12, money: 15, glyph: "당", sense: 2, trust: 4, trouble: -3),
+                Job("job_tower_watch", "송전탑 관리소 야간 순찰", "송전탑", StatKind.Stamina, 60, st: 2, ag: 1, ch: -2, stress: 32, money: 65, glyph: "순찰", sense: 2, condStamina: 60),
+                Job("job_lighthouse", "목마등대 청소", "이호테우", StatKind.Stamina, 40, st: 2, ag: 0, ch: 0, stress: 21, money: 45, glyph: "등대", sense: 2, trust: 1),
                 // ── NG+ 전용 (2회차부터) ──
-                Ng(Job("job_tower_fix", "송전탑 정비 보조", "송전탑 관리소", StatKind.Agility, 55, st: 2, ag: 2, ch: 0, stress: 16, money: 70, glyph: "정비", sense: 2, trust: 2, condStamina: 40)),
-                Ng(Job("job_dj_assist", "라디오 국 보조", "제주 방송국", StatKind.Sense, 45, st: 0, ag: 0, ch: 2, stress: 10, money: 50, glyph: "DJ", sense: 3, trust: 1, condTrust: 20)),
-                // ── 교육 (확정·유료) ──
-                Les("les_skate", "스케이트 트릭 교습", "해안도로", 60, st: 1, ag: 3, stress: 8, glyph: "트릭"),
-                Les("les_gym", "체육관", "구좌 체육관", 50, st: 3, ag: 1, stress: 9, glyph: "체육"),
-                Les("les_ham", "아마추어 무선 교실", "청소년센터", 70, sense: 3, ch: 1, stress: 5, glyph: "무선"),
-                Les("les_photo", "사진·그림 교실", "문화의 집", 55, sense: 2, ch: 2, stress: 5, glyph: "사진"),
-                Les("les_speech", "제주어 교실", "도서관", 45, ch: 3, trust: 1, stress: 6, glyph: "말"),
-                Les("les_dance", "댄스 학원", "청소년센터", 55, ch: 2, ag: 1, st: 1, stress: 8, glyph: "학원"),
-                Les("les_cook", "제주 요리 교실", "마을회관", 40, sense: 1, ch: 1, st: 1, stress: 4, glyph: "요리"),
-                Les("les_swim", "해녀학교", "성산", 65, st: 2, ag: 2, sense: 1, stress: 10, glyph: "해녀", only: SeasonKind.Summer),
-                // ── 자기계발 ──
-                Dev("dev_oreum", "오름 산책", "다랑쉬오름", StatKind.Stamina, 20, st: 1, ag: 2, ch: 1, stress: 4, money: -5, glyph: "오름"),
-                Dev("dev_skate", "스케이트 연습", "해안도로", StatKind.Agility, 40, st: 1, ag: 3, ch: 0, stress: 9, money: 0, glyph: "보드"),
-                Dev("dev_dance", "댄스 연습", "청소년센터", StatKind.Charm, 40, st: -1, ag: 1, ch: 3, stress: 10, money: -10, glyph: "댄스"),
-                Dev("dev_radio", "라디오 편지", "내 방", StatKind.Charm, 25, st: 0, ag: 0, ch: 2, stress: 3, money: 0, hearts: 2, glyph: "편지", sense: 2),
+                Ng(Job("job_tower_fix", "송전탑 정비 보조", "송전탑 관리소", StatKind.Agility, 55, st: 2, ag: 2, ch: 0, stress: 24, money: 70, glyph: "정비", sense: 2, trust: 2, condStamina: 40)),
+                Ng(Job("job_dj_assist", "라디오 국 보조", "제주 방송국", StatKind.Sense, 45, st: 0, ag: 0, ch: 2, stress: 15, money: 50, glyph: "DJ", sense: 3, trust: 1, condTrust: 20)),
+                // ── 교육 (확정·유료) ── 돈으로 확정 성장을 사는 대신 스트레스도 확정으로 쌓인다(프메의 레슨).
+                Les("les_skate", "스케이트 트릭 교습", "해안도로", 60, st: 1, ag: 3, stress: 13, glyph: "트릭"),
+                Les("les_gym", "체육관", "구좌 체육관", 50, st: 3, ag: 1, stress: 14, glyph: "체육"),
+                Les("les_ham", "아마추어 무선 교실", "청소년센터", 70, sense: 3, ch: 1, stress: 8, glyph: "무선"),
+                Les("les_photo", "사진·그림 교실", "문화의 집", 55, sense: 2, ch: 2, stress: 8, glyph: "사진"),
+                Les("les_speech", "제주어 교실", "도서관", 45, ch: 3, trust: 1, stress: 9, glyph: "말"),
+                Les("les_dance", "댄스 학원", "청소년센터", 55, ch: 2, ag: 1, st: 1, stress: 12, glyph: "학원"),
+                Les("les_cook", "제주 요리 교실", "마을회관", 40, sense: 1, ch: 1, st: 1, stress: 6, glyph: "요리"),
+                Les("les_swim", "해녀학교", "성산", 65, st: 2, ag: 2, sense: 1, stress: 15, glyph: "해녀", only: SeasonKind.Summer),
+                // ── 자기계발(「놀기」 칸) ── 74차: 같은 칸 안에서 **푸는 놀이 / 빡센 연습**이 갈리게.
+                //   산책·수영·라디오는 스트레스를 내리고 성장은 작다 / 스케이트·댄스 연습은 성장이 크고 스트레스가 오른다.
+                Dev("dev_oreum", "오름 산책", "다랑쉬오름", StatKind.Stamina, 20, st: 1, ag: 2, ch: 1, stress: -7, money: -5, glyph: "오름"),
+                Dev("dev_skate", "스케이트 연습", "해안도로", StatKind.Agility, 40, st: 1, ag: 3, ch: 0, stress: 12, money: 0, glyph: "보드"),
+                Dev("dev_dance", "댄스 연습", "청소년센터", StatKind.Charm, 40, st: -1, ag: 1, ch: 3, stress: 13, money: -10, glyph: "댄스"),
+                Dev("dev_radio", "라디오 편지", "내 방", StatKind.Charm, 25, st: 0, ag: 0, ch: 2, stress: -5, money: 0, hearts: 2, glyph: "편지", sense: 2),
                 Dev("rest_sea", "바다 수영", "함덕 해변", StatKind.Stamina, 15, st: 1, ag: 1, ch: 0, stress: -12, money: 0, glyph: "수영"),   // 밥이 아니라 놀기(스트레스↓)
-                // ── 휴식(밥) ──
-                Rest("rest_home", "집밥 먹고 쉬기", "우리 집", stress: -25, st: 0, glyph: "밥"),
-                Rest("rest_nap", "낮잠", "우리 집", stress: -20, st: 1, glyph: "잠"),
+                // ── 휴식(밥) ── 한 칸으로 스트레스를 다 지우지는 못하게(전 -25/-20 → -10/-9).
+                //   밥은 식사·잠을 겸하므로 주간 결산에서 잠 보너스(-5)가 더 붙는다.
+                Rest("rest_home", "집밥 먹고 쉬기", "우리 집", stress: -10, st: 0, glyph: "밥"),
+                Rest("rest_nap", "낮잠", "우리 집", stress: -9, st: 1, glyph: "잠"),
                 // ── 스토리 ──
                 new ScheduleDef
                 {

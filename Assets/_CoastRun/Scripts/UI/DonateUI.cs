@@ -127,29 +127,38 @@ namespace CoastRun
             _canvas = CoastUiCanvas.Create("DonateCanvas", 472);
             _root = CoastUiCanvas.Root(_canvas);
             var pad = CoastUiCanvas.HudPad;
-            // 시안 배경(전체 화면) — 없으면 크림 판
-            var bgTex = ArtAssets.LoadTexture("UI_Donate_BG");
-            var bg = CoastHudLayout.MakeImage(_root, "BG", Vector2.zero, Vector2.one, new Vector2(-pad - 400f, -pad - 400f), new Vector2(pad + 400f, pad + 400f), new Color(0.99f, 0.93f, 0.84f));
-            bg.raycastTarget = true;
-            var page = new GameObject("Page", typeof(RectTransform)).GetComponent<RectTransform>();
+            // 74차(사용자: 「기부부탁은 pop-up 형태로 닫을 수 있어야 한다」): 전체 화면 페이지 → **팝업**.
+            //   ① 어두운 딤 — 카드 바깥을 누르면 닫힌다  ② 카드는 부모(안전 영역) 안으로 통째 축소(PopupFit)해서
+            //   어떤 화면 비율에서도 오른쪽 위 ✕ 와 아래 「다음에 할게요」가 잘리지 않는다  ③ Esc·안드로이드 뒤로 키.
+            var dim = CoastHudLayout.MakeImage(_root, "Dim", Vector2.zero, Vector2.one, new Vector2(-pad - 400f, -pad - 400f), new Vector2(pad + 400f, pad + 400f), new Color(0.05f, 0.04f, 0.10f, 0.72f));
+            dim.raycastTarget = true;
+            var dimBtn = dim.gameObject.AddComponent<Button>(); dimBtn.transition = Selectable.Transition.None;
+            dimBtn.onClick.AddListener(() => { CoastPrefs.Vibrate(); Close(); });
+
+            var page = new GameObject("Page", typeof(RectTransform), typeof(PopupFit), typeof(CloseKeys)).GetComponent<RectTransform>();
             page.SetParent(_root, false); page.anchorMin = page.anchorMax = new Vector2(0.5f, 0.5f); page.pivot = new Vector2(0.5f, 0.5f); page.sizeDelta = new Vector2(720f, 1280f); page.anchoredPosition = Vector2.zero;
             _page = page;
+            // 시안 배경(카드 전체) — 없으면 크림 카드. 카드는 레이캐스트를 먹어 딤(닫기)으로 탭이 새지 않게 한다.
+            var bgTex = ArtAssets.LoadTexture("UI_Donate_BG");
             // 86차-2 규칙: 시안 그림(UI_Donate_BG)에는 프레임·컵·꽃만 굽고, 글자는 전부 코드에서 Loc.T로 그린다(다국어).
             if (bgTex != null)
             {
-                bg.color = new Color(0.99f, 0.93f, 0.84f);
                 var art = CoastHudLayout.MakeImage(page, "Art", Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, Color.white);
-                art.sprite = CoastUiArt.AsSprite(bgTex); art.preserveAspect = false; art.raycastTarget = false;
+                art.sprite = CoastUiArt.AsSprite(bgTex); art.preserveAspect = false; art.raycastTarget = true;
             }
             else
             {
-                // 그림이 없을 때만: 컵을 따로
+                // 그림이 없을 때: 크림 카드 + 컵을 따로
+                var card = Box(page, "Card", new Color(0.99f, 0.93f, 0.84f), BoxLine, 4, 40);
+                var crt = card.rectTransform; crt.anchorMin = Vector2.zero; crt.anchorMax = Vector2.one; crt.offsetMin = Vector2.zero; crt.offsetMax = Vector2.zero;
+                card.raycastTarget = true;
                 var cup = ArtAssets.LoadTexture("UI_Donate_Cup");
                 var head = CoastHudLayout.MakeImage(page, "Cup", Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero, Color.white);
                 Place(head.rectTransform, 300f, 112f, 420f, 250f);
                 if (cup != null) { head.sprite = CoastUiArt.AsSprite(cup); head.preserveAspect = true; } else head.color = new Color(1f, 0.86f, 0.45f);
                 head.raycastTarget = false;
             }
+
             // 제목(항상 글자로) — 시안: 금색 굵은 글씨 + 갈색 외곽선, 커피콩 ☕
             var title = CoastHudLayout.MakeText(page, "Title", Loc.T("커피 한 잔 값, 기부 부탁드려요 ☕", "A coffee's worth — please donate ☕"), 27, TextAnchor.MiddleCenter, Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero);
             Place(title.rectTransform, 70f, 258f, 650f, 326f); title.color = new Color(1f, 0.80f, 0.22f); title.fontStyle = FontStyle.Bold; CoastUiArt.OutlineText(title, new Color(0.40f, 0.18f, 0.05f), 3f);
@@ -216,6 +225,16 @@ namespace CoastRun
             _status = CoastHudLayout.MakeText(page, "Status", "", 13, TextAnchor.MiddleCenter, Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero);
             Place(_status.rectTransform, 80f, 1130f, 640f, 1182f); _status.color = new Color(0.1f, 0.5f, 0.25f); _status.fontStyle = FontStyle.Bold; _status.horizontalOverflow = HorizontalWrapMode.Wrap;
             RefreshCups();
+
+            // 74차: 오른쪽 위 ✕ — 맨 마지막에 붙여 언제나 제일 위에 그려지고 제일 먼저 눌린다.
+            var x = CoastUiArt.GlossyPill(page, "X", new Color(0.55f, 0.58f, 0.66f), 18, 5);
+            Place(x.rectTransform, 612f, 22f, 690f, 100f);
+            x.raycastTarget = true;
+            var xb = x.gameObject.AddComponent<Button>(); xb.transition = Selectable.Transition.None; xb.targetGraphic = x;
+            xb.onClick.AddListener(() => { CoastPrefs.Vibrate(); Close(); });
+            var xt = CoastHudLayout.MakeText(x.rectTransform, "T", "✕", 34, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(0f, 3f), Vector2.zero);
+            xt.color = Color.white; xt.fontStyle = FontStyle.Bold; xt.raycastTarget = false;
+            CoastUiArt.OutlineText(xt, new Color(0f, 0f, 0f, 0.4f), 1.5f);
         }
 
         private static void RefreshGifts()
@@ -264,6 +283,36 @@ namespace CoastRun
                 CoastAudioManager.PlayAnywhere(CoastSfx.RankS, 0.7f);
                 RefreshCups();
             });
+        }
+
+        /// 74차: 시안 카드(720×1280)를 부모 사각형 안에 통째로 넣는다 — 세로가 짧은 16:9에서도 ✕·「다음에 할게요」가 화면 안.
+        ///   0.94 를 곱해 딤이 테두리처럼 보이게(= 팝업으로 읽힌다) + 바깥을 눌러 닫을 자리를 남긴다.
+        private class PopupFit : MonoBehaviour
+        {
+            private static readonly Vector2 Design = new Vector2(720f, 1280f);
+            private RectTransform _self, _parent;
+            private float _lw = -1f, _lh = -1f;
+            private void OnEnable() { _self = (RectTransform)transform; _parent = _self.parent as RectTransform; Apply(); }
+            private void LateUpdate() { Apply(); }
+            private void Apply()
+            {
+                if (_self == null || _parent == null) return;
+                float rw = _parent.rect.width, rh = _parent.rect.height;
+                if (rw < 8f || rh < 8f) return;
+                if (Mathf.Abs(rw - _lw) < 0.25f && Mathf.Abs(rh - _lh) < 0.25f) return;
+                _lw = rw; _lh = rh;
+                float s = Mathf.Min(rw / Design.x, rh / Design.y) * 0.94f;
+                _self.localScale = new Vector3(s, s, 1f);
+            }
+        }
+
+        /// 74차: Esc(안드로이드 뒤로 키도 Escape 로 들어온다)·Backspace 로 닫기.
+        private class CloseKeys : MonoBehaviour
+        {
+            private void Update()
+            {
+                if (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.Backspace) || CoastRemoteKeys.Down(KeyCode.Backspace)) Close();
+            }
         }
 
         public static void Close()

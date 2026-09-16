@@ -325,8 +325,12 @@ namespace CoastRun
             bool inSphere = magnet > 0.05f && toPlayer.sqrMagnitude <= magnet * magnet;
             if (!feverPull && !inSphere)
             {
-                _magnetActive = false;
-                return;
+                // 이미 빨려 오는 중이면 끝까지 온다 — 전엔 피버가 끝나는 순간 공중에 그대로 멈췄다.
+                if (!_magnetActive || _magnetT < 0.05f)
+                {
+                    _magnetActive = false;
+                    return;
+                }
             }
 
             if (!_magnetActive)

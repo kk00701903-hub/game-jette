@@ -14,14 +14,20 @@ namespace CoastRun
         private Text _spark; private float _t;
         private const float BarMin = 6f, BarMax = 30f;
 
+        /// K-POP 러닝 기본 자리 — 우하단.
         public static KpopNowPlaying Build(RectTransform root, string credit)
+            => Build(root, credit, new Vector2(1f, 0f), new Vector2(-6f, 10f));
+
+        /// 79차(사용자: 컷씬 음악 표시도 K-POP 러닝과 똑같이) — 자리를 골라 세울 수 있게.
+        ///   컷씬은 아래에 자막이 깔리므로 좌상단(0,1)에 둔다.
+        public static KpopNowPlaying Build(RectTransform root, string credit, Vector2 anchor, Vector2 offset)
         {
             const float W = 262f, H = 60f;
             var go = new GameObject("NowPlaying", typeof(RectTransform), typeof(Image));
             go.transform.SetParent(root, false);
             var rt = go.GetComponent<RectTransform>();
-            rt.anchorMin = rt.anchorMax = new Vector2(1f, 0f); rt.pivot = new Vector2(1f, 0f);
-            rt.anchoredPosition = new Vector2(-6f, 10f); rt.sizeDelta = new Vector2(W, H);
+            rt.anchorMin = rt.anchorMax = anchor; rt.pivot = anchor;
+            rt.anchoredPosition = offset; rt.sizeDelta = new Vector2(W, H);
             var bg = go.GetComponent<Image>();
             bg.sprite = GradientPill(Mathf.RoundToInt(W), Mathf.RoundToInt(H), 18, new Color(0.50f, 0.32f, 0.92f), new Color(0.96f, 0.38f, 0.72f), 3);
             bg.raycastTarget = false;

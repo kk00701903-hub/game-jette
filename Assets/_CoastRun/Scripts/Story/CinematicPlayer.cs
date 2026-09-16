@@ -141,29 +141,15 @@ namespace CoastRun
         }
 
         /// 좌상단 — 지금 흐르는 컷씬 BGM 제목.
+        /// 79차(사용자): 남색 알약 대신 **K-POP 러닝과 같은 표시**(KpopNowPlaying) — 보라→분홍 그라데이션 알약 +
+        ///   멜로디를 따라 움직이는 이퀄라이저 막대 5개 + 「NOW PLAYING ♫ / 곡명 — 우히&히시」. 자리만 좌상단으로.
         private static Transform BuildNowPlaying(RectTransform root, string bgmKey)
         {
             string title = RecordTable.TitleFromBgm(bgmKey);
             if (string.IsNullOrEmpty(title)) return null;
-            var pill = CoastUiArt.CutePill(root, "NowPlaying", new Color(0.08f, 0.10f, 0.22f, 0.78f), 14, 3);
-            pill.raycastTarget = false;
-            var prt = pill.rectTransform;
-            prt.anchorMin = prt.anchorMax = new Vector2(0f, 1f);
-            prt.pivot = new Vector2(0f, 1f);
-            prt.anchoredPosition = new Vector2(10f, -36f);
-            prt.sizeDelta = new Vector2(320f, 52f);
-            var head = CoastOrnate.Label(pill.transform, "Head", Loc.T("NOW PLAYING ♪", "NOW PLAYING ♪"), 11, new Color(1f, 0.82f, 0.45f));
-            var hrt = head.rectTransform; hrt.anchorMin = new Vector2(0f, 0.52f); hrt.anchorMax = new Vector2(1f, 1f);
-            hrt.offsetMin = new Vector2(12f, 0f); hrt.offsetMax = new Vector2(-10f, -4f);
-            head.alignment = TextAnchor.MiddleLeft; head.fontStyle = FontStyle.Bold;
-            CoastUiArt.OutlineText(head, new Color(0f, 0f, 0f, 0.55f), 1.2f);
-            var name = CoastOrnate.Label(pill.transform, "Title", title, 16, new Color(1f, 0.97f, 0.92f));
-            var nrt = name.rectTransform; nrt.anchorMin = new Vector2(0f, 0f); nrt.anchorMax = new Vector2(1f, 0.58f);
-            nrt.offsetMin = new Vector2(12f, 4f); nrt.offsetMax = new Vector2(-10f, 0f);
-            name.alignment = TextAnchor.MiddleLeft; name.fontStyle = FontStyle.Bold;
-            name.resizeTextForBestFit = true; name.resizeTextMinSize = 11; name.resizeTextMaxSize = CoastHudLayout.Scaled(16);
-            CoastUiArt.OutlineText(name, new Color(0f, 0f, 0f, 0.65f), 1.4f);
-            return pill.transform;
+            string credit = title + " — " + KpopTrackMeta.Artist;
+            var np = KpopNowPlaying.Build(root, credit, new Vector2(0f, 1f), new Vector2(10f, -36f));
+            return np != null ? np.transform : null;
         }
 
         private static Image MakeShot(RectTransform root, string name)

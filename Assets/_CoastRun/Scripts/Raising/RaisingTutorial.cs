@@ -5,14 +5,15 @@ using UnityEngine.UI;
 
 namespace CoastRun
 {
-    /// 31차: 육성 화면 튜토리얼 — 꼬마 집사(도담)가 메뉴를 하나씩 하이라이트하며 소개한다.
-    /// 화면 위에 어두운 막(4장)으로 대상만 밝게 남기고, 대상 둘레에 맥동하는 테두리, 집사 흉상 + 말풍선 + [다음]/[건너뛰기].
-    /// 처음 육성 화면에 들어왔을 때 1회(PlayerPrefs CoastRun_RaisingTut). 에디터 F1 로 다시 볼 수 있다.
+    /// 31차: 육성 화면 튜토리얼 — 버튼을 하나씩 하이라이트하며 소개한다.
+    /// 화면 위에 어두운 막(4장)으로 대상만 밝게 남기고, 대상 둘레에 맥동하는 테두리, 화자 그림 + 말풍선 + [다음]/[건너뛰기].
+    /// 처음 육성 화면에 들어왔을 때 1회(PlayerPrefs CoastRun_RaisingTut). ★ 옆 「도움」 버튼과 에디터 F1 로 다시 볼 수 있다.
+    /// 95차(사용자): 설명하는 사람을 집사에서 **꼬마**(주황 우비)로 바꿨다 — 이름은 아직 안 밝히는 시점이라 이름표는 「꼬마」.
     public class RaisingTutorial : MonoBehaviour
     {
         public const string PrefKey = "CoastRun_RaisingTut";
 
-        public class Step { public string target; public string[] targets; public string ko, en; public bool butlerTop; }
+        public class Step { public string target; public string[] targets; public string ko, en; public bool speakerTop; }
 
         private RectTransform _uiRoot, _root;
         private Canvas _canvas;
@@ -21,7 +22,7 @@ namespace CoastRun
         private Action _onDone;
         private readonly Image[] _dim = new Image[4];
         private Image _ring, _ring2;
-        private RectTransform _butler, _bubble;
+        private RectTransform _speaker, _bubble;
         private Text _text, _count;
         private float _t;
 
@@ -40,22 +41,29 @@ namespace CoastRun
             return TamaSteps();
         }
 
-        /// TamaRaisingUI 대상 이름에 맞춘 튜토리얼(밥·놀기·알바·다음 턴·생존).
+        /// TamaRaisingUI 대상 이름에 맞춘 튜토리얼 — 화면 위에서 아래로, 버튼을 하나씩.
+        /// 95차(사용자): 꼬마가 설명한다. 여섯 살 말투(짧게, 같은 말을 두 번), 하늘이를 「바다누나」라고 부른다.
         public static List<Step> TamaSteps()
         {
             return new List<Step>
             {
-                new Step { target = null, ko = "아가씨, 처음이시죠? 집사 도담입니다.\n이 마당에서 뭘 할 수 있는지 짧게 보여 드릴게요.", en = "Miss, first time? I'm Dodam.\nA quick tour of this yard." },
-                new Step { target = "Week", ko = "여기가 <b>주차와 계절</b>이에요.\n챕터 끝까지 체력을 키워야 대회(러닝)에 갈 수 있어요.", en = "<b>Week & season</b>.\nRaise stamina before the chapter ends to enter the contest run." },
-                new Step { target = "GoalRibbon", ko = "<b>목표 리본</b>이에요. 게이트 체력 · ♥ S컷 · 쌀/옷을 한눈에 봐요.\n밥·알바를 고를 때 여기를 보세요.", en = "The <b>goal ribbon</b>: gate stamina, ♥ for S, rice/clothes.\nCheck it when you pick Feed or Work." },
-                new Step { target = "Money", ko = "<b>G</b>는 장보기·교육·마이룸에 써요.\n알바로 벌고, 쌀이 떨어지면 장보기!", en = "<b>G</b> buys food, lessons and room stuff.\nEarn from jobs — shop when rice runs low!" },
-                new Step { target = "StatusBtn", ko = "<b>상태창</b>에서 체력·기운·평판을 자세히 봐요.", en = "<b>Status</b> shows stamina, energy and trust in detail." },
-                new Step { target = "RoomBtn", ko = "<b>마이룸</b> — 꾸미기·텃밭·미니게임으로 쉬거나 G를 벌어요.", en = "<b>My Room</b> — decorate, garden, mini-games." },
-                new Step { target = "ShopBtn", ko = "<b>장보기</b> — 쌀·반찬·옷, 그리고 펫.\n생존이 무너지면 일어나기 힘들어요.", en = "<b>Shop</b> — rice, sides, clothes, pets.\nSurvival matters." },
-                new Step { targets = new[] { "Act0", "Act1", "Act2" }, ko = "아래 <b>밥 · 놀기 · 알바</b>를 누르면 카드 두 장이 나와요.\n골라서 한 주를 채워 주세요. 주당 세 번!", en = "Tap <b>Feed · Play · Work</b> to pick from two cards.\nThree actions fill a week!", butlerTop = true },
-                new Step { target = "NextTurn", ko = "<b>다음 턴</b> — 한 주가 지나고 생활 결산이 나요.\n챕터 마지막 주면 이야기 → 대회로 이어져요.", en = "<b>Next turn</b> ends the week.\nOn the chapter's last week: story → contest.", butlerTop = true },
-                new Step { target = "Girl", ko = "하늘이를 <b>쓰다듬으면</b> 스트레스가 내려가요.\n탭하면 말도 걸어 줘요.", en = "<b>Pet</b> Haneul to lower stress.\nTap to chat.", butlerTop = true },
-                new Step { target = null, ko = "이 정도면 충분해요. 밥부터 눌러 볼까요?\n(에디터에선 F1 로 다시 볼 수 있어요)", en = "That's the tour. Try Feed?\n(Press F1 in the editor to replay.)" },
+                new Step { target = null, ko = "바다누나, 처음이지?\n내가 내가 알려 줄게. 하나씩 눌러 볼 거야.", en = "First time, sis?\nI'll show you. One by one, one by one." },
+                new Step { target = "Week", ko = "여기 <b>몇 주째</b>인지, 무슨 계절인지 나와.\n한 주에 세 번 움직이면 다음 주로 가.", en = "This says the <b>week</b> and the season.\nThree things each week, then the week ends." },
+                new Step { target = "GoalRibbon", ko = "이번에 <b>뭘 해야 하는지</b> 여기 써 있어.\n모르면 여기 봐. 여기 보면 돼.", en = "This ribbon says <b>what you need</b> this chapter.\nWhen you're lost, look here." },
+                new Step { target = "Money", ko = "<b>G</b>는 돈이야. 쌀 사고 옷 사고.\n다 쓰면 밥을 못 먹어. 못 먹어.", en = "<b>G</b> is money — rice, clothes, stuff.\nSpend it all and there's no dinner." },
+                new Step { target = "StatusBtn", ko = "별을 누르면 <b>상태창</b>이야.\n체력이랑 기운이랑, 누나 몸 상태 다 보여.", en = "The star opens your <b>status</b>.\nStamina, energy, how you're holding up." },
+                new Step { target = "TutorialBtn", ko = "별 옆에 <b>전구</b>. 이거 나야.\n또 모르겠으면 여기 눌러. 내가 또 올게.", en = "The <b>bulb</b> next to the star is me.\nTap it anytime and I'll come back." },
+                new Step { target = "RoomBtn", ko = "<b>마이룸</b>. 방 꾸미고 텃밭에 씨 심고.\n놀이도 있어. 놀이 하면 돈도 생겨.", en = "<b>My Room</b> — decorate, plant seeds, play games.\nGames give you a little money too." },
+                new Step { target = "ShopBtn", ko = "<b>장보기</b>야. 쌀, 반찬, 옷.\n쌀 없으면 큰일 나. 큰일 나.", en = "<b>Shop</b> — rice, side dishes, clothes.\nNo rice is bad. Really bad." },
+                new Step { target = "BagBtn", ko = "<b>가방</b>엔 산 게 들어 있어.\n뭐가 남았는지 여기서 세어 봐.", en = "Your <b>bag</b> holds what you bought.\nCheck here for what's left." },
+                new Step { targets = new[] { "HpTrack", "StressTrack" }, ko = "빨간 건 <b>♥ 체력</b>, 보라는 <b>스트레스</b>야.\n보라 막대 <b>노란 줄</b> 넘으면 누나가 지쳐서 자꾸 실패해.", en = "Red is <b>♥ stamina</b>, purple is <b>stress</b>.\nPast the <b>yellow tick</b> you're worn out and things start failing." },
+                new Step { target = "Girl", ko = "누나를 <b>쓰다듬으면</b> 스트레스가 조금 내려가.\n근데 한 주에 세 번만이야. 세 번만.", en = "<b>Pet</b> her and stress drops a bit.\nOnly three times a week though. Three." },
+                new Step { targets = new[] { "Act0", "Act1", "Act2" }, ko = "아래 <b>밥 · 놀기 · 알바</b>.\n누르면 카드 두 장 나와. 하나 골라.", en = "<b>Feed · Play · Work</b> down here.\nTap one, then pick from two cards.", speakerTop = true },
+                new Step { targets = new[] { "ActRing0", "ActRing1", "ActRing2" }, ko = "동그라미 세 개가 <b>이번 주</b>야.\n하면 초록 ✓. 세 개 다 차면 끝.", en = "Three circles are <b>this week</b>.\nEach one turns green. Three and you're done.", speakerTop = true },
+                new Step { target = "Auto", ko = "<b>자동</b>을 켜면 누나가 알아서 해.\n근데 누나가 막 골라. 나는 누나가 고르는 게 좋아.", en = "<b>Auto</b> lets her decide on her own.\nShe picks fast, though. I like it when you pick.", speakerTop = true },
+                new Step { target = "NextTurn", ko = "<b>다음 턴</b> 누르면 한 주가 지나가.\n밥 먹었는지 잠 잤는지 다 세어 줘.", en = "<b>Next turn</b> ends the week.\nIt counts your meals, sleep, everything.", speakerTop = true },
+                new Step { target = "Home", ko = "<b>홈</b>은 처음 화면으로 나가는 거야.\n여기까지 한 건 저장돼. 걱정 마.", en = "<b>Home</b> goes back to the title.\nYour week is saved. Don't worry.", speakerTop = true },
+                new Step { target = null, ko = "다 알려 줬어. 밥부터 눌러 볼래?\n또 모르면 전구 눌러. 전구.", en = "That's everything. Try Feed first?\nIf you forget, tap the bulb. The bulb." },
             };
         }
 
@@ -78,22 +86,23 @@ namespace CoastRun
             // 링 안쪽은 어두운 막이 없어야 하므로 링은 '테두리만' — 안쪽 Hole 을 투명이 아니라 '막을 뚫는' 용도로는 못 쓰니, 링 자체를 얇은 액자 4장으로 만든다.
             _ring2.enabled = false;
 
-            // 집사 + 말풍선
-            _butler = new GameObject("Butler", typeof(RectTransform)).GetComponent<RectTransform>();
-            _butler.SetParent(_root, false);
-            _butler.sizeDelta = new Vector2(200f, 240f);
-            var tex = ArtAssets.LoadTexture("UI_Butler_Bust") ?? ArtAssets.LoadTexture("UI_Butler_Boy");
+            // 꼬마 + 말풍선 — 95차: 전신(UI_Kid_Bust = Raise_Kid 의 여백을 자른 422×824)이라 세로로 길게.
+            _speaker = new GameObject("Speaker", typeof(RectTransform)).GetComponent<RectTransform>();
+            _speaker.SetParent(_root, false);
+            _speaker.sizeDelta = new Vector2(176f, 344f);
+            var tex = ArtAssets.LoadTexture("UI_Kid_Bust") ?? ArtAssets.LoadTexture("Raise_Kid")
+                      ?? ArtAssets.LoadTexture("UI_Butler_Bust") ?? ArtAssets.LoadTexture("UI_Butler_Boy");
             var img = new GameObject("Img", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
-            img.transform.SetParent(_butler, false);
+            img.transform.SetParent(_speaker, false);
             img.rectTransform.anchorMin = Vector2.zero; img.rectTransform.anchorMax = Vector2.one; img.rectTransform.offsetMin = img.rectTransform.offsetMax = Vector2.zero;
             img.preserveAspect = true; img.raycastTarget = false;
             if (tex != null) img.sprite = CoastUiArt.AsSprite(RaisingUI.ChromaKeyed(tex)); else img.color = new Color(0.25f, 0.2f, 0.35f);
 
             var pill = CoastUiArt.CutePill(_root, "Bubble", new Color(1f, 0.99f, 0.95f), 20, 4);
             _bubble = pill.rectTransform;
-            _bubble.sizeDelta = new Vector2(470f, 210f);
-            var tag = CoastHudLayout.MakeText(_bubble, "Tag", Loc.T("집사 도담", "Dodam"), 13, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(18f, -30f), new Vector2(-12f, -8f));
-            tag.color = new Color(0.85f, 0.4f, 0.3f); tag.fontStyle = FontStyle.Bold;
+            _bubble.sizeDelta = new Vector2(440f, 210f);   // 95차: 470 이면 꼬마(176) 와 합쳐 인셋 664 를 넘어 오른쪽이 삐져나왔다
+            var tag = CoastHudLayout.MakeText(_bubble, "Tag", Loc.T("꼬마", "The kid"), 13, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(18f, -30f), new Vector2(-12f, -8f));
+            tag.color = new Color(0.94f, 0.48f, 0.15f); tag.fontStyle = FontStyle.Bold;   // 95차: 주황 우비 색
             _count = CoastHudLayout.MakeText(_bubble, "Count", "", 12, TextAnchor.UpperRight, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(18f, -30f), new Vector2(-16f, -8f));
             _count.color = new Color(0.55f, 0.5f, 0.6f);
             _text = CoastHudLayout.MakeText(_bubble, "Text", "", 15, TextAnchor.UpperLeft, Vector2.zero, Vector2.one, new Vector2(18f, 60f), new Vector2(-14f, -34f));
@@ -178,15 +187,15 @@ namespace CoastRun
                 _ring.rectTransform.anchoredPosition = r.center; _ring.rectTransform.sizeDelta = r.size + new Vector2(10f, 10f);
                 // 링은 액자: 안쪽을 다시 밝히려면 안쪽에 같은 크기의 투명 구멍이 필요 → sliced 스프라이트의 테두리만 남기는 대신 4각 띠로
                 BuildRingBands(r);
-                // 집사·말풍선 위치: 대상이 화면 위쪽이면 집사는 아래, 아래쪽이면 위. Step.butlerTop 이 있으면 우선.
-                bool top = s.butlerTop || r.center.y < -80f;
-                PlaceButler(top);
+                // 화자·말풍선 위치: 대상이 화면 위쪽이면 꼬마는 아래, 아래쪽이면 위. Step.speakerTop 이 있으면 우선.
+                bool top = s.speakerTop || r.center.y < -80f;
+                PlaceSpeaker(top);
             }
             else
             {
                 SetDim(0, -big, -big, 2f * big, 2f * big); SetDim(1, 0, 0, 0, 0); SetDim(2, 0, 0, 0, 0); SetDim(3, 0, 0, 0, 0);
                 _ring.enabled = false; ClearBands();
-                PlaceButler(false, center: true);
+                PlaceSpeaker(false, center: true);
             }
             _t = 0f;
         }
@@ -217,15 +226,16 @@ namespace CoastRun
             rt.anchoredPosition = new Vector2(x, y); rt.sizeDelta = new Vector2(Mathf.Max(0f, w), Mathf.Max(0f, h));
         }
 
-        private void PlaceButler(bool top, bool center = false)
+        private void PlaceSpeaker(bool top, bool center = false)
         {
             var rr = _root.rect;
-            _butler.anchorMin = _butler.anchorMax = new Vector2(0.5f, 0.5f); _butler.pivot = new Vector2(0f, 0f);
+            _speaker.anchorMin = _speaker.anchorMax = new Vector2(0.5f, 0.5f); _speaker.pivot = new Vector2(0f, 0f);
             _bubble.anchorMin = _bubble.anchorMax = new Vector2(0.5f, 0.5f); _bubble.pivot = new Vector2(0f, 0f);
-            float y = center ? -60f : top ? rr.yMax - 300f : rr.yMin + 30f;
-            _butler.anchoredPosition = new Vector2(rr.xMin + 10f, y);
-            _bubble.anchoredPosition = new Vector2(rr.xMin + 210f, y + 20f);
-            _butler.SetAsLastSibling(); _bubble.SetAsLastSibling();
+            // 95차: 화자 그림이 240 → 344 로 길어져, 위쪽에 세울 때 머리가 화면 밖으로 나가던 것(yMax−300)을 내렸다.
+            float y = center ? -110f : top ? rr.yMax - 400f : rr.yMin + 30f;
+            _speaker.anchoredPosition = new Vector2(rr.xMin + 10f, y);
+            _bubble.anchoredPosition = new Vector2(rr.xMin + 196f, y + 20f);
+            _speaker.SetAsLastSibling(); _bubble.SetAsLastSibling();
         }
 
         private void Update()
@@ -233,7 +243,7 @@ namespace CoastRun
             _t += Time.unscaledDeltaTime;
             float p = 0.75f + 0.25f * Mathf.Abs(Mathf.Sin(_t * 3f));
             foreach (var b in _bands) if (b != null) b.color = new Color(1f, 0.85f, 0.35f, p);
-            if (_butler != null) _butler.localScale = new Vector3(1f, 1f + 0.02f * Mathf.Sin(_t * 2.2f), 1f);
+            if (_speaker != null) _speaker.localScale = new Vector3(1f, 1f + 0.02f * Mathf.Sin(_t * 2.2f), 1f);
             // 엔터가 EventSystem Submit 으로 아래 화면의 마지막 선택 버튼을 누르지 않게 선택을 비운다
             var es = UnityEngine.EventSystems.EventSystem.current;
             if (es != null && es.currentSelectedGameObject != null) es.SetSelectedGameObject(null);

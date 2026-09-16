@@ -16,6 +16,8 @@ namespace CoastRun
         public float weight = 1f;
         public bool hasSeason;
         public SeasonKind season;
+        /// 74차: 스트레스가 이 값 이상일 때만 뜨는 사건(프메의 반항·가출 계열). 0 이면 항상 후보.
+        public int condStressMin;
         // Legacy condition fields kept for data; choices replace auto-branching.
         public StatKind condStat = StatKind.None;
         public int condMin;
@@ -119,19 +121,39 @@ namespace CoastRun
                     altBody = "이름을 묻자 입을 다물었다. 「말하면 다른 사람이 돼.」",
                     choiceA = "그대로 받아 준다", choiceB = "진짜 이름을 묻는다",
                     dHearts = 1, dStress = -2, altStress = 1 },
+                // ── 74차: 스트레스가 쌓였을 때만 뜨는 사건 — 다마고치처럼 상태가 이야기로 터져 나온다.
+                new RandomEventDef { id = "ev_cry", title = "새벽 세 시", weight = 2.0f, condStressMin = PlayerStats.StressWorn,
+                    body = "이유도 없이 눈물이 났다. 베개에 얼굴을 묻고 울다 잠들었다. 아침엔 눈이 부었다.",
+                    altBody = "참고 라디오를 켰다. 낯선 사연 하나가 밤을 데워 줬다.",
+                    choiceA = "울다 잠든다", choiceB = "라디오를 켠다",
+                    dStress = -12, dStamina = -1, altStress = -6, altHearts = 1 },
+                new RandomEventDef { id = "ev_snap", title = "말이 먼저 나갔다", weight = 1.8f, condStressMin = 62,
+                    body = "삼춘의 농담에 날카롭게 받아쳤다. 돌아서서 귤 한 봉지를 사 들고 사과하러 갔다.",
+                    altBody = "모른 척 지나갔다. 며칠 동안 그 얼굴이 떠올랐다.",
+                    choiceA = "사과하러 간다", choiceB = "모른 척한다",
+                    dStress = -8, dMoney = -20, altStress = 8 },
+                new RandomEventDef { id = "ev_runaway", title = "아무 버스나", weight = 2.2f, condStressMin = 72,
+                    body = "번호도 안 보고 버스를 탔다. 종점 바다까지 갔다가 막차로 돌아왔다. 아무도 몰랐다.",
+                    altBody = "정류장에 앉아 있다가 그냥 집으로 걸었다. 발이 무거웠다.",
+                    choiceA = "종점까지 간다", choiceB = "돌아선다",
+                    dStress = -25, dMoney = -30, dStamina = -2, altStress = -5 },
             };
         }
 
-        public static RandomEventDef Pick(SeasonKind season, double roll)
+        /// stress: 스트레스 조건이 붙은 사건을 걸러 내기 위한 현재 값(기본 999 = 제한 없음).
+        public static RandomEventDef Pick(SeasonKind season, double roll, int stress = 999)
         {
             Ensure();
+            System.Func<RandomEventDef, bool> ok = e =>
+                (!e.hasSeason || e.season == season) && stress >= e.condStressMin;
             float total = 0f;
             foreach (var e in _all)
-                if (!e.hasSeason || e.season == season) total += e.weight;
+                if (ok(e)) total += e.weight;
+            if (total <= 0f) return _all[0];
             float r = (float)roll * total;
             foreach (var e in _all)
             {
-                if (e.hasSeason && e.season != season) continue;
+                if (!ok(e)) continue;
                 r -= e.weight;
                 if (r <= 0f) return e;
             }

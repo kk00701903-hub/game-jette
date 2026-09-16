@@ -1047,17 +1047,18 @@ namespace CoastRun
                 case StatKind.Agility: return $"순발력 {st.agility} = 피격 경직 ×{RunTuning.HitFreezeMul:0.00} · 연속 경직 방지 {RunTuning.DashInvincible:0.0}초";   // 76차: 무적이 아니라 경직만 막는다(피해는 매번)
                 case StatKind.Charm: return $"매력 {st.charm} = 대성공률 +{st.charm * ScheduleJudge.GreatCharmCoef:P1} · 니어미스 하트 ×{RunTuning.NearMissBonus:0.00}";
                 case StatKind.Sense: return Loc.T($"감성 {st.sense} = 라디오·사진·정령계 이벤트 조건(60+) · 감성 판정 알바", $"Sense {st.sense} = radio/photo/spirit events (60+) · sense-based jobs");
-                case StatKind.Trust: return Loc.T($"평판 {st.trust} = 15 미용실 · 50 알바 스트레스 -2 · 실패하면 -1", $"Trust {st.trust} = 15 salon · 50 job stress -2 · fail -1");
+                case StatKind.Trust: return Loc.T($"평판 {st.trust} = 15 미용실 · 50 알바 스트레스 -4 · 실패하면 -1", $"Trust {st.trust} = 15 salon · 50 job stress -4 · fail -1");
                 case StatKind.Stress:
-                    return st.Burnout ? $"스트레스 {st.stress} > 체력 {st.stamina} = 번아웃! 실패율 급증 · 휴식 필요"
-                        : $"스트레스 {st.stress} = 성공률 -{ScheduleJudge.MildStressCoef * st.stress / Mathf.Max(1, st.stamina):P0} · 체력({st.stamina})을 넘으면 번아웃";
+                    // 74차: 스트레스는 0~100 절대 척도 · 번아웃 문턱은 체력에 따라 70~90.
+                    return st.Burnout ? $"스트레스 {st.stress} ≥ 한계 {st.StressLimit} = 번아웃! 실패율 급증 · 휴식 필요"
+                        : $"스트레스 {st.stress}/100 = 성공률 -{ScheduleJudge.MildStressCoef * st.stress / (float)PlayerStats.StressMax:P0} · 한계 {st.StressLimit}을 넘으면 번아웃";
             }
             switch (v.key)
             {
                 case "speed": return Save.runMode == RunMode.Skateboard ? "스케이트보드: 속도 ×1.3 · 코인 ×1.3 (고급)" : "러닝: 속도 ×1.0 · 코인 ×1.0";
                 case "hp": return $"런닝 시작 HP {(RunTuning.BurnoutStart ? RunTuning.MaxHp * 0.7f : RunTuning.MaxHp):0} / {RunTuning.MaxHp:0}" + (RunTuning.BurnoutStart ? " (번아웃 -30%)" : "");
                 case "hearts": { var rec = Save.CurrentChapter; return rec != null ? $"이번 챕터 ♥{Save.chapterHearts} / {rec.heartsTarget} · S급 컷 {Mathf.CeilToInt(rec.heartsTarget * ChapterGrading.S_Ratio)}" : ""; }
-                case "luck": return $"대성공 확률 {ScheduleJudge.GreatBase + st.charm * ScheduleJudge.GreatCharmCoef:P1}" + (st.Burnout ? " (번아웃 ×0.25)" : "");
+                case "luck": return $"대성공 확률 {ScheduleJudge.GreatChance(ScheduleTable.Get("job_cafe"), st):P1}" + (st.Burnout ? " (번아웃 ×0.2)" : st.Stage == StressStage.Worn ? " (지침 ×0.55)" : "");
             }
             return "";
         }
@@ -1113,11 +1114,15 @@ namespace CoastRun
 
         private (string label, Color color) Condition(PlayerStats st)
         {
-            float r = st.stamina > 0 ? st.stress / (float)st.stamina : 2f;
-            if (r >= 1f) return ("부상", new Color(0.5f, 0.5f, 0.55f));
-            if (r >= 0.7f) return ("피로", new Color(0.85f, 0.55f, 0.25f));
-            if (r >= 0.4f) return ("보통", new Color(0.95f, 0.75f, 0.30f));
-            return ("최상", Red);
+            // 74차: 스트레스 구간(0~100)을 그대로 쓴다 — 전엔 stress/stamina 비율이라 체력이 오르면 늘 「최상」이었다.
+            switch (st.Stage)
+            {
+                case StressStage.Crisis: return ("부상", new Color(0.5f, 0.5f, 0.55f));
+                case StressStage.Burnout: return ("번아웃", new Color(0.95f, 0.35f, 0.30f));
+                case StressStage.Worn: return ("피로", new Color(0.85f, 0.55f, 0.25f));
+                case StressStage.Tired: return ("보통", new Color(0.95f, 0.75f, 0.30f));
+                default: return ("최상", Red);
+            }
         }
 
         private void ApplySeasonRoom(SeasonKind season)
@@ -1242,14 +1247,14 @@ namespace CoastRun
         private void RefreshCharacter(Mood? force = null, string pose = null)
         {
             var st = Save.stats;
-            float ratio = st.stamina > 0 ? st.stress / (float)st.stamina : 2f;
-            Mood mood = force ?? (ratio < 0.4f ? Mood.Happy : ratio < 0.7f ? Mood.Normal : Mood.Tired);
+            // 74차: 기분·화남은 스트레스 구간(0~100)으로 — 전엔 stress/stamina 비율이라 중반부터 늘 웃었다.
+            Mood mood = force ?? (st.Stage <= StressStage.Calm ? Mood.Happy : st.Stage == StressStage.Tired ? Mood.Normal : Mood.Tired);
 
             string key = mood == Mood.Great ? "Happy" : mood == Mood.Fail ? "Tired" : mood.ToString();
             // 6차: 계절 옷 — Raise_Girl_<mood>_<SEASON> 이 있으면 그것(봄은 기본 노란 티)
             string sfx = Save != null ? SeasonLook.Suffix(Timeline.SeasonOf(Save.week)) : "SPRING";
-            // 52차: 포즈 그림 우선(활동/대성공/실패), 스트레스 0.95 이상이면 화남
-            if (pose == null && force == null && ratio >= 0.95f) pose = "Angry";
+            // 52차: 포즈 그림 우선(활동/대성공/실패), 번아웃이면 화남
+            if (pose == null && force == null && st.Burnout) pose = "Angry";
             var tex = (pose != null ? ArtAssets.LoadTexture("Raise_Girl_Pose_" + pose) : null)
                       ?? ArtAssets.LoadTexture("Raise_Girl_" + key + "_" + sfx) ?? ArtAssets.LoadTexture("Raise_Girl_" + key)
                       ?? ArtAssets.LoadTexture("Raise_Girl_Normal_" + sfx) ?? ArtAssets.LoadTexture("Raise_Girl_Normal");
@@ -1370,7 +1375,7 @@ namespace CoastRun
             {
                 if (!string.IsNullOrEmpty(Save.queuedSchedule[i])) continue;
                 ScheduleDef pick = null;
-                if (stress >= 70) pick = Best(ScheduleCategory.Rest, season, used, d => -d.dStress);
+                if (stress >= s.StressLimit - 10) pick = Best(ScheduleCategory.Rest, season, used, d => -d.dStress);   // 74차: 번아웃 문턱 기준
                 else if (money < 60) pick = Best(ScheduleCategory.Job, season, used, d => d.dMoney - d.dStress * 0.5f);
                 else if (gateSoon && stamina < gateNeed)
                 {
@@ -1653,7 +1658,7 @@ namespace CoastRun
                 (Loc.T("매력", "Charm"), "★", a.charm, b.charm, PlayerStats.StatMax, false),
                 (Loc.T("감성", "Sense"), "♪", a.sense, b.sense, PlayerStats.StatMax, false),
                 (Loc.T("평판", "Trust"), "◎", a.trust, b.trust, 100, false),
-                (Loc.T("스트레스", "Stress"), "~", a.stress, b.stress, PlayerStats.StatMax, true),
+                (Loc.T("스트레스", "Stress"), "~", a.stress, b.stress, PlayerStats.StressMax, true),
                 (Loc.T("돈", "Money"), "G", a.money, b.money, Mathf.Max(1000, Mathf.Max(a.money, b.money)), false),
                 (Loc.T("하트", "Hearts"), "♥", a.hearts, b.hearts, Mathf.Max(41, Save.CurrentChapter?.heartsTarget ?? 41), false),
             };

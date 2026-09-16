@@ -25,6 +25,7 @@ namespace CoastRun
         private Text _bubble, _weekLabel, _moneyLabel, _gateLabel, _autoLabel, _actionsLeft, _levelLabel, _lifeLabel;
         private Text _goalRibbon;
         private Image _bubbleBg, _staminaFill, _energyFill, _gateMark, _hpFill, _stressFill;
+        private RectTransform _stressTick;   // 74차: 스트레스 게이지의 번아웃 한계선
         private Image _goalRibbonBg;
         private Text _gateFlag;
         private Text _staminaTxt, _energyTxt;
@@ -35,7 +36,9 @@ namespace CoastRun
         private GameObject _cardPickOverlay, _eventOverlay;
         private bool _busy, _auto;
         private float _hop, _autoTimer, _bubbleUntil;
-        private int _rubBudget = 10;     // 이번 주 쓰다듬기로 내릴 수 있는 스트레스
+        private int _rubBudget = RubBudgetPerWeek;   // 이번 주 쓰다듬기로 내릴 수 있는 스트레스
+        /// 74차: 공짜 회복이 주 10이나 되어 스트레스가 쌓이지 않았다 → 3으로. 애정 표현은 남기고 양만 줄인다.
+        private const int RubBudgetPerWeek = 3;
         private float _rubDist;
         private int _lastAutoPick;
         private static readonly Color Navy = new Color(0.16f, 0.14f, 0.30f);
@@ -149,21 +152,12 @@ namespace CoastRun
             // 바닥 쪽 살짝 어둡게(카드 가독)
             var shade = CoastHudLayout.MakeImage(_root, "Shade", new Vector2(0f, 0f), new Vector2(1f, 0.42f), new Vector2(-pad, -pad), new Vector2(pad, 0f), new Color(0.05f, 0.08f, 0.16f, 0.30f));
             shade.raycastTarget = false;
-            // 67차-7(사용자: 갤럭시 S25 울트라 등 19.5:9~22:9 폰): 이 화면 배치는 인셋 폭 664(16:9) 기준 절대 좌표라 좁은 인셋(≈596)에선
-            //   동그라미 3개가 장보기 버튼을 덮고 아래 버튼 줄이 잘렸다 → 폭 664 짜리 「Fit」 상자를 두고 화면 폭에 맞춰 통째로 축소(비율 유지).
-            {
-                float rw = _root.rect.width, rh = _root.rect.height;
-                float fit = rw > 100f ? Mathf.Min(1f, rw / 664f) : 1f;
-                if (fit < 0.999f)
-                {
-                    var fitGo = new GameObject("Fit", typeof(RectTransform));
-                    fitGo.transform.SetParent(_root, false);
-                    var frt = fitGo.GetComponent<RectTransform>();
-                    frt.anchorMin = frt.anchorMax = new Vector2(0.5f, 0.5f); frt.pivot = new Vector2(0.5f, 0.5f);
-                    frt.anchoredPosition = Vector2.zero; frt.sizeDelta = new Vector2(664f, rh / fit); frt.localScale = new Vector3(fit, fit, 1f);
-                    _root = frt;
-                }
-            }
+            // 67차-7(사용자: 갤럭시 S25 울트라 등 19.5:9~22:9 폰): 이 화면 배치는 인셋 664×1224(9:16) 기준 절대 좌표라 좁은 인셋(≈596)에선
+            //   동그라미 3개가 장보기 버튼을 덮고 아래 버튼 줄이 잘렸다 → 「Fit」 상자를 두고 화면에 맞춰 통째로 축소(비율 유지).
+            // 74차(사용자: 갤럭시 16:9에서 상하 잘림): 전엔 가로만 재서 9:16보다 짧은 비율(16:9 게임뷰·태블릿·폴더블)에선
+            //   배율이 1로 남아 주차 알약과 「다음 턴」 줄이 화면 밖으로 나갔다 → 세로도 같이 재는 CoastUiDesignFit 으로.
+            //   매 프레임 갱신이라 에디터에서 게임뷰 크기를 바꿔도 즉시 맞춰진다.
+            _root = CoastUiCanvas.MakeFitBox(_root) ?? _root;
 
             // ── 상단 HUD: 주차·계절 / 챕터 / 돈·하트 / 홈 ──
             var wk = CoastUiArt.CutePill(_root, "Week", new Color(0.10f, 0.13f, 0.30f, 0.92f), 18, 3);
@@ -180,6 +174,15 @@ namespace CoastRun
             _levelLabel.color = Color.white; _levelLabel.fontStyle = FontStyle.Bold; CoastUiArt.OutlineText(_levelLabel, new Color(0f, 0f, 0f, 0.35f), 1.2f);
             var sb = stBtn.gameObject.AddComponent<Button>(); sb.transition = Selectable.Transition.None;
             sb.onClick.AddListener(() => { if (_busy) return; CoastPrefs.Vibrate(); StatusUI.Open(_gm, Refresh); });
+            // 95차(사용자): ★ 왼쪽에 「도움」 전구 — 꼬마가 버튼을 하나씩 하이라이트하며 설명한다. 첫 진입 1회 말고도 언제든 다시.
+            var tutBtn = CoastUiArt.GlossyPill(_root, "TutorialBtn", new Color(0.98f, 0.45f, 0.62f), 30, 6);
+            Anchor(tutBtn.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(84f, -118f), new Vector2(62f, 62f)); tutBtn.raycastTarget = true;
+            SideIcon(tutBtn.rectTransform, "Icon_Help", 34f, 14f);   // Icon_Bulb 의 연파랑 원판을 지운 전구(Tools/Art/make_help_icon.py)
+            var tutT = CoastHudLayout.MakeText(tutBtn.rectTransform, "T", Loc.T("도움", "Help"), 10, TextAnchor.LowerCenter, Vector2.zero, Vector2.one, new Vector2(0f, 2f), new Vector2(0f, 0f));
+            tutT.color = Color.white; tutT.fontStyle = FontStyle.Bold; CoastUiArt.OutlineText(tutT, new Color(0f, 0f, 0f, 0.5f), 1f);
+            Sparkle(tutBtn.rectTransform, new Vector2(1f, 1f), new Vector2(-12f, -12f), 12);
+            var tub = tutBtn.gameObject.AddComponent<Button>(); tub.transition = Selectable.Transition.None;
+            tub.onClick.AddListener(() => { if (_busy) return; CoastPrefs.Vibrate(); StartCoroutine(TamaTutorial()); });
             var roomBtn = CoastUiArt.GlossyPill(_root, "RoomBtn", new Color(0.30f, 0.70f, 0.55f), 20, 6);
             Anchor(roomBtn.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(226f, -118f), new Vector2(140f, 62f)); roomBtn.raycastTarget = true;
             SideIcon(roomBtn.rectTransform, "Icon_Home", 28f, 14f); Sparkle(roomBtn.rectTransform, new Vector2(0f, 1f), new Vector2(18f, -12f), 12);
@@ -395,6 +398,15 @@ namespace CoastRun
             fill.rectTransform.anchorMin = new Vector2(0f, 0f); fill.rectTransform.anchorMax = new Vector2(1f, 0.5f); fill.rectTransform.offsetMin = new Vector2(4f, 4f); fill.rectTransform.offsetMax = new Vector2(-4f, 0f);
             var hi = CoastUiArt.Panel(fill.transform, "Hi", new Color(1f, 1f, 1f, 0.35f), 3); hi.raycastTarget = false;
             hi.rectTransform.anchorMin = new Vector2(0.2f, 0f); hi.rectTransform.anchorMax = new Vector2(0.42f, 1f); hi.rectTransform.offsetMin = new Vector2(0f, 6f); hi.rectTransform.offsetMax = new Vector2(0f, -6f);
+            if (right)
+            {
+                // 74차: 번아웃 한계선 눈금 — 체력이 오르면 위로 올라간다(HP 게이지의 게이트 눈금과 같은 역할).
+                var tick = CoastUiArt.Panel(track.transform, "Limit", new Color(1f, 0.95f, 0.35f), 2); tick.raycastTarget = false;
+                var trt = tick.rectTransform;
+                trt.anchorMin = new Vector2(0f, 0.7f); trt.anchorMax = new Vector2(1f, 0.7f); trt.pivot = new Vector2(0.5f, 0.5f);
+                trt.offsetMin = new Vector2(-3f, -2f); trt.offsetMax = new Vector2(3f, 2f);
+                _stressTick = trt;
+            }
             var lab = CoastHudLayout.MakeText(_root, label, label, 15, TextAnchor.MiddleCenter, A, A, Vector2.zero, Vector2.zero);
             Anchor(lab.rectTransform, A, A, P(60f, 744f, 120f), new Vector2(120f, 24f));
             lab.color = col; lab.fontStyle = FontStyle.Bold; CoastUiArt.OutlineText(lab, Color.white, 2f);
@@ -413,6 +425,19 @@ namespace CoastRun
                 g.color = Color.white; g.fontStyle = FontStyle.Bold; CoastUiArt.OutlineText(g, new Color(0f, 0f, 0f, 0.4f), 1.2f);
             }
             return fill;
+        }
+
+        /// 74차: 스트레스 구간 색 — 한눈에 「아 이제 위험하다」가 보이게.
+        private static Color StressColor(StressStage st)
+        {
+            switch (st)
+            {
+                case StressStage.Crisis: return new Color(0.95f, 0.15f, 0.20f);
+                case StressStage.Burnout: return new Color(0.98f, 0.35f, 0.30f);
+                case StressStage.Worn: return new Color(0.98f, 0.62f, 0.25f);
+                case StressStage.Tired: return new Color(0.55f, 0.62f, 0.95f);
+                default: return new Color(0.62f, 0.38f, 0.92f);
+            }
         }
 
         private static void Anchor(RectTransform rt, Vector2 aMin, Vector2 aMax, Vector2 pos, Vector2 size)
@@ -438,7 +463,20 @@ namespace CoastRun
             // 57차(사용자 「체력바 확인」): 「123 / 36」이 헷갈렸다 → 막대 = 체력/최대(200), 게이트 자리에 흰 눈금, 글자 = 「체력 123 · 게이트 36 ✓」
             float gx = Mathf.Clamp01(need / (float)PlayerStats.StatMax);
             if (_hpFill != null) _hpFill.rectTransform.anchorMax = new Vector2(1f, Mathf.Clamp(s.stamina / (float)PlayerStats.StatMax, 0.03f, 1f));
-            if (_stressFill != null) _stressFill.rectTransform.anchorMax = new Vector2(1f, Mathf.Clamp(s.stress / (float)PlayerStats.StatMax, 0.03f, 1f));
+            // 74차(사용자: 스트레스가 너무 적게 쌓인다): 게이지를 0~100 척도로(전엔 /200 이라 절반으로 보였다) +
+            //   번아웃 한계선 눈금 + 구간별 색(평온 라벤더 → 피곤 하늘 → 지침 주황 → 번아웃 빨강).
+            if (_stressFill != null)
+            {
+                _stressFill.rectTransform.anchorMax = new Vector2(1f, Mathf.Clamp(s.stress / (float)PlayerStats.StressMax, 0.03f, 1f));
+                _stressFill.color = StressColor(s.Stage);
+            }
+            if (_stressTick != null)
+            {
+                float ly = Mathf.Clamp01(s.StressLimit / (float)PlayerStats.StressMax);
+                _stressTick.anchorMin = new Vector2(0f, ly); _stressTick.anchorMax = new Vector2(1f, ly);
+                var tick = _stressTick.GetComponent<Image>();
+                if (tick != null) tick.color = s.Burnout ? new Color(1f, 0.30f, 0.30f) : new Color(1f, 0.95f, 0.35f);
+            }
             if (_staminaFill != null)
             {
             _staminaFill.rectTransform.anchorMax = new Vector2(Mathf.Clamp01(s.stamina / (float)PlayerStats.StatMax), 1f);
@@ -532,10 +570,11 @@ namespace CoastRun
         {
             if (Save == null) return;
             var st = Save.stats;
-            float ratio = st.stamina > 0 ? st.stress / (float)st.stamina : 2f;
-            string key = moodKey ?? (ratio < 0.4f ? "Happy" : ratio < 0.7f ? "Normal" : "Tired");
+            // 74차: 표정도 스트레스 구간(0~100)을 본다 — 전엔 stress/stamina 비율이라 체력이 오르면 늘 웃고 있었다.
+            var stage0 = st.Stage;
+            string key = moodKey ?? (stage0 <= StressStage.Calm ? "Happy" : stage0 == StressStage.Tired ? "Normal" : "Tired");
             string sfx = SeasonLook.Suffix(Timeline.SeasonOf(Save.week));
-            string pose = _pose != null && Time.unscaledTime < _poseUntil ? _pose : (moodKey == null && ratio >= 0.95f ? "Angry" : null);
+            string pose = _pose != null && Time.unscaledTime < _poseUntil ? _pose : (moodKey == null && stage0 >= StressStage.Burnout ? "Angry" : null);
             // 95차: 성장 단계(주차 1~13 = S1 봄 초보 → 14~26 S2 여름 → 27~39 S3 가을 → 40~ S4 겨울·스무 살 직전) 그림이 있으면 우선
             string stage = "S" + Mathf.Clamp(1 + (Mathf.Max(1, Save.week) - 1) / 13, 1, 4);
             // 95차: 옛 포즈 이름(52차 갈색 머리 세트)은 새 수채화 세트(검은 머리·노란 핀)로 바꿔 쓴다 — 그림체가 섞이지 않게
@@ -594,7 +633,10 @@ namespace CoastRun
                 SpawnHeart(2);
                 _gm.Persist();
             }
-            else ShowBubble(Loc.T("이제 됐어, 고마워!", "That's enough, thanks!"), 1.2f);
+            // 74차: 쓰다듬기로 더 못 내릴 때는 무엇을 해야 하는지 알려 준다(주 상한 = RubBudgetPerWeek).
+            else ShowBubble(Save.stats.stress > 0
+                ? Loc.T("쓰다듬는 건 이제 됐어… 놀거나 쉬어야 풀릴 것 같아.", "Petting won't cut it… I need to play or rest.")
+                : Loc.T("이제 됐어, 고마워!", "That's enough, thanks!"), 1.6f);
         }
 
         private void SpawnHeart(int n)
@@ -651,10 +693,13 @@ namespace CoastRun
             var s = Save.stats;
             LifeItems.Ensure(Save);
             bool canFeed = LifeItems.HasEdible(Save);
+            // 74차: 자동도 스트레스 구간을 본다 — 지침(55↑)부터는 놀기로 풀고, 번아웃이면 무조건 놀기.
+            if (s.Burnout) return 1;
             // 요리가 없으면 「밥」을 고르지 않음(매 틱 실패로 오토가 멈춘 것처럼 보임)
-            if (canFeed && 100 - s.stress < 30) return 0;
+            if (canFeed && !Save.restedThisWeek && s.Stage >= StressStage.Worn) return 0;
+            if (s.Stage >= StressStage.Worn) return 1;
             if (s.money < 100) return 2;
-            if (canFeed && s.stamina < StoryGate.Required(Save) && 100 - s.stress >= 40) return 0;
+            if (canFeed && s.stamina < StoryGate.Required(Save) && s.Stage <= StressStage.Tired) return 0;
             _lastAutoPick = _lastAutoPick == 1 ? 2 : 1;
             return _lastAutoPick;
         }
@@ -769,6 +814,26 @@ namespace CoastRun
             return pick;
         }
 
+        /// 74차: 카드에 붙는 효과 요약 — 돈·스탯·스트레스·성공률. 「놀기」 안에서 푸는 놀이와 빡센 연습이
+        ///   갈리므로(스트레스 부호가 다르다) 고르기 전에 숫자가 보여야 선택이 된다.
+        private string CardNote(ScheduleDef d)
+        {
+            if (d == null || Save == null) return null;
+            var s = Save.stats;
+            var parts = new List<string>();
+            if (d.dMoney != 0) parts.Add($"{d.dMoney:+#;-#}G");
+            if (d.dStamina != 0) parts.Add(Loc.T($"체력{d.dStamina:+#;-#}", $"STA{d.dStamina:+#;-#}"));
+            if (d.dAgility != 0) parts.Add(Loc.T($"순발{d.dAgility:+#;-#}", $"AGI{d.dAgility:+#;-#}"));
+            if (d.dCharm != 0) parts.Add(Loc.T($"매력{d.dCharm:+#;-#}", $"CHA{d.dCharm:+#;-#}"));
+            if (d.dSense != 0) parts.Add(Loc.T($"감성{d.dSense:+#;-#}", $"SEN{d.dSense:+#;-#}"));
+            if (d.dStress != 0) parts.Add(Loc.T($"스트레스{d.dStress:+#;-#}", $"stress{d.dStress:+#;-#}"));
+            string head = parts.Count > 0 ? string.Join(" · ", parts) : "";
+            if (d.category == ScheduleCategory.Rest || d.category == ScheduleCategory.Story || d.deterministic) return head;
+            ScheduleJudge.Rhythm = Save.rhythm; ScheduleJudge.SnackOn = Save.snackOn; ScheduleJudge.Condition = Save.condition;
+            float p = ScheduleJudge.SuccessChance(d, s);
+            return head + Loc.T($"\n성공 {p:P0}", $"\nsuccess {p:P0}");
+        }
+
         private IEnumerator CardPickRoutine(int idx, List<ScheduleDef> cards)
         {
             _busy = true;
@@ -780,7 +845,8 @@ namespace CoastRun
             var dim = _cardPickOverlay.GetComponent<Image>();
             // 94차 시안 「어디 알바?」: 어두운 딤 대신 라벤더·분홍 파스텔 바탕 + 반짝이
             dim.color = new Color(0.90f, 0.84f, 0.96f, 0.94f); dim.raycastTarget = true;
-            var drt = dim.rectTransform; drt.anchorMin = Vector2.zero; drt.anchorMax = Vector2.one; drt.offsetMin = new Vector2(-40f, -40f); drt.offsetMax = new Vector2(40f, 40f);
+            // 74차: Fit 상자는 폭 664 고정이라 9:16보다 짧은(=상대적으로 넓은) 화면에선 좌우가 남는다 → 딤은 넉넉히 넘겨 덮는다(화면 밖은 자동으로 잘림).
+            var drt = dim.rectTransform; drt.anchorMin = Vector2.zero; drt.anchorMax = Vector2.one; drt.offsetMin = new Vector2(-400f, -400f); drt.offsetMax = new Vector2(400f, 400f);
             var pinkWash = CoastHudLayout.MakeImage(drt, "Wash", new Vector2(0f, 0.45f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero, new Color(0.99f, 0.86f, 0.90f, 0.55f));
             pinkWash.raycastTarget = false;
             Color[] sparkCols = { new Color(1f, 1f, 1f, 0.8f), new Color(1f, 0.85f, 0.95f, 0.8f), new Color(0.85f, 0.80f, 1f, 0.8f) };
@@ -817,7 +883,7 @@ namespace CoastRun
                     tabs[Mathf.Clamp(i, 0, tabs.Length - 1)],
                     new Vector2(x0 + cardW * 0.5f + i * (cardW + gap), -10f),
                     new Vector2(cardW, cardH),
-                    () => { chosen = captured; });
+                    () => { chosen = captured; }, CardNote(def));
             }
 
             // 하단 작은 취소(∨)
@@ -854,7 +920,7 @@ namespace CoastRun
             _eventOverlay.transform.SetParent(_root, false);
             var dim = _eventOverlay.GetComponent<Image>();
             dim.color = new Color(0.08f, 0.06f, 0.14f, 0.70f); dim.raycastTarget = true;
-            var drt = dim.rectTransform; drt.anchorMin = Vector2.zero; drt.anchorMax = Vector2.one; drt.offsetMin = new Vector2(-40f, -40f); drt.offsetMax = new Vector2(40f, 40f);
+            var drt = dim.rectTransform; drt.anchorMin = Vector2.zero; drt.anchorMax = Vector2.one; drt.offsetMin = new Vector2(-400f, -400f); drt.offsetMax = new Vector2(400f, 400f);   // 74차: 짧은 비율에서 좌우 여백까지 덮게
 
             var panel = CoastUiArt.CutePill(_eventOverlay.transform, "Panel", new Color(1f, 0.98f, 0.95f), 28, 4);
             var prt = panel.rectTransform; prt.anchorMin = prt.anchorMax = new Vector2(0.5f, 0.5f); prt.pivot = new Vector2(0.5f, 0.5f);
@@ -903,7 +969,15 @@ namespace CoastRun
         private ScheduleDef PickDev(SeasonKind season)
         {
             var list = BuildChoices(1, season);
-            return list.Count > 0 ? list[UnityEngine.Random.Range(0, list.Count)] : null;
+            if (list.Count == 0) return null;
+            // 74차: 지쳐 있으면 자동은 「푸는 놀이」(스트레스가 내려가는 카드)를 고른다 — 연습은 더 지치게 만든다.
+            if (Save != null && Save.stats.Stage >= StressStage.Worn)
+            {
+                ScheduleDef best = null;
+                foreach (var d in list) if (best == null || d.dStress < best.dStress) best = d;
+                if (best != null && best.dStress < 0) return best;
+            }
+            return list[UnityEngine.Random.Range(0, list.Count)];
         }
         private ScheduleDef PickJob(SeasonKind season)
         {
@@ -937,9 +1011,10 @@ namespace CoastRun
             var result = _gm.ResolvePhase(slot);
             if (idx == 0 && result.HasValue)
             {
-                // 밥: v3 규칙 — 체력 +1 보너스(주당 상한은 게이트 자체가 낮아 필요 없음), 스트레스 −5 추가
+                // 밥: v3 규칙 — 체력 +1 보너스(주당 상한은 게이트 자체가 낮아 필요 없음), 스트레스 추가 회복
+                //   74차: −5 → −2. 밥 한 칸으로 스트레스가 다 지워지면 관리할 게 없어진다(대신 주간 결산에서 잠 보너스가 붙는다).
                 Save.stats.stamina = Mathf.Min(PlayerStats.StatMax, Save.stats.stamina + 1);
-                Save.stats.stress = Mathf.Max(0, Save.stats.stress - 5);
+                Save.stats.stress = Mathf.Max(0, Save.stats.stress - 2);
                 Survival.OnRestAction(Save);   // 잠 + 식사는 MealPick에서 이미 소진
                 if (!Save.ateThisWeek) ShowBubble(Loc.T("식사를 안 한 채 쉬었어…", "Rested without eating…"), 2.5f);
                 _gm.Persist();
@@ -1039,7 +1114,7 @@ namespace CoastRun
             int fromWeek = Save.week;
             var rep = Survival.WeekTick(Save);
             bool forced = _gm.AdvanceWeek();
-            _rubBudget = 10;
+            _rubBudget = RubBudgetPerWeek;
             Refresh();
             string nextNote = null;
             if (rep.died) nextNote = Loc.T("…하늘이 일어나지 못한다.", "…Haneul can't get up.");
@@ -1053,7 +1128,9 @@ namespace CoastRun
             bool passDone = false;
             _auto = _auto && !forced && !rep.died; RefreshAuto();
             WeekPassUI.Show(fromWeek, Save.week, Timeline.SeasonOf(Save.week), rep, nextNote, () => passDone = true);
-            if (_auto) { float w = 0f; while (!passDone && w < 1.4f) { w += Time.unscaledDeltaTime; yield return null; } if (!passDone) WeekPassUI.Close(); }
+            // 74차(사용자: 결산 카드 3초): 자동 진행에서도 카드가 제 시간(WeekPassUI.AutoCloseSeconds)만큼 보이게 —
+            //   전엔 1.4초에 강제로 닫아 자동 모드에서만 더 빨리 사라졌다. 여유 0.3초는 자동 닫힘이 못 돌 때의 안전장치.
+            if (_auto) { float w = 0f, lim = WeekPassUI.AutoCloseSeconds + 0.3f; while (!passDone && w < lim) { w += Time.unscaledDeltaTime; yield return null; } if (!passDone) WeekPassUI.Close(); }
             else while (!passDone) yield return null;
             if (rep.died)
             {

@@ -97,6 +97,53 @@ namespace CoastRun
         /// 러닝 HUD 배치 기준 폭(인셋 664 = 720−2×HudPad). 갤럭시 S25U 등 좁은 세로폰에선
         /// 인셋이 ~596으로 줄어 상단 알약이 겹친다 → HudFit 으로 664 기준 배치를 통째로 축소.
         public const float HudDesignWidth = 664f;
+        /// 같은 기준의 높이(1280−2×HudPad). 9:16보다 **짧은** 비율(16:9 게임뷰·태블릿·폴더블 펼침)에서
+        /// 절대 좌표 배치가 위아래로 잘리던 것을 막기 위해 세로도 이 값을 기준으로 축소한다.
+        public const float HudDesignHeight = 1224f;
+        /// 축소 하한 — 여기까지는 잘리지 않고 줄어들고, 더 극단적인 비율에서는 잘린다.
+        public const float MinFitScale = 0.45f;
+
+        /// 절대 좌표(664×1224) 배치를 화면에 맞춰 통째로 축소하는 상자. 배경처럼 꽉 차야 하는 것은
+        /// 이 상자 **바깥**(인셋)에 먼저 붙이고, 좌표로 놓는 UI만 이 상자의 자식으로 둔다.
+        public static RectTransform MakeFitBox(RectTransform parent, string name = "Fit")
+        {
+            if (parent == null) return null;
+            var existing = parent.Find(name) as RectTransform;
+            if (existing != null) return existing;
+            var go = new GameObject(name, typeof(RectTransform), typeof(CoastUiDesignFit));
+            go.transform.SetParent(parent, false);
+            var rt = go.GetComponent<RectTransform>();
+            rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f);
+            rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = Vector2.zero;
+            go.GetComponent<CoastUiDesignFit>().ApplyNow();
+            return rt;
+        }
+
+        /// 부모 인셋 크기로 664×1224 기준 배율을 구한다(가로·세로 중 더 빡빡한 쪽, 1 초과 없음).
+        public static float FitScale(float insetW, float insetH)
+        {
+            if (insetW < 8f || insetH < 8f) return 1f;
+            float byW = insetW / HudDesignWidth;
+            float byH = insetH / HudDesignHeight;
+            return Mathf.Clamp(Mathf.Min(byW, byH), MinFitScale, 1f);
+        }
+
+        /// 해상도(+안전 영역) → HudInset 의 디자인 단위 크기와 축소 배율. 런타임과 에디터 점검 메뉴가
+        /// 같은 식을 쓰게 한 곳에 모아 둔다. fit==1 이면 기준(664×1224)이 그대로 들어간다는 뜻이고,
+        /// fit 이 MinFitScale 에 걸린 경우(=반환 크기가 664×1224보다 작다)에만 잘림이 생긴다.
+        public static void DesignMetrics(float screenW, float screenH, float safeW, float safeH,
+                                         out Vector2 insetSize, out float fit)
+        {
+            float lw = Mathf.Log(Mathf.Max(1f, screenW) / 1080f, 2f);
+            float lh = Mathf.Log(Mathf.Max(1f, screenH) / 1920f, 2f);
+            float scale = Mathf.Pow(2f, Mathf.Lerp(lw, lh, 0.5f));
+            var sz = new Vector2(safeW, safeH) / scale / DesignScale;
+            float iw = Mathf.Max(100f, sz.x - 2f * HudPad);
+            float ih = Mathf.Max(100f, sz.y - 2f * HudPad);
+            fit = FitScale(iw, ih);
+            insetSize = new Vector2(iw / fit, ih / fit);
+        }
 
         /// 러닝 크롬·여정 바가 같은 Fit 자식을 쓰도록. 폭이 충분하면 scale=1(에디터 720×1280 동일).
         public static RectTransform HudFitRoot(Canvas canvas)
@@ -117,7 +164,9 @@ namespace CoastRun
         }
     }
 
-    /// 인셋 폭이 HudDesignWidth 보다 좁을 때 Fit 자식을 비율 유지로 축소(매 프레임 안전영역 갱신 반영).
+    /// 인셋이 HudDesignWidth×HudDesignHeight 보다 좁거나 **짧을** 때 Fit 자식을 비율 유지로 축소
+    /// (매 프레임 안전영역 갱신 반영). 74차(사용자: 갤럭시 16:9 게임뷰에서 상하 잘림): 전엔 가로만
+    /// 봤기 때문에 9:16보다 짧은 비율에서는 배율이 1로 남아 위아래가 그대로 잘렸다.
     public class CoastHudNarrowFit : MonoBehaviour
     {
         private RectTransform _self, _parent;
@@ -134,10 +183,36 @@ namespace CoastRun
             if (rw < 8f || rh < 8f) return;
             if (Mathf.Abs(rw - _lastW) < 0.25f && Mathf.Abs(rh - _lastH) < 0.25f) return;
             _lastW = rw; _lastH = rh;
-            float fit = Mathf.Clamp(rw / CoastUiCanvas.HudDesignWidth, 0.55f, 1f);
+            float fit = CoastUiCanvas.FitScale(rw, rh);
             _self.localScale = new Vector3(fit, fit, 1f);
             // 스케일 후 부모와 같은 높이를 덮도록 내부 높이 = rh/fit
             _self.sizeDelta = new Vector2(CoastUiCanvas.HudDesignWidth, rh / fit);
+        }
+    }
+
+    /// 664×1224 절대 좌표 배치를 화면 비율에 맞춰 통째로 축소하는 상자(가로·세로 동시 고려).
+    /// 상자 크기는 부모(안전 영역 인셋)를 덮도록 rw/fit × rh/fit 로 잡아, 화면 가장자리에 붙인
+    /// UI가 축소 후에도 실제 가장자리에 붙는다. 세로가 기준(1224)보다 남으면 그만큼 더 넓게 퍼진다.
+    public class CoastUiDesignFit : MonoBehaviour
+    {
+        private RectTransform _self, _parent;
+        private float _lastW = -1f, _lastH = -1f;
+
+        private void LateUpdate() => ApplyNow();
+
+        public void ApplyNow()
+        {
+            if (_self == null) _self = transform as RectTransform;
+            if (_parent == null) _parent = _self != null ? _self.parent as RectTransform : null;
+            if (_self == null || _parent == null) return;
+            float rw = _parent.rect.width, rh = _parent.rect.height;
+            if (rw < 8f || rh < 8f) return;
+            if (Mathf.Abs(rw - _lastW) < 0.25f && Mathf.Abs(rh - _lastH) < 0.25f) return;
+            _lastW = rw; _lastH = rh;
+            float fit = CoastUiCanvas.FitScale(rw, rh);
+            _self.localScale = new Vector3(fit, fit, 1f);
+            // 가로는 배치 기준(664)을 넘기지 않는다 — 가운데 정렬 좌표(x0 = (664−…)/2)가 어긋나지 않게.
+            _self.sizeDelta = new Vector2(Mathf.Min(CoastUiCanvas.HudDesignWidth, rw / fit), rh / fit);
         }
     }
 
@@ -191,11 +266,15 @@ namespace CoastRun
             if (_inset == null) _inset = _safe.Find(CoastUiCanvas.InsetName) as RectTransform;
             if (_inset != null)
             {
-                // CanvasScaler(Match 0.5)와 같은 식으로 배율을 직접 계산 — 첫 프레임에도 정확하다
-                float lw = Mathf.Log(w / 1080f, 2f), lh = Mathf.Log(h / 1920f, 2f);
-                float scale = Mathf.Pow(2f, Mathf.Lerp(lw, lh, 0.5f));
-                var sz = new Vector2(r.width, r.height) / scale / CoastUiCanvas.DesignScale;
-                _inset.sizeDelta = new Vector2(Mathf.Max(100f, sz.x - 2f * CoastUiCanvas.HudPad), Mathf.Max(100f, sz.y - 2f * CoastUiCanvas.HudPad));
+                // 74차(사용자: 갤럭시 16:9 게임뷰에서 상하 잘림) — 배치 좌표는 664×1224(9:16) 기준인데
+                // 9:16보다 **짧은** 비율(16:9·3:4·태블릿·폴더블 펼침)에선 인셋 높이가 1224보다 작아져
+                // 위(주차 알약)와 아래(다음 턴 줄)가 화면 밖으로 나갔다. 인셋을 「최소 664×1224 보장 +
+                // 비율 유지 축소」로 바꾼다: 자식 좌표계는 늘 기준 크기 이상이고, 축소분을 스케일로 돌려
+                // 화면에서 차지하는 영역(sizeDelta×scale)은 예전과 동일하다 → 꽉 찬 배경도 그대로 full-bleed.
+                CoastUiCanvas.DesignMetrics(w, h, r.width, r.height, out var insetSize, out float fit);
+                float s = CoastUiCanvas.DesignScale * fit;
+                _inset.localScale = new Vector3(s, s, 1f);
+                _inset.sizeDelta = insetSize;
             }
         }
     }

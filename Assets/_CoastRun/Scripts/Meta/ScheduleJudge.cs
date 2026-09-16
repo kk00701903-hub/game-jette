@@ -18,13 +18,18 @@ namespace CoastRun
     }
 
     /// 프린세스 메이커식 판정. 성공률은 주 스탯 vs 난이도로 시작하고,
-    /// 스트레스가 체력을 넘는 순간(번아웃) 실패율이 급증한다. 휴식은 판정 없이 항상 성공.
+    /// 스트레스·컨디션이 그 위에 얹힌다. 번아웃 문턱(PlayerStats.StressLimit)을 넘으면 실패율이 급증한다.
+    /// 휴식은 판정 없이 항상 성공.
     public static class ScheduleJudge
     {
         public const float BaseChance = 0.72f;     // 스탯 = 난이도일 때
         public const float StatSlope = 0.004f;     // 스탯-난이도 1점당 ±0.4%
-        public const float MildStressCoef = 0.12f; // 스트레스 ≤ 체력: 최대 -12%
-        public const float BurnoutCoef = 0.55f;    // 스트레스 > 체력: 초과비율 × 55% 추가 감소
+        /// 74차: 스트레스 0~100 척도 기준 — 문턱 아래에서도 스트레스 100당 -22%(비례).
+        public const float MildStressCoef = 0.22f;
+        /// 문턱을 넘은 뒤 추가 감소(문턱~100 을 꽉 채우면 -45%). 번아웃은 「그냥 실패하는 상태」가 된다.
+        public const float BurnoutCoef = 0.45f;
+        /// 컨디션 보정 — 50이 기준, 0이면 -12%, 100이면 +12%(밥·잠 관리가 성과로 이어지게).
+        public const float ConditionCoef = 0.12f;
         public const float GreatBase = 0.06f;
         public const float GreatCharmCoef = 0.0012f;
         public const float FailStressMult = 1.5f;
@@ -35,6 +40,8 @@ namespace CoastRun
         /// v3 생활 리듬 — 교체 가능한 정적 컨텍스트(GameManager가 Save.rhythm을 넣어 준다).
         public static LifeRhythm Rhythm = LifeRhythm.Normal;
         public static bool SnackOn;
+        /// 74차: 컨디션(0~100)도 판정에 들어간다. GameManager 가 Save.condition 을 넣어 준다.
+        public static int Condition = 50;
         public static float RhythmStaminaMul => Rhythm == LifeRhythm.Hard ? 1.3f : Rhythm == LifeRhythm.Easy ? 0.8f : 1f;
         public static float RhythmStressMul => (Rhythm == LifeRhythm.Hard ? 1.3f : Rhythm == LifeRhythm.Easy ? 0.7f : 1f) * (SnackOn ? 0.8f : 1f);
         public static float RhythmChanceAdd => Rhythm == LifeRhythm.Hard ? -0.03f : Rhythm == LifeRhythm.Easy ? 0.03f : 0f;
@@ -47,11 +54,14 @@ namespace CoastRun
             int stat = s.Get(d.primaryStat);
             float p = BaseChance + (stat - d.difficulty) * StatSlope;
 
-            float stamina = Mathf.Max(1f, s.stamina);
-            if (s.stress <= s.stamina)
-                p -= MildStressCoef * (s.stress / stamina);
-            else
-                p -= MildStressCoef + BurnoutCoef * ((s.stress - stamina) / stamina);
+            // 스트레스: 문턱(체력이 높으면 조금 더 버틴다) 아래는 비례 감소, 넘으면 급락.
+            int limit = s.StressLimit;
+            p -= MildStressCoef * (s.stress / (float)PlayerStats.StressMax);
+            if (s.stress >= limit)
+                p -= BurnoutCoef * ((s.stress - limit) / (float)Mathf.Max(1, PlayerStats.StressMax - limit));
+
+            // 컨디션: 잘 먹고 잘 잔 주는 더 잘 된다.
+            p += ConditionCoef * ((Mathf.Clamp(Condition, 0, 100) - 50) / 50f);
 
             p += RhythmChanceAdd;
             return Mathf.Clamp(p, MinChance, MaxChance);
@@ -62,7 +72,10 @@ namespace CoastRun
             if (d == null || d.category == ScheduleCategory.Rest || d.category == ScheduleCategory.Story || d.deterministic)
                 return 0f;
             float g = GreatBase + s.charm * GreatCharmCoef;
-            if (s.Burnout) g *= 0.25f;
+            // 74차: 지침(55↑)부터 이미 대성공이 잘 안 나오고, 번아웃이면 거의 없다.
+            if (s.Burnout) g *= 0.20f;
+            else if (s.Stage == StressStage.Worn) g *= 0.55f;
+            else if (s.Stage == StressStage.Calm) g *= 1.25f;   // 푹 쉬고 하면 잘 터진다
             return Mathf.Clamp(g, 0f, 0.30f);
         }
 
@@ -95,6 +108,10 @@ namespace CoastRun
 
             if (d.category == ScheduleCategory.Rest)
                 after.stress += Mathf.RoundToInt(d.dStress * seasonMul);     // 음수, 항상 적용
+            else if (d.dStress < 0)
+                // 74차: 스트레스를 「푸는」 놀이(산책·수영·라디오) — 실패하면 덜 풀린다.
+                //   실패 배율(×1.5)이나 간식 배율(×0.8)을 그대로 곱하면 실패가 더 시원해지는 역전이 생긴다.
+                after.stress += Mathf.RoundToInt(d.dStress * (o == Outcome.Fail ? 0.5f : 1f) * seasonMul);
             else
                 after.stress += Mathf.RoundToInt(d.dStress * (o == Outcome.Fail ? FailStressMult : 1f) * RhythmStressMul);
 
@@ -106,8 +123,8 @@ namespace CoastRun
                 after.trust -= 1;   // 마을에 소문
                 if (d.dTrouble > 0) after.trouble += 2;
             }
-            // 평판 50 이상: 알바 스트레스 -2(단골 대우)
-            if (d.category == ScheduleCategory.Job && before.trust >= 50) after.stress -= 2;
+            // 평판 50 이상: 알바 스트레스 -4(단골 대우) — 74차: 알바 스트레스가 1.5배가 되었으니 혜택도 같이.
+            if (d.category == ScheduleCategory.Job && before.trust >= 50) after.stress -= 4;
 
             after.Clamp();
 
@@ -136,7 +153,8 @@ namespace CoastRun
             Delta(log, Loc.T("돈", "Money"), before.money, after.money);
             Delta(log, Loc.T("말랑이 하트", "Hearts"), before.hearts, after.hearts);
             if (after.trouble > before.trouble && after.trouble >= 30 && before.trouble < 30) log.Add(Loc.T("  …요즘 밤에 자꾸 나간다고 누가 그러더라.", "  …someone said you've been out late a lot."));
-            if (after.Burnout) log.Add(Loc.T("⚠ 번아웃 — 스트레스가 체력을 넘었어. 휴식이 필요해.", "⚠ BURNOUT — stress over stamina. Rest needed."));
+            if (after.Burnout) log.Add(Loc.T($"⚠ 번아웃 — 스트레스 {after.stress}/{after.StressLimit}. 이대로면 앓아눕는다.", $"⚠ BURNOUT — stress {after.stress}/{after.StressLimit}. Rest now."));
+            else if (after.Stage == StressStage.Worn) log.Add(Loc.T($"스트레스 {after.stress} — 지쳐 간다(성공률·대성공 ↓).", $"Stress {after.stress} — wearing down (success ↓)."));
 
             return new PhaseResult
             {
@@ -152,10 +170,11 @@ namespace CoastRun
             log.Add($"  {name} {a} → {b}  ({(d >= 0 ? "+" : "")}{d})");
         }
 
-        /// 주말 자연 회복: 스트레스 -5, 번아웃이면 회복 없음. 간식비는 주 15G.
+        /// 주말 정산. 74차: 무조건 -5 하던 스트레스 자연 회복은 없앴다 —
+        ///   이제 스트레스의 주간 증감은 생활(잠·식사·옷)에 달렸고 `Survival.WeekTick` 이 한곳에서 계산한다.
+        ///   여기 남은 것은 간식비뿐(간식은 ScheduleJudge.RhythmStressMul 로 행동 스트레스를 깎아 준다).
         public static void WeeklyDecay(PlayerStats s)
         {
-            if (!s.Burnout) s.stress = Mathf.Max(0, s.stress - 5);
             if (SnackOn) s.money = Mathf.Max(0, s.money - 15);
         }
 
@@ -167,18 +186,29 @@ namespace CoastRun
             if (!s.Burnout) { save.burnoutWeeks = 0; return null; }
             save.burnoutWeeks++;
             if (save.burnoutWeeks == 1)
-                return Loc.T("지쳤다. 이대로 한 주 더 가면 앓아눕는다.", "Exhausted. One more week like this and you'll fall ill.");
+            {
+                // 74차: 경고에도 대가를 붙인다 — 컨디션이 깎여 다음 주 성공률까지 떨어진다.
+                save.condition = Mathf.Max(0, save.condition - 10);
+                s.stamina = Mathf.Max(0, s.stamina - 2);
+                return Loc.T($"지쳤다(스트레스 {s.stress}). 이대로 한 주 더 가면 앓아눕는다. (컨디션 -10)",
+                             $"Exhausted (stress {s.stress}). One more week and you'll fall ill. (Condition -10)");
+            }
             if (save.burnoutWeeks == 2)
             {
-                // 앓아눕기: 다음 주 전부 강제 휴식, 약값, 스트레스 크게 회복
+                // 앓아눕기: 다음 주 전부 강제 휴식, 약값, 스트레스 회복(다 지워 주지는 않는다)
                 save.sickWeeks++;
-                s.money = Mathf.Max(0, s.money - 30);
-                s.stress = Mathf.Max(0, s.stress - 40);
+                s.money = Mathf.Max(0, s.money - 60);
+                s.stress = Mathf.Max(0, s.stress - 35);
+                s.stamina = Mathf.Max(0, s.stamina - 5);
+                save.condition = Mathf.Max(0, save.condition - 15);
                 for (int i = 0; i < save.queuedSchedule.Length; i++) save.queuedSchedule[i] = "rest_home";
-                return Loc.T("열이 났다. 이번 주는 꼼짝 못 하고 누워 있었다. (약값 -30G, 스트레스 -40)", "Fever. Bedridden the whole week. (medicine -30G, stress -40)");
+                s.Clamp();
+                return Loc.T("열이 났다. 이번 주는 꼼짝 못 하고 누워 있었다. (약값 -60G, 체력 -5, 스트레스 -35)",
+                             "Fever. Bedridden all week. (medicine -60G, stamina -5, stress -35)");
             }
-            // 3주+: 잠수 — 스트레스 0, 평판 -10, 말썽 +5, 그리고 이번 챕터 노을을 놓친다(자동 C급).
-            s.stress = 0;
+            // 3주+: 잠수 — 평판 -10, 말썽 +5, 이번 챕터 노을을 놓친다(자동 C급).
+            //   74차: 스트레스를 0으로 지워 주면 「일부러 번아웃」이 이득이 된다 → -50 만.
+            s.stress = Mathf.Max(0, s.stress - 50);
             s.trust -= 10;
             s.trouble += 5;
             save.burnoutWeeks = 0;

@@ -10,11 +10,15 @@ namespace CoastRun
         public const int ClothesWeeks = 12;
         public const int RicePrice = 60, SidePrice = 40, ClothesPrice = 300; // 레거시 상수(새 단가는 LifeItems)
         public const int DangerWeeksToDie = 2;
+        /// 74차: 한 주를 살면 그냥 쌓이는 피로. 다 잘 챙긴 주에만 겨우 -1 이 되고(공짜 회복을 없앤다),
+        ///   굶고 못 자고 옷까지 낡으면 +40 까지 오른다.
+        public const int WeeklyStressBase = 8;
 
         public class WeekReport
         {
             public bool ateRice, ateSide, slept, clothesWorn;
             public int hungerBefore, hungerAfter, condBefore, condAfter, riceLeft, sideLeft, clothesLeft, harvested;
+            public int stressBefore, stressAfter, stressLimit;   // 74차: 주간 스트레스 변화(결산 줄)
             public bool died;
             public readonly List<string> lines = new List<string>();
             public readonly List<string> harvestNames = new List<string>();
@@ -25,7 +29,7 @@ namespace CoastRun
             var r = new WeekReport();
             if (s == null) return r;
             LifeItems.Ensure(s);
-            r.hungerBefore = s.hunger; r.condBefore = s.condition;
+            r.hungerBefore = s.hunger; r.condBefore = s.condition; r.stressBefore = s.stats.stress;
             r.harvested = HomeData.WeeklyGrow(s);
             HomeData.EnsurePots(s);
             for (int i = 0; i < s.pots.Length; i++)
@@ -55,11 +59,29 @@ namespace CoastRun
             r.slept = s.restedThisWeek;
             if (s.restedThisWeek) s.sleepDebt = 0; else s.sleepDebt++;
             s.restedThisWeek = false;
-            if (s.sleepDebt >= 2) { s.condition -= 15; s.stats.stress = Mathf.Min(PlayerStats.StatMax, s.stats.stress + 10); }
 
             s.clothesWeeks = Mathf.Max(0, s.clothesWeeks - 1);
             r.clothesWorn = s.clothesWeeks <= 0;
             if (r.clothesWorn) { s.condition -= 8; s.stats.charm = Mathf.Max(0, s.stats.charm - 1); }
+
+            // ── 74차(사용자: 스트레스가 너무 적게 쌓인다) 주간 스트레스 압력 ──
+            //   다마고치처럼 「한 주 살았다는 것만으로 쌓이고, 잘 챙기면 내려간다」. 프메처럼 방치는 벌을 받는다.
+            //   전엔 여기서 잠 부족 +10 만 있고 ScheduleJudge.WeeklyDecay 가 무조건 -5 를 줬다 → 사실상 안 쌓임.
+            int ds = WeeklyStressBase;                                 // 기본 생활 피로
+            if (r.slept) ds -= 5; else ds += 5;                        // 이번 주에 잤나(밥/휴식 칸)
+            if (s.sleepDebt >= 2) ds += 10;                            // 이틀 이상 밀린 잠
+            if (s.hunger >= 60) ds -= 2; else if (s.hunger < 30) ds += 8;
+            if (r.clothesWorn) ds += 4;                                // 낡은 옷 = 밖에 나가기 싫다
+            if (s.condition >= 70) ds -= 2; else if (s.condition < 30) ds += 5;
+            if (s.stats.Burnout && ds < 0) ds = 0;                     // 번아웃이면 그냥 쉬는 것만으로는 안 풀린다
+            s.stats.stress = Mathf.Clamp(s.stats.stress + ds, 0, PlayerStats.StressMax);
+            if (s.sleepDebt >= 2) s.condition -= 15;
+
+            // 스트레스가 몸을 갉아먹는다 — 지침부터 컨디션, 번아웃부터 체력까지.
+            var stage = s.stats.Stage;
+            if (stage >= StressStage.Worn) s.condition -= 6;
+            if (stage >= StressStage.Burnout) { s.condition -= 8; s.stats.stamina = Mathf.Max(0, s.stats.stamina - 4); }
+            if (stage >= StressStage.Crisis) s.stats.stamina = Mathf.Max(0, s.stats.stamina - 4);
 
             if (s.hunger >= 60) s.condition += 8;
             else if (s.hunger >= 30) s.condition -= 8;
@@ -68,11 +90,14 @@ namespace CoastRun
             if (s.condition < 30) s.stats.stamina = Mathf.Max(0, s.stats.stamina - 3);
 
             if (s.condition <= 0) s.dangerWeeks++; else s.dangerWeeks = 0;
-            r.died = s.dangerWeeks >= DangerWeeksToDie || s.starveWeeks >= 4;
+            // 74차: 위기(문턱+15↑) 스트레스로도 쓰러진다 — 2주 연속이면 병원행(컨디션 0 과 같은 취급).
+            if (stage >= StressStage.Crisis) s.stressCrisisWeeks++; else s.stressCrisisWeeks = 0;
+            r.died = s.dangerWeeks >= DangerWeeksToDie || s.starveWeeks >= 4 || s.stressCrisisWeeks >= DangerWeeksToDie;
             if (r.died) s.deaths++;
 
             LifeItems.SyncLegacy(s);
             r.hungerAfter = s.hunger; r.condAfter = s.condition;
+            r.stressAfter = s.stats.stress; r.stressLimit = s.stats.StressLimit;
             r.riceLeft = s.rice; r.sideLeft = s.sideDish; r.clothesLeft = s.clothesWeeks;
 
             int dishes = LifeItems.CountCat(s, LifeItemCat.BasicDish) + LifeItems.CountCat(s, LifeItemCat.PremiumDish);
@@ -90,8 +115,24 @@ namespace CoastRun
             r.lines.Add(r.slept ? Loc.T("잘 잤다", "Slept well") : Loc.T($"잠을 못 잤다 ({s.sleepDebt}주째)", $"No sleep ({s.sleepDebt} wk)"));
             r.lines.Add(r.clothesWorn ? Loc.T("옷이 낡아서 못 입겠다 — 새 옷을 사자", "Clothes worn out — buy new") : Loc.T($"옷 {s.clothesWeeks}주 남음", $"Clothes {s.clothesWeeks} wk left"));
             r.lines.Add(Loc.T($"배부름 {r.hungerBefore} → {s.hunger}  ·  컨디션 {r.condBefore} → {s.condition}", $"Fullness {r.hungerBefore} → {s.hunger}  ·  Condition {r.condBefore} → {s.condition}"));
+            r.lines.Add(Loc.T($"스트레스 {r.stressBefore} → {r.stressAfter} / 한계 {r.stressLimit} ({StageName(s.stats.Stage)})",
+                              $"Stress {r.stressBefore} → {r.stressAfter} / limit {r.stressLimit} ({StageName(s.stats.Stage)})"));
             if (!r.died && s.condition <= 0) r.lines.Add(Loc.T("!! 컨디션 0 — 한 주 더 이러면 쓰러진다", "!! Condition 0 — one more week and she collapses"));
+            if (!r.died && s.stressCrisisWeeks >= 1) r.lines.Add(Loc.T("!! 스트레스 한계 — 한 주 더 이러면 쓰러진다", "!! Stress critical — one more week and she collapses"));
             return r;
+        }
+
+        /// 74차: 스트레스 구간 이름 — 결산·상태창·말풍선이 같은 말을 쓰게 한곳에서.
+        public static string StageName(StressStage st)
+        {
+            switch (st)
+            {
+                case StressStage.Crisis: return Loc.T("위기", "critical");
+                case StressStage.Burnout: return Loc.T("번아웃", "burnout");
+                case StressStage.Worn: return Loc.T("지침", "worn out");
+                case StressStage.Tired: return Loc.T("피곤", "tired");
+                default: return Loc.T("평온", "calm");
+            }
         }
 
         /// 밥/휴식 — 잠 표시. 배부름은 Eat()에서 오른다.
@@ -119,9 +160,11 @@ namespace CoastRun
             LifeItems.Ensure(s);
             s.stats.money /= 2;
             s.condition = 50; s.hunger = 50; s.dangerWeeks = 0; s.starveWeeks = 0; s.sleepDebt = 0;
+            s.stressCrisisWeeks = 0; s.burnoutWeeks = 0;
             if (!LifeItems.HasEdible(s)) LifeItems.Add(s, "dish_rice", 1);
             if (s.clothesWeeks <= 0) s.clothesWeeks = 2;
-            s.stats.stress = Mathf.Max(0, s.stats.stress - 30);
+            // 74차: 병원에서 나오면 스트레스는 「피곤」 아래로 — 남겨 두면 나온 주에 또 쓰러진다.
+            s.stats.stress = Mathf.Min(s.stats.stress, PlayerStats.StressTired - 5);
             LifeItems.SyncLegacy(s);
         }
 
@@ -140,6 +183,10 @@ namespace CoastRun
             if (s == null) return null;
             LifeItems.Ensure(s);
             if (s.condition <= 0) return Loc.T("컨디션 0! 다음 주에 쓰러진다 — 식사·잠·약", "Condition 0! Collapses next week");
+            // 74차: 스트레스도 생활 띠에 뜬다 — 위기·번아웃은 굶는 것과 같은 급의 경고.
+            var stg = s.stats.Stage;
+            if (stg >= StressStage.Crisis) return Loc.T($"스트레스 {s.stats.stress}! 다음 주에 쓰러진다 — 놀기·쓰다듬기·바다 수영", $"Stress {s.stats.stress}! Collapses next week — play & rest");
+            if (stg == StressStage.Burnout) return Loc.T($"번아웃 {s.stats.stress}/{s.stats.StressLimit} — 이번 주는 놀기로 풀자", $"Burnout {s.stats.stress}/{s.stats.StressLimit} — spend this week playing");
             if (!LifeItems.HasEdible(s) && LifeItems.CountCat(s, LifeItemCat.Ingredient) > 0)
                 return Loc.T("재료만 있어 — 마이룸에서 조리", "Ingredients only — cook in My Room");
             if (!LifeItems.HasEdible(s)) return Loc.T("먹을 요리가 없어 — 장보기·조리", "No meals — shop & cook");
@@ -147,6 +194,7 @@ namespace CoastRun
             if (s.clothesWeeks <= 0) return Loc.T("옷이 낡았어 — 새 옷", "Clothes worn out");
             if (s.sleepDebt >= 1) return Loc.T("이번 주엔 꼭 자자(밥/휴식)", "Rest this week");
             if (s.condition < 30) return Loc.T("컨디션이 나빠 — 약·보양식", "Poor condition — medicine / stew");
+            if (stg == StressStage.Worn) return Loc.T($"스트레스 {s.stats.stress} — 지쳐 간다, 놀기로 한 칸", $"Stress {s.stats.stress} — worn out, spend a slot playing");
             return null;
         }
     }

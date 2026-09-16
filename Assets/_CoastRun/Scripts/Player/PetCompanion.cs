@@ -147,9 +147,12 @@ namespace CoastRun
 
         private void OnDestroy()
         {
+            // 재도전에서 새 펫이 먼저 들어선 뒤 옛 펫이 정리되는 순서일 수 있다 —
+            // 그때 보너스를 지우면 새 펫(기러기 자석·참새 배수)이 먹통이 된다.
+            if (Instance != this) return;
             MagnetBonus = 0f;
             CoinBonus = 1f;
-            if (Instance == this) Instance = null;
+            Instance = null;
         }
 
         /// 66차: PaintedProp 빌보드 우선. 없으면 절차형 3D 피겨(CoastFigureMesh).

@@ -13,6 +13,11 @@ namespace CoastRun
     public class PlayerStats
     {
         public const int StatMax = 200;
+        /// 74차(사용자: 스트레스가 너무 적게 쌓인다): 스트레스는 **0~100 한 척도**로 통일했다.
+        ///   전엔 상태창은 /100, 육성 화면 세로 게이지는 /200(StatMax)으로 그려 실제의 절반으로 보였다.
+        public const int StressMax = 100;
+        /// 경고(피곤) · 지침 구간의 문턱.
+        public const int StressTired = 30, StressWorn = 55;
 
         public int stamina = 30;   // 체력
         public int agility = 20;   // 순발력
@@ -46,7 +51,7 @@ namespace CoastRun
             stamina = Mathf.Clamp(stamina, 0, StatMax);
             agility = Mathf.Clamp(agility, 0, StatMax);
             charm = Mathf.Clamp(charm, 0, StatMax);
-            stress = Mathf.Clamp(stress, 0, StatMax);
+            stress = Mathf.Clamp(stress, 0, StressMax);
             sense = Mathf.Clamp(sense, 0, StatMax);
             trust = Mathf.Clamp(trust, 0, 100);
             trouble = Mathf.Clamp(trouble, 0, 100);
@@ -54,9 +59,23 @@ namespace CoastRun
             hearts = Mathf.Max(0, hearts);
         }
 
-        /// 스트레스가 체력을 넘으면 번아웃: 실패율 급증, 대성공 거의 없음.
-        public bool Burnout => stress > stamina;
+        /// 번아웃 문턱 — 체력이 곧 「버티는 힘」(프메식). 체력 30이면 73, 체력 200이면 90에서 무너진다.
+        ///   전엔 `stress > stamina` 라 체력이 100을 넘는 중반부터는 번아웃이 사실상 불가능했다.
+        public int StressLimit => Mathf.Clamp(70 + stamina / 10, 70, 90);
+
+        /// 스트레스가 문턱을 넘으면 번아웃: 실패율 급증, 대성공 거의 없음.
+        public bool Burnout => stress >= StressLimit;
+
+        /// 스트레스 구간 — 표정·게이지 색·경고 문구·자동 행동이 모두 이걸 본다(다마고치식 즉각 피드백).
+        public StressStage Stage =>
+            stress >= StressLimit + 15 ? StressStage.Crisis :
+            stress >= StressLimit ? StressStage.Burnout :
+            stress >= StressWorn ? StressStage.Worn :
+            stress >= StressTired ? StressStage.Tired : StressStage.Calm;
     }
+
+    /// 스트레스 5단계. 평온(0~29) · 피곤(30~54) · 지침(55~문턱) · 번아웃(문턱~+15) · 위기(그 위).
+    public enum StressStage { Calm = 0, Tired = 1, Worn = 2, Burnout = 3, Crisis = 4 }
 
     public enum StatKind { None = 0, Stamina = 1, Agility = 2, Charm = 3, Stress = 4, Sense = 5, Trust = 6 }
 
@@ -135,6 +154,7 @@ namespace CoastRun
         public int sleepDebt;                // 잠(밥·휴식 행동)을 안 한 연속 주
         public int starveWeeks;              // 식사 없이 지낸 연속 주
         public int dangerWeeks;              // 컨디션 0 인 연속 주(2주 = 사망)
+        public int stressCrisisWeeks;        // 74차: 스트레스 위기(한계+15↑) 연속 주(2주 = 사망)
         public int deaths;                   // 쓰러진 횟수(통계)
         public bool restedThisWeek;          // 이번 주 밥/휴식 행동을 했는가
         public bool boundaryPending;         // 챕터 마지막 주가 끝나 다음 턴에 컷씬·대회가 기다리는 중

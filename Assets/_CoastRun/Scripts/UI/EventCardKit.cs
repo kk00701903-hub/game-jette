@@ -218,7 +218,8 @@ namespace CoastRun
         }
 
         /// 알바/쉼/놀기 선택 카드 (탭 + 큰 제목 + 워터마크 ✦).
-        public static Button ThemedPickCard(RectTransform parent, string name, string tab, string title, Color fill, Color tabCol, Vector2 pos, Vector2 size, Action onClick)
+        /// note: 카드 아래 작은 흰 알약(효과 요약). 74차 — 「이 카드가 스트레스를 쌓는지 푸는지」를 고를 때 보이게.
+        public static Button ThemedPickCard(RectTransform parent, string name, string tab, string title, Color fill, Color tabCol, Vector2 pos, Vector2 size, Action onClick, string note = null)
         {
             var card = CoastUiArt.GlossyPill(parent, name, fill, 26, 10);
             var rt = card.rectTransform; rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f); rt.pivot = new Vector2(0.5f, 0.5f);
@@ -238,6 +239,18 @@ namespace CoastRun
             nm.color = Color.white; nm.fontStyle = FontStyle.Bold; nm.horizontalOverflow = HorizontalWrapMode.Wrap;
             nm.resizeTextForBestFit = true; nm.resizeTextMinSize = 14; nm.resizeTextMaxSize = CoastHudLayout.Scaled(28);
             CoastUiArt.OutlineText(nm, new Color(0.12f, 0.10f, 0.28f, 0.85f), 2.4f);
+
+            if (!string.IsNullOrEmpty(note))
+            {
+                nm.rectTransform.offsetMin = new Vector2(18f, 86f);   // 제목을 위로 밀고 아래에 효과 알약
+                var pill = CoastUiArt.CutePill(rt, "Note", new Color(1f, 1f, 1f, 0.94f), 14, 0);
+                var prt = pill.rectTransform; prt.anchorMin = new Vector2(0f, 0f); prt.anchorMax = new Vector2(1f, 0f); prt.pivot = new Vector2(0.5f, 0f);
+                prt.anchoredPosition = new Vector2(0f, 16f); prt.sizeDelta = new Vector2(-28f, 62f); pill.raycastTarget = false;
+                var nt = CoastHudLayout.MakeText(prt, "T", note, 15, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(8f, 4f), new Vector2(-8f, -4f));
+                nt.color = new Color(0.24f, 0.20f, 0.34f); nt.fontStyle = FontStyle.Bold; nt.raycastTarget = false;
+                nt.horizontalOverflow = HorizontalWrapMode.Wrap;
+                nt.resizeTextForBestFit = true; nt.resizeTextMinSize = 10; nt.resizeTextMaxSize = CoastHudLayout.Scaled(15);
+            }
 
             var btn = card.gameObject.AddComponent<Button>(); btn.transition = Selectable.Transition.None;
             btn.onClick.AddListener(() => { CoastPrefs.Vibrate(); onClick?.Invoke(); });

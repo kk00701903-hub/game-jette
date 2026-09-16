@@ -1,11 +1,19 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 namespace CoastRun
 {
     /// 꼬마(집사) 도움 — 달리는 중 가끔 오른쪽에 꼬마 얼굴이 뜨고,
     /// 누르면 피버: 주변 코인·말랑이가 강하게 빨려 들어온다.
+    ///
+    /// 90차(사용자 "피버 안 눌렀는데 돈이 모인다"): 제안 얼굴이 화면 오른쪽 42 % 높이에 있는데
+    /// 러닝의 "오른쪽 레인" 탭 영역(화면 우 35 %)과 겹쳐서, 레인 이동 탭·스와이프가 그대로
+    /// 피버 버튼 클릭이 되었다(코인 카펫 = 돈이 쏟아지는 느낌). 그래서
+    ///   1) 클릭을 Button 대신 TapGate 로 받아 **짧고 안 움직인 탭**만 피버로 인정하고,
+    ///   2) 얼굴 위에서 시작한 스와이프는 MobileSwipeInput 이 그대로 조작으로 쓰게 열어 주고,
+    ///   3) 얼굴이 막 뜬 직후 0.25 초는 입력을 받지 않는다(반사 탭 방지).
     public class FeverMode : MonoBehaviour
     {
         public static FeverMode Instance { get; private set; }
@@ -32,6 +40,20 @@ namespace CoastRun
         private PlayerController _player;
         private Vector2 _btnBasePos;
         private CanvasGroup _tapCg;   // 40차-b: TAP! 깜빡임
+        private RectTransform _tapPill;
+        private float _tapArmedAt = -1f;   // 제안이 뜬 뒤 이 시각부터 탭을 받는다
+
+        /// 지금 손가락이 제안 얼굴(또는 TAP! 알약) 위인가 — MobileSwipeInput 이 묻는다.
+        /// 여기서 시작한 스와이프는 그대로 조작으로 쓰고(레인 이동이 먹히지 않던 문제),
+        /// 짧은 탭만 피버로 준다.
+        public static bool PointerOverOffer(Vector2 screenPos)
+        {
+            var f = Instance;
+            if (f == null || f._offerUntil < 0f || f._btn == null || !f._btn.gameObject.activeInHierarchy) return false;
+            var cam = f._canvas != null && f._canvas.renderMode != RenderMode.ScreenSpaceOverlay ? f._canvas.worldCamera : null;
+            if (RectTransformUtility.RectangleContainsScreenPoint(f._btn, screenPos, cam)) return true;
+            return f._tapPill != null && RectTransformUtility.RectangleContainsScreenPoint(f._tapPill, screenPos, cam);
+        }
 
         public static FeverMode Ensure()
         {
@@ -77,7 +99,7 @@ namespace CoastRun
             // HUD(100)·여정(105)·주스(110)보다 위 — 탭이 스와이프/다른 UI에 먹히지 않게
             _canvas = CoastUiCanvas.Create("FeverCanvas", 160, transform);
             var root = CoastUiCanvas.Root(_canvas);
-            var go = new GameObject("HelpButton", typeof(RectTransform), typeof(Image), typeof(Button), typeof(CanvasGroup));
+            var go = new GameObject("HelpButton", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
             go.transform.SetParent(root, false);
             _btn = go.GetComponent<RectTransform>();
             _btn.anchorMin = _btn.anchorMax = new Vector2(1f, 0.42f);
@@ -101,10 +123,9 @@ namespace CoastRun
             _cg.blocksRaycasts = true;
             _cg.interactable = true;
 
-            var b = go.GetComponent<Button>();
-            b.transition = Selectable.Transition.None;
-            b.targetGraphic = _face;
-            b.onClick.AddListener(OnPressed);
+            // Button 은 손가락이 얼마나 끌렸든 뗄 때 클릭이 되어, 레인 스와이프가 피버로 새어 들어왔다.
+            var gate = go.AddComponent<TapGate>();
+            gate.OnTap = OnPressed;
 
             // 40차-b(사용자): TAP! 알약은 얼굴과 분리해 **얼굴 아래**에, 깜빡인다(_tapCg). 알약도 눌리게(Button 자식 → 부모로 버블).
             var tap = CoastUiArt.CutePill(go.transform, "Tap", new Color(1f, 0.55f, 0.28f), 12, 2);
@@ -114,6 +135,7 @@ namespace CoastRun
             trt.anchoredPosition = new Vector2(0f, -6f);
             trt.sizeDelta = new Vector2(88f, 34f);
             tap.raycastTarget = true;
+            _tapPill = trt;
             _tapCg = tap.gameObject.AddComponent<CanvasGroup>();
             var tl = CoastHudLayout.MakeText(trt, "T", "TAP!", 18, TextAnchor.MiddleCenter,
                 Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
@@ -141,6 +163,7 @@ namespace CoastRun
             if (!Active && racing && Time.time >= _nextOffer && _offerUntil < 0f)
             {
                 _offerUntil = Time.time + OfferWindow;
+                _tapArmedAt = Time.unscaledTime + 0.25f;   // 막 뜬 순간의 반사 탭은 피버로 세지 않는다
                 _btn.gameObject.SetActive(true);
                 _cg.alpha = 1f;
                 _cg.blocksRaycasts = true;
@@ -161,12 +184,16 @@ namespace CoastRun
                     _cg.blocksRaycasts = true;
                 }
             }
-            if (CoastRemoteKeys.Down(KeyCode.H) && racing) Trigger();
+#if UNITY_EDITOR || DEVELOPMENT_BUILD
+            // 디버그 키는 에디터·개발 빌드에서만 — 배포 빌드에서 키보드/원격으로 피버가 켜지지 않게.
+            if (CoastRemoteKeys.Down(KeyCode.H) && racing) Trigger("debugKey");
+#endif
         }
 
         private void HideOfferQuiet()
         {
             _offerUntil = -1f;
+            _tapArmedAt = -1f;
             if (_btn != null) _btn.gameObject.SetActive(false);
         }
 
@@ -180,12 +207,14 @@ namespace CoastRun
         {
             if (Active) return;
             if (_offerUntil < 0f) return;
+            if (_tapArmedAt > 0f && Time.unscaledTime < _tapArmedAt) return;
             HideOffer();
-            Trigger();
+            Trigger("tap");
         }
 
-        public void Trigger()
+        public void Trigger(string by = "code")
         {
+            Debug.Log($"[Fever] on by={by} t={Time.time:0.0}");   // "안 눌렀는데 켜졌다" 를 로그로 가릴 수 있게
             ArcadeRun.NoteFever();   // 48차: K-POP 미션(후렴에서 피버)
             _until = Time.time + Duration;
             _nextOffer = Time.time + OfferEvery;
@@ -239,6 +268,44 @@ namespace CoastRun
             }
             RestoreInvincible();
             juice?.OnFeverEnd();
+        }
+
+        /// 짧고 거의 움직이지 않은 탭만 콜백을 부른다. 레인 스와이프(0.6 cm 이상 끌기)나
+        /// 길게 누르기는 무시 — Button.onClick 은 그 둘을 구분하지 못해 피버가 저절로 켜졌다.
+        private class TapGate : MonoBehaviour, IPointerDownHandler, IPointerUpHandler
+        {
+            public System.Action OnTap;
+            private const float MaxSeconds = 0.3f;
+            private Vector2 _down;
+            private float _t;
+            private bool _armed;
+
+            /// MobileSwipeInput 과 같은 물리 거리(0.6 cm) — 스와이프로 인정되는 거리면 탭이 아니다.
+            private static float MaxMovePx
+            {
+                get
+                {
+                    float dpi = Screen.dpi > 1f ? Screen.dpi : 320f;
+                    return 0.6f / 2.54f * dpi;
+                }
+            }
+
+            public void OnPointerDown(PointerEventData e)
+            {
+                _down = e.position;
+                _t = Time.unscaledTime;
+                _armed = true;
+            }
+
+            public void OnPointerUp(PointerEventData e)
+            {
+                if (!_armed) return;
+                _armed = false;
+                if (Time.unscaledTime - _t > MaxSeconds) return;
+                float move = MaxMovePx;
+                if ((e.position - _down).sqrMagnitude > move * move) return;
+                OnTap?.Invoke();
+            }
         }
     }
 }

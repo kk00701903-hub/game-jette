@@ -63,7 +63,8 @@ namespace CoastRun
             bool hasNote = !string.IsNullOrEmpty(nextNote);
             int rows = 4 + (rep != null && rep.harvested > 0 ? 1 : 0);
             float listH = 12f + rows * 78f;
-            float h = 120f + listH + 184f + (hasNote ? 60f : 0f) + 24f;   // 94차: 아래 빈 공간 제거
+            // 94차: 아래 빈 공간 제거 / 74차: 미터가 2개(배부름·컨디션) → 3개(+스트레스)라 88 더
+            float h = 120f + listH + 272f + (hasNote ? 60f : 0f) + 24f;
             crt.anchoredPosition = new Vector2(0f, 10f); crt.sizeDelta = new Vector2(640f, h); card.raycastTarget = true;
 
             // 코너 꽃
@@ -129,9 +130,22 @@ namespace CoastRun
             {
                 Meter(crt, ref y, "Hunger", Loc.T("배부름", "Fullness"), "♥", "♥", "♡", new Color(1f, 0.93f, 0.95f), new Color(0.96f, 0.36f, 0.55f), rep.hungerBefore, rep.hungerAfter);
                 Meter(crt, ref y, "Cond", Loc.T("컨디션", "Condition"), "★", "★", "☆", new Color(1f, 0.97f, 0.86f), new Color(0.98f, 0.70f, 0.15f), rep.condBefore, rep.condAfter);
+                // 74차(사용자: 스트레스가 너무 적게 쌓인다): 결산에 스트레스 미터를 추가 — 한 주에 얼마나 쌓였는지,
+                //   번아웃 한계(체력에 따라 70~90)까지 얼마 남았는지 카드에서 바로 보이게.
+                bool over = rep.stressAfter >= rep.stressLimit;
+                var stressInk = over ? new Color(0.92f, 0.28f, 0.28f)
+                    : rep.stressAfter >= PlayerStats.StressWorn ? new Color(0.95f, 0.55f, 0.20f)
+                    : new Color(0.55f, 0.42f, 0.86f);
+                Meter(crt, ref y, "Stress", Loc.T($"스트레스 (한계 {rep.stressLimit})", $"Stress (limit {rep.stressLimit})"),
+                    over ? "!" : "◆", "◆", "◇", new Color(0.95f, 0.93f, 0.99f), stressInk, rep.stressBefore, rep.stressAfter);
                 if (!rep.died && rep.condAfter <= 0)
                 {
                     var warn = CoastHudLayout.MakeText(crt, "Warn", Loc.T("!! 컨디션 0 — 한 주 더 이러면 쓰러진다", "!! Condition 0 — one more week and she collapses"), 14, TextAnchor.MiddleCenter, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(24f, y - 24f), new Vector2(-24f, y));
+                    warn.color = new Color(0.85f, 0.15f, 0.20f); warn.fontStyle = FontStyle.Bold; y -= 26f;
+                }
+                else if (!rep.died && over)
+                {
+                    var warn = CoastHudLayout.MakeText(crt, "WarnS", Loc.T("!! 번아웃 — 이번 주는 놀기로 풀자", "!! Burnout — spend next week playing"), 14, TextAnchor.MiddleCenter, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(24f, y - 24f), new Vector2(-24f, y));
                     warn.color = new Color(0.85f, 0.15f, 0.20f); warn.fontStyle = FontStyle.Bold; y -= 26f;
                 }
             }
@@ -263,7 +277,7 @@ namespace CoastRun
             y -= 88f;
         }
 
-        public static float AutoCloseSeconds = 2.0f;
+        public static float AutoCloseSeconds = 3.0f;   // 74차(사용자): 결산 카드는 3초 떠 있게(전 2초)
         private class AutoCloser : MonoBehaviour { public Action act; public float delay = 2f; private System.Collections.IEnumerator Start() { yield return new WaitForSecondsRealtime(delay); act?.Invoke(); } }
 
         public static void Close() { if (_canvas != null) UnityEngine.Object.Destroy(_canvas.gameObject); _canvas = null; }

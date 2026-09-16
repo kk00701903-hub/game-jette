@@ -122,7 +122,8 @@ namespace CoastRun
         {
             if (Save == null) return null;
             if (SaveSys.NextDouble() >= RandomEventTable.Chance) return null;
-            return RandomEventTable.Pick(Timeline.SeasonOf(Save.week), SaveSys.NextDouble());
+            // 74차: 스트레스가 쌓였을 때만 뜨는 사건(새벽 세 시·아무 버스나)을 위해 현재 스트레스를 넘긴다.
+            return RandomEventTable.Pick(Timeline.SeasonOf(Save.week), SaveSys.NextDouble(), Save.stats.stress);
         }
 
         public RandomEventResult CommitRandomEvent(RandomEventDef ev, int choice)
@@ -154,7 +155,7 @@ namespace CoastRun
                 return null;
             }
 
-            ScheduleJudge.Rhythm = Save.rhythm; ScheduleJudge.SnackOn = Save.snackOn;
+            ScheduleJudge.Rhythm = Save.rhythm; ScheduleJudge.SnackOn = Save.snackOn; ScheduleJudge.Condition = Save.condition;
             var result = ScheduleJudge.Resolve(def, Save.stats, Timeline.SeasonOf(Save.week), SaveSys.NextDouble());
             Save.stats = result.after;
             Save.chapterHearts += result.heartsGained;
@@ -183,7 +184,7 @@ namespace CoastRun
         public bool AdvanceWeek()
         {
             if (Save == null) return false;
-            ScheduleJudge.Rhythm = Save.rhythm; ScheduleJudge.SnackOn = Save.snackOn;
+            ScheduleJudge.Rhythm = Save.rhythm; ScheduleJudge.SnackOn = Save.snackOn; ScheduleJudge.Condition = Save.condition;
             ScheduleJudge.WeeklyDecay(Save.stats);
             PendingWeekNote = ScheduleJudge.BurnoutStage(Save);
             Save.week = Mathf.Min(Timeline.Weeks + 30, Save.week + 1);   // 26차: 게이트 연장으로 52주를 넘길 수 있다(계절은 겨울에 고정)

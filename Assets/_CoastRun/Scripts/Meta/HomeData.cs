@@ -28,14 +28,14 @@ namespace CoastRun
         public float chance;              // 수확 성공 확률(0~1)
         public int food;                  // 성공 시 반찬 주분
         public int rice;                  // 성공 시 쌀 주분
-        public bool rose;                 // 성공 시 스트레스 0
+        public bool rose;                 // 성공 시 스트레스 -25(꽃)
         public Color petal, center;
         public string emoji;              // 텃밭 말풍선·카드 아이콘
         public string growHintKo, growHintEn; // "성장 2-3분" 식 표기
         public string Name => Loc.T(ko, en);
         public int waters => weeks;       // 구 코드 호환(성장 단계 수)
         public bool Edible => food > 0 || rice > 0;
-        public string RewardText => rose ? Loc.T("스트레스 0", "Stress → 0") : rice > 0 ? Loc.T($"쌀 {rice}주분", $"Rice ×{rice}w") : Loc.T($"반찬 {food}주분", $"Side ×{food}w");
+        public string RewardText => rose ? Loc.T("스트레스 -25", "Stress -25") : rice > 0 ? Loc.T($"쌀 {rice}주분", $"Rice ×{rice}w") : Loc.T($"반찬 {food}주분", $"Side ×{food}w");
         public string GrowHint => Loc.T(growHintKo ?? "", growHintEn ?? "");
         public string Emoji => string.IsNullOrEmpty(emoji) ? "🌱" : emoji;
     }
@@ -44,6 +44,8 @@ namespace CoastRun
     {
         public const int PotCount = 3;
         public const int MiniGameRewardPerWeek = 3;
+        /// 74차: 놀이 탭은 「스트레스를 푼다」고 써 있었지만 실제로는 돈만 줬다 → 보상 1회당 스트레스 -3(주 최대 -9).
+        public const int MiniGameStressRelief = 3;
 
         // ── 가구(방 꾸미기 v2에서 추가된 것; 장식 12종은 RoomDeco.All) ──
         public static readonly DecoDef[] Furniture =
@@ -203,7 +205,7 @@ namespace CoastRun
         {
             if (!TreadmillReady(s, p)) return false;
             s.treadmillStamp = Stamp(s);
-            s.stats.stamina += 2; s.stats.stress += 1; s.stats.Clamp();
+            s.stats.stamina += 2; s.stats.stress += 2; s.stats.Clamp();
             return true;
         }
 
@@ -247,7 +249,7 @@ namespace CoastRun
             var p = s.pots[pot]; p.growth++; p.waterStamp = Stamp(s); return true;
         }
         public static bool IsBloomed(SaveData s, int pot) { EnsurePots(s); var p = s.pots[pot]; var sd = Seed(p.seed); return sd != null && p.growth >= sd.waters; }
-        /// 56차: 수확 — 성공 확률을 굴려 성공이면 보상(반찬/쌀/스트레스 0), 실패면 시든다. 어느 쪽이든 화분은 비운다.
+        /// 56차: 수확 — 성공 확률을 굴려 성공이면 보상(반찬/쌀/꽃은 스트레스↓), 실패면 시든다. 어느 쪽이든 화분은 비운다.
         public static bool Harvest(SaveData s, int pot, out SeedDef seed)
         {
             seed = null;
@@ -259,7 +261,8 @@ namespace CoastRun
             {
                 if (seed.rice > 0) LifeItems.Add(s, "ing_rice", seed.rice);
                 if (seed.food > 0) LifeItems.Add(s, "ing_veg", seed.food);
-                if (seed.rose) s.stats.stress = 0;
+                // 74차: 꽃 한 송이로 스트레스를 0 으로 지우던 건 너무 셌다(관리가 무의미) → -25.
+                if (seed.rose) { s.stats.stress = Mathf.Max(0, s.stats.stress - 25); s.stats.Clamp(); }
                 s.flowersSold++;
                 LifeItems.SyncLegacy(s);
             }
@@ -304,6 +307,7 @@ namespace CoastRun
             if (RewardPlaysLeft(s) <= 0) return 0;
             s.miniGamePlays++;
             s.stats.money += amount;
+            s.stats.stress = Mathf.Max(0, s.stats.stress - MiniGameStressRelief);
             return amount;
         }
     }
