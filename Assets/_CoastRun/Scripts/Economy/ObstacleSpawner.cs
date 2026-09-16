@@ -99,6 +99,11 @@ namespace CoastRun
                     Destroy(_root.GetChild(i).gameObject);
             _rowsUntilPad = 2;
             _padsSinceLine = 0;
+            // 95차-3(사용자: 「케이팝 데미지가 또 안 된다」): 억제를 여기서 반드시 푼다.
+            //   K-POP 은 곡 끝 8초(아웃트로)와 보스전마다 SetSuppressed(true) 를 걸고, 끄는 쪽은
+            //   코루틴 끝(보스)이나 보너스타임 종료뿐이었다 → 곡이 끝나거나 보스 중에 죽으면 억제가 남아
+            //   **다음 런부터 장애물이 아예 안 나와** 「맞아도 피해가 없다」로 보였다.
+            _suppressed = false;
         }
 
         private bool _suppressed;

@@ -47,6 +47,7 @@ namespace CoastRun
         private CoinWallet _wallet;
 
         private Text _scoreText;
+        private Text _godBadge;   // 95차-3: God mode(Dev) 켜짐 표시 — 매 프레임 켜고 끈다
         private Text _multText;
         private Text _coinText;
         private RectTransform _multBadge;
@@ -99,14 +100,14 @@ namespace CoastRun
             BuildCoinPill(root);
             BuildWeatherChip(root);
             BuildHealthBar(root);
-            if (PlayerController.DebugGod)
-            {
-                // 76차: God mode 가 켜져 있으면 눈에 띄게 — 조용히 켜진 채로 「피해가 안 닳는다」로 오해하지 않게
-                var god = CoastHudLayout.MakeText(root, "GodBadge", "GOD · 피해 무시(Dev)", 18, TextAnchor.MiddleLeft,
-                    new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(8f, -160f), new Vector2(260f, -130f));
-                god.fontStyle = FontStyle.Bold; god.color = new Color(1f, 0.3f, 0.3f); god.raycastTarget = false;
-                CoastUiArt.OutlineText(god, new Color(0.2f, 0f, 0f, 0.9f), 2f);
-            }
+            // 76차: God mode 가 켜져 있으면 눈에 띄게 — 조용히 켜진 채로 「피해가 안 닳는다」로 오해하지 않게
+            // 95차-3: 배지를 늘 만들어 두고 매 프레임 켜고 끈다 — 전엔 HUD 를 만드는 순간에만 검사해서,
+            //   달리는 중에 God mode 가 켜지면(단축키 오타) 배지 없이 무적이 되어 원인을 못 찾았다.
+            _godBadge = CoastHudLayout.MakeText(root, "GodBadge", "GOD · 피해 무시(Dev)", 18, TextAnchor.MiddleLeft,
+                new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(8f, -160f), new Vector2(260f, -130f));
+            _godBadge.fontStyle = FontStyle.Bold; _godBadge.color = new Color(1f, 0.3f, 0.3f); _godBadge.raycastTarget = false;
+            CoastUiArt.OutlineText(_godBadge, new Color(0.2f, 0f, 0f, 0.9f), 2f);
+            _godBadge.gameObject.SetActive(PlayerController.DebugGod);
             // (노을 시계는 UI_FinalDestinationController 의 여정 바/타이머가 맡는다 — BuildSunMeter 는 예비)
             BuildHeartsGoal(root);
             BuildBonusBanner(root);
@@ -1238,6 +1239,8 @@ namespace CoastRun
 #endif
             UpdateCookieHud();
             RefreshWeatherChip();
+            if (_godBadge != null && _godBadge.gameObject.activeSelf != PlayerController.DebugGod)
+                _godBadge.gameObject.SetActive(PlayerController.DebugGod);
             if (_timeDiscRt != null)
             {
                 float pulse = 1f + 0.04f * Mathf.Sin(Time.unscaledTime * (_shownNight ? 2.2f : 3.4f));

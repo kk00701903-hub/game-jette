@@ -172,7 +172,25 @@ namespace CoastRun.EditorTools
             if (sp != null) sp.DebugSpawnPadAhead();
         }
 
-        [MenuItem("Coast Run/Debug/God mode (toggle) %#&g")]
+        /// 95차-3: God mode 는 **한 세션짜리**다. PlayerPrefs 에 남아 다음에 에디터를 열었을 때도
+        ///   켜진 채였던 것이 76차·95차 「피해가 안 들어간다」의 원인이었다 → 에디터를 열 때마다 끄고,
+        ///   켜져 있었다면 왜 껐는지 로그로 알린다.
+        [InitializeOnLoad]
+        private static class GodModeIsSessionOnly
+        {
+            static GodModeIsSessionOnly()
+            {
+                if (!PlayerController.DebugGod) return;
+                PlayerController.DebugGod = false;
+                Debug.LogWarning("[Dev] God mode 가 켜진 채 남아 있어 껐습니다 — 장애물 피해가 전부 무시되던 상태였습니다."
+                                 + " 필요하면 Coast Run/Debug/God mode (toggle) 로 다시 켜세요(이 세션만 유지).");
+            }
+        }
+
+        /// 95차-3(사용자: 「케이팝 데미지가 또 안 된다」): 단축키를 뗀다. Ctrl+Alt+Shift+G 가
+        ///   게임뷰 S25 프리셋·게이트 테스트 세이브와 겹쳐, 다른 걸 누르려다 God mode 가 조용히 켜지면
+        ///   장애물 피해가 전부 무시된다(76차와 같은 증상). 토글은 메뉴에서만.
+        [MenuItem("Coast Run/Debug/God mode (toggle)")]
         public static void ToggleGod()
         {
             PlayerController.DebugGod = !PlayerController.DebugGod;

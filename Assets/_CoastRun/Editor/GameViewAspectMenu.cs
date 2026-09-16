@@ -20,8 +20,10 @@ namespace CoastRun.Editor
 
         /// 95차(사용자: 「갤럭시 S25 기준으로 유니티 화면 사이즈 조정」): 기본 개발 크기.
         ///   S25 · S25 Edge = 1080×2340(19.5:9), S25+ · S25 Ultra = 1440×3120(19.5:9) — 비율이 같아 배치는 하나로 본다.
-        ///   단축키 Ctrl+Alt+Shift+G.
-        [MenuItem("Coast Run/Debug/Game view 갤럭시 S25 1080x2340 (기본) %#&g")]
+        /// 95차-3(사용자: 「케이팝 데미지가 또 안 된다」): 여기 달려 있던 Ctrl+Alt+Shift+G 는
+        ///   「God mode (toggle)」·「게이트 테스트 세이브」와 같은 조합이었다. 게임뷰를 S25로 바꾸려고 누를 때마다
+        ///   God mode 가 같이 켜져 장애물 피해가 전부 무시됐다(76차와 같은 증상) → 단축키를 뗀다.
+        [MenuItem("Coast Run/Debug/Game view 갤럭시 S25 1080x2340 (기본)")]
         public static void SetGalaxyS25() => Select(GalaxyS25Label, 1080, 2340);
 
         [MenuItem("Coast Run/Debug/Game view 갤럭시 S25 Ultra 1440x3120")]

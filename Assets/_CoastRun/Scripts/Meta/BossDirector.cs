@@ -49,7 +49,15 @@ namespace CoastRun
         }
 
         private void Awake() => Instance = this;
-        private void OnDestroy() { if (Instance == this) Instance = null; Active = false; if (_player != null && Mathf.Approximately(_player.SpeedBoost, _applied)) _player.SpeedBoost = 1f; }
+        private void OnDestroy()
+        {
+            if (Instance == this) Instance = null;
+            // 95차-3: 보스전 중에 파괴되면(사망·완주 결과로 FreezeWorldForResult 가 지운다) BossPhase 코루틴이
+            //   끊겨 장애물 억제가 그대로 남았다 → 여기서 반드시 푼다(스포너도 ResetForStage 에서 한 번 더 푼다).
+            if (Active) _obstacles?.SetSuppressed(false);
+            Active = false;
+            if (_player != null && Mathf.Approximately(_player.SpeedBoost, _applied)) _player.SpeedBoost = 1f;
+        }
 
         /// 곡 창(길이 L)에 보스 시각을 배치. 보스전은 3초 뒤부터 20초마다 계속.
         private void Plan()
