@@ -814,26 +814,6 @@ namespace CoastRun
             return pick;
         }
 
-        /// 74차: 카드에 붙는 효과 요약 — 돈·스탯·스트레스·성공률. 「놀기」 안에서 푸는 놀이와 빡센 연습이
-        ///   갈리므로(스트레스 부호가 다르다) 고르기 전에 숫자가 보여야 선택이 된다.
-        private string CardNote(ScheduleDef d)
-        {
-            if (d == null || Save == null) return null;
-            var s = Save.stats;
-            var parts = new List<string>();
-            if (d.dMoney != 0) parts.Add($"{d.dMoney:+#;-#}G");
-            if (d.dStamina != 0) parts.Add(Loc.T($"체력{d.dStamina:+#;-#}", $"STA{d.dStamina:+#;-#}"));
-            if (d.dAgility != 0) parts.Add(Loc.T($"순발{d.dAgility:+#;-#}", $"AGI{d.dAgility:+#;-#}"));
-            if (d.dCharm != 0) parts.Add(Loc.T($"매력{d.dCharm:+#;-#}", $"CHA{d.dCharm:+#;-#}"));
-            if (d.dSense != 0) parts.Add(Loc.T($"감성{d.dSense:+#;-#}", $"SEN{d.dSense:+#;-#}"));
-            if (d.dStress != 0) parts.Add(Loc.T($"스트레스{d.dStress:+#;-#}", $"stress{d.dStress:+#;-#}"));
-            string head = parts.Count > 0 ? string.Join(" · ", parts) : "";
-            if (d.category == ScheduleCategory.Rest || d.category == ScheduleCategory.Story || d.deterministic) return head;
-            ScheduleJudge.Rhythm = Save.rhythm; ScheduleJudge.SnackOn = Save.snackOn; ScheduleJudge.Condition = Save.condition;
-            float p = ScheduleJudge.SuccessChance(d, s);
-            return head + Loc.T($"\n성공 {p:P0}", $"\nsuccess {p:P0}");
-        }
-
         private IEnumerator CardPickRoutine(int idx, List<ScheduleDef> cards)
         {
             _busy = true;
@@ -883,7 +863,7 @@ namespace CoastRun
                     tabs[Mathf.Clamp(i, 0, tabs.Length - 1)],
                     new Vector2(x0 + cardW * 0.5f + i * (cardW + gap), -10f),
                     new Vector2(cardW, cardH),
-                    () => { chosen = captured; }, CardNote(def));
+                    () => { chosen = captured; });
             }
 
             // 하단 작은 취소(∨)
