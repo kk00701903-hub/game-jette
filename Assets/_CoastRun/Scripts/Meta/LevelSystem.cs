@@ -2,9 +2,9 @@ using UnityEngine;
 
 namespace CoastRun
 {
-    /// 53차(사용자): 육성 **레벨·경험치**. 젤리는 경험치로(통화 아님), 행동·러닝·미니게임·이야기가 경험치를 준다.
+    /// 53차(사용자): 육성 **레벨·경험치**. 젤리·행동·러닝·미니게임·이야기가 경험치를 준다.
     ///   레벨업마다 스탯이 조금씩 오르고(체력 +2·순발력 +1·매력 +1·감성 +1), 러닝 코인 +1 %/Lv(최대 +30 %).
-    ///   롱컷씬은 레벨이 되어야 열린다(LevelForLongCut) — 롱컷이 K-POP 11챕터+를 여니 레벨이 「킥」.
+    ///   스토리 컷씬/엔딩은 레벨로 잠그지 않는다 — K-POP 은 돈·아이템 파밍용.
     ///   필요 경험치 Need(L) = 80 + 40·L (Lv1→2 120, Lv10→11 480, Lv20→21 880). 상한 MaxLevel.
     public static class LevelSystem
     {
@@ -59,32 +59,13 @@ namespace CoastRun
         /// 러닝 코인 배수: +1 %/Lv, 최대 +30 %.
         public static float CoinMul(SaveData s) => 1f + Mathf.Min(0.30f, 0.01f * ((s != null ? Mathf.Max(1, s.level) : 1) - 1));
 
-        /// 롱컷씬 레벨 조건: CH4 Lv3 · CH7 Lv5 · CH10 Lv7 · CH13 Lv9 · CH15(마지막 롱컷) Lv12 · 엔딩(CH20) Lv15.
-        public static int LevelForLongCut(int chapter)
-        {
-            switch (chapter)
-            {
-                case 4: return 3;
-                case 7: return 5;
-                case 10: return 7;
-                case 13: return 9;
-                case 15: return 12;
-                case 20: return 15;
-                default: return 1;
-            }
-        }
-        public static bool LongCutOpen(int chapter) => Level >= LevelForLongCut(chapter) || (GameManager.I != null && GameManager.I.DevUnlockAll);
+        /// (호환) 예전 롱컷 레벨표 — 스토리는 더 이상 레벨로 잠기지 않는다.
+        public static int LevelForLongCut(int chapter) => 1;
+        public static bool LongCutOpen(int chapter) => true;
 
-        /// 다음에 열리는 롱컷(레벨 부족한 것 중 가장 낮은) — 상태창 힌트.
-        public static string NextUnlockHint()
-        {
-            int[] chs = { 4, 7, 10, 13, 15, 20 };
-            string[] ko = { "롱컷 「하트」", "롱컷 「우리 기지」", "롱컷 「열두 개의 초」", "롱컷 「그 밤」", "롱컷 「스무 살」", "엔딩" };
-            string[] en = { "long cut 'Heart'", "long cut 'Our Base'", "long cut 'Twelve Candles'", "long cut 'That Night'", "long cut 'Twenty'", "the ending" };
-            for (int i = 0; i < chs.Length; i++)
-                if (Level < LevelForLongCut(chs[i])) return Loc.T($"Lv {LevelForLongCut(chs[i])} 에 {ko[i]} 열림", $"Lv {LevelForLongCut(chs[i])} opens {en[i]}");
-            return Loc.T("모든 롱컷이 레벨 조건을 넘었어요", "All long cuts are level-ready");
-        }
+        /// 상태창 힌트 — 레벨 게이트 없음.
+        public static string NextUnlockHint() =>
+            Loc.T("K-POP 런으로 돈·아이템을 모아 스토리에 쓰세요", "Farm money & items in K-POP for story mode");
 
         /// 칭호(5레벨마다).
         public static string Title(int level)

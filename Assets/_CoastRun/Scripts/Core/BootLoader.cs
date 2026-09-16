@@ -24,6 +24,7 @@ namespace CoastRun
         {
             TitleAudio.PlayMenuEarly();   // 48차-6: 켜자마자 타이틀 BGM(M5)
             var dir = GameDirector.EnsureExists();
+            CoastSystemBars.ApplyImmersive();
             dir.Flow.BootToTitle();
         }
     }

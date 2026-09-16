@@ -298,6 +298,7 @@ namespace CoastRun
             if (input != null)
                 input.enabled = false;
             _bonus?.ForceEnd();
+            FreezeWorldForResult();
             if (ArcadeRun.Active)
             {
                 ArcadeRunOver();
@@ -320,6 +321,7 @@ namespace CoastRun
                         GameManager.I.ReturnToRaisingAfterFail();
                         return;
                     }
+                    ArcadeRun.ClearSession();
                     var flow = GameDirector.Instance != null ? GameDirector.Instance.Flow : null;
                     if (flow != null)
                         _ = flow.GoTo(FlowState.Title, TransitionType.Fade);
@@ -330,6 +332,7 @@ namespace CoastRun
         /// 아케이드(K-POP 포함) 런 종료: 점수 정산 + 결과창(다시/나가기). 사망·완주 공용.
         private void ArcadeRunOver()
         {
+            FreezeWorldForResult();
             runStats?.EndStage();
             ArcadeRun.Settle(GameManager.I, runStats);
             // 38차: K-POP 러닝도 시안 결과 화면(아쉽지만 다음에!)으로 — 옛 '노을 달리기 결과' 카드는 안 쓴다. 48차: 완주면 「한 곡 완주!」 변형.
@@ -345,7 +348,19 @@ namespace CoastRun
             IsRunning = false;
             if (input != null) input.enabled = false;
             _bonus?.ForceEnd();
+            FreezeWorldForResult();
             ArcadeRunOver();
+        }
+
+        /// 결과 UI 동안 플레이어·스테이지·스포너를 멈춰 백그라운드 동전/꽈당이 안 나게.
+        private void FreezeWorldForResult()
+        {
+            player?.HaltForResult();
+            stages?.HaltForResult();
+            if (obstacles != null) obstacles.enabled = false;
+            if (coins != null) coins.enabled = false;
+            if (_jellies != null) _jellies.enabled = false;
+            if (BossDirector.Instance != null) Destroy(BossDirector.Instance.gameObject);
         }
 
         private void HandleStageStart(StageDef stage)
@@ -356,20 +371,29 @@ namespace CoastRun
             else StoryContest.End();
             if (ArcadeRun.Active) ArcadeRun.OnStageBegin();
             _bonus?.ForceEnd();
+            // 튜닝(최대 HP)을 먼저 맞춘 뒤 채운다 — 예전엔 ResetFull이 옛 max로 채운 뒤 ApplyTuning만 해서
+            // 체력 스탯 높은 런이 절반 게이지로 시작하거나, K-POP↔스토리 전환 시 수치가 어긋났다.
+            _health?.ApplyTuning();
             _health?.ResetFull();
             if (_jellies != null && player != null)
             {
                 _jellies.ConfigureHearts(stage.targetDistance);
                 _jellies.ResetForStage(stage.stageIndex, player.PathDistance);
             }
-            _health?.ApplyTuning();
             _pet?.ResetForStage();
             // Same seed per stage: a retry replays the same course, so the player is
             // learning a layout rather than fighting a new random one each attempt.
-            if (obstacles != null && player != null)
-                obstacles.ResetForStage(stage.stageIndex, player.PathDistance);
-            if (coins != null && player != null)
-                coins.ResetForStage(stage.stageIndex, player.PathDistance);
+            if (obstacles != null)
+            {
+                obstacles.enabled = true;
+                if (player != null) obstacles.ResetForStage(stage.stageIndex, player.PathDistance);
+            }
+            if (coins != null)
+            {
+                coins.enabled = true;
+                if (player != null) coins.ResetForStage(stage.stageIndex, player.PathDistance);
+            }
+            if (_jellies != null) _jellies.enabled = true;
             // Prefill promenade tiles before the first Update — avoids bare road + backdrop seam.
             map?.WarmStart(player != null ? player.PathDistance : 0f);
             // 35차: 계절별 날씨(눈·비·바람) — 런마다 다르게, 런 중에도 45~90초마다 바뀐다

@@ -48,6 +48,7 @@ namespace CoastRun
         private float _startHold;       // 출발 연출: 잠시 속도 0
         private float _laneFrom;        // lane easing: where the last change started
         private float _laneT = 1f;      // 0..1 progress of the current lane change
+        private float _speedRecoverBoost;   // 피격 감속 후 가속 회복을 잠깐 빠르게
         private bool _tucking;
         private SkateState _state = SkateState.Run;
 
@@ -137,6 +138,8 @@ namespace CoastRun
             EndGlide();
             _softHitTimer = 0f;
             _inputFreezeTimer = 0f;
+            _iFrameTimer = 0f;
+            _speedRecoverBoost = 0f;
             _startHold = 0f;
             _verticalVelocity = 0f;
             if (config != null)
@@ -274,11 +277,11 @@ namespace CoastRun
         private void UpdateSoftHit()
         {
             if (_iFrameTimer > 0f)
-                _iFrameTimer -= Time.deltaTime;
+                _iFrameTimer -= Time.unscaledDeltaTime;   // HitStop 중에도 경직 창이 실시간으로 끝나게
             if (_softHitTimer <= 0f)
                 return;
 
-            _softHitTimer -= Time.deltaTime;
+            _softHitTimer -= Time.unscaledDeltaTime;
             if (_softHitTimer <= 0f && _state == SkateState.SoftHit)
                 _state = SkateState.Run;
         }
@@ -309,8 +312,10 @@ namespace CoastRun
                 target *= config.tuckMultiplier;
             target *= Mathf.Max(0.1f, SpeedBoost);
 
-            // 계단 사이는 1.5 m/s² 로 붙고, 부스터 아이템·감속은 즉시.
-            float rate = (target > _speed && SpeedBoost <= 1.01f) ? 1.5f : 20f;
+            // 계단 사이는 1.5 m/s², 피격 직후 회복은 더 빠르게(전엔 수 초간 「갑자기 느려짐」). 부스터·감속은 즉시.
+            if (_speedRecoverBoost > 0f) _speedRecoverBoost -= Time.deltaTime;
+            float climb = (_speedRecoverBoost > 0f) ? 10f : 1.5f;
+            float rate = (target > _speed && SpeedBoost <= 1.01f) ? climb : 20f;
             _speed = Mathf.MoveTowards(_speed, target, rate * Time.deltaTime);
         }
 
@@ -536,13 +541,11 @@ namespace CoastRun
             float prevLateral = _lateral;
             if (_laneT < 1f)
             {
-                // 7차: 부드럽게 — 시간을 늘리고(0.15→0.30s) ease-in-out(smootherstep)으로 출발·도착이 둘 다 완만하게.
-                // 이동 중 다시 스와이프하면 _laneFrom이 현재 위치라 꺾이지 않고 이어서 휜다.
+                // 7차: 부드럽게 — 시간을 늘리고 ease. HitStop(timeScale↓) 중에도 좌우가 안 늘어지게 unscaled 사용.
                 float dur = Mathf.Max(0.12f, config.laneChangeSeconds * LaneEaseScale * RunTuning.LaneMul);
-                _laneT = Mathf.Min(1f, _laneT + Time.deltaTime / dur);
+                _laneT = Mathf.Min(1f, _laneT + Time.unscaledDeltaTime / dur);
                 float t = _laneT;
-                // 14차-9: ease-out(즉시 출발, 부드럽게 도착) — 스와이프 직후 몸이 바로 움직여 반응이 '붙는다'.
-                // 27차: easeOutBack — 목표를 살짝 지나쳤다가 튕겨 돌아온다(laneOvershoot 0.6 ≈ 레인 폭의 3~4%). 고무 같은 도착.
+                // 14차-9: ease-out · 27차: easeOutBack
                 float c1 = config != null ? config.laneOvershoot : 0f;
                 float u = t - 1f;
                 float e = c1 > 0.001f ? 1f + (c1 + 1f) * u * u * u + c1 * u * u : 1f - (1f - t) * (1f - t) * (1f - t);
@@ -552,7 +555,9 @@ namespace CoastRun
             {
                 _lateral = laneTarget;
             }
-            LateralVelocity = Time.deltaTime > 0f ? (_lateral - prevLateral) / Time.deltaTime : 0f;
+            // 레인 이동이 unscaled 이므로 속도도 unscaled 기준(히트스톱 중 deltaTime≈0 이면 카메라 기울기가 폭발하던 것).
+            float latDt = Time.unscaledDeltaTime;
+            LateralVelocity = latDt > 1e-5f ? (_lateral - prevLateral) / latDt : 0f;
 
             bool wasGrounded = _state != SkateState.Air;
             if (_gliding)
@@ -630,7 +635,11 @@ namespace CoastRun
 
         /// Call from obstacle triggers — casual soft fail, no hard death by default.
         /// Camera / SFX juice is owned by JuiceDirector (subscribed to OnSoftHit).
-        public void SoftHit() => SoftHit(HitKind.Trip, 0);
+        public void SoftHit()
+        {
+            PendingHitDamageMul = ObstacleHazard.DefaultFrac;
+            SoftHit(HitKind.Trip, 0);
+        }
 
         /// Trip: a knee-high thing (hurdle, cone) — she stumbles over it and keeps her
         /// lane. Bounce: a solid body (car, crate, bench) — she is knocked sideways into
@@ -644,7 +653,8 @@ namespace CoastRun
         public float PendingHitDamageMul = ObstacleHazard.DefaultFrac;   // 71차: 최대 체력 비율
         /// 76차: 피해 이벤트(HealthSystem 이 듣는다). OnSoftHit(경직·꽈당 연출)와 분리 — 경직 창 안의 충돌도 피해는 낸다.
         public event Action OnHitDamage;
-        /// 같은 장애물의 겹친 콜라이더(버스 몸통+앞범퍼 등)가 두 번 피해를 내지 않게 하는 아주 짧은 디바운스. 레인 이동(0.2 s)보다 짧아야 옆 레인 장애물은 따로 맞는다.
+        /// 같은 장애물의 겹친 콜라이더가 두 번 피해를 내지 않게 하는 디바운스(실시간).
+        /// HitStop 중 Time.time 이 거의 안 가서 피해가 수 초간 막히던 버그 → unscaled 사용.
         public const float SameHitDebounce = 0.15f;
         private float _lastDamageTime = -10f;
 
@@ -665,18 +675,21 @@ namespace CoastRun
 
             if (Invincible || FeverMode.Active)
             {
+                PendingHitDamageMul = ObstacleHazard.DefaultFrac;
                 if (DebugGod) Debug.LogWarning("[Hit] 무시 — God mode(Coast Run/Dev/God mode - OFF 로 끌 것)");
                 return false;
             }
 
-            // 76차: 피해는 무적프레임과 무관하게 매 충돌마다(최소 HP 30 은 HealthSystem 이 보장). 겹친 콜라이더만 0.15 s 디바운스.
-            if (Time.time - _lastDamageTime > SameHitDebounce)
+            // 피해는 무적프레임과 무관하게 매 충돌마다. 겹친 콜라이더만 0.15 s(실시간) 디바운스.
+            if (Time.unscaledTime - _lastDamageTime > SameHitDebounce)
             {
-                _lastDamageTime = Time.time;
+                _lastDamageTime = Time.unscaledTime;
                 StageRunStats.Instance?.NotifySoftHit();
                 if (ArcadeRun.Active) ArcadeRun.OnHit();
                 OnHitDamage?.Invoke();
             }
+            else
+                PendingHitDamageMul = ObstacleHazard.DefaultFrac;
 
             if (_iFrameTimer > 0f)
                 return false;   // 경직·넉백은 겹치지 않게(피해는 위에서 이미 적용)
@@ -684,7 +697,11 @@ namespace CoastRun
             _state = SkateState.SoftHit;
             _softHitTimer = config.softHitRecoverSeconds * RunTuning.HitFreezeMul;
             _iFrameTimer = RunTuning.DashInvincible;
-            if (!NoHitSlow) _speed *= config.softHitSlowFactor;
+            if (!NoHitSlow)
+            {
+                _speed *= config.softHitSlowFactor;
+                _speedRecoverBoost = 2.8f;   // SoftHit 끝난 뒤 가속 회복 빠르게
+            }
             _tucking = false;
 
             LastHitKind = kind;
@@ -718,6 +735,18 @@ namespace CoastRun
             _laneFrom = _lane * config.laneOffset;
             _verticalVelocity = 0f;
             _hop = _groundY + _bodyHeight * 0.5f;
+            SnapToPath();
+        }
+
+        /// 결과창(사망·완주) — 즉시 정지. FinishRun 감속만으로는 timeScale 0 동안 속도가 안 줄어 워치독이 월드를 다시 푼다.
+        public void HaltForResult()
+        {
+            if (_gliding) EndGlide();
+            _state = SkateState.Finish;
+            _speed = 0f;
+            _verticalVelocity = 0f;
+            _softHitTimer = 0f;
+            _inputFreezeTimer = 0f;
             SnapToPath();
         }
 

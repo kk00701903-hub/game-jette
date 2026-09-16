@@ -1232,7 +1232,7 @@ namespace CoastRun
                 case "job_haenyeo": case "les_swim": case "rest_sea": return "Haenyeo";
                 case "dev_dance": case "les_dance": return "Dance";
                 case "dev_skate": case "dev_oreum": case "les_skate": case "les_gym": return "Skate";
-                case "rest_home": return "Sleep";
+                case "rest_home": case "rest_nap": return "Sleep";
                 case "les_cook": return "Eat";
                 case "dev_radio": case "job_dj_assist": case "les_ham": return "Laugh";
                 default: return null;
@@ -1506,19 +1506,12 @@ namespace CoastRun
             Refresh();
             yield return ShowWeekSummary(_weekSnap, endSnap, _weekGreat, _weekFail);
             _weekSnapValid = false;
+            // 옛 SIDE 미니컷씬 큐 — 재생하지 않고 보상만 준 뒤 비움.
             if (!string.IsNullOrEmpty(_gm.PendingSideScene))
             {
-                // 6차: NPC 호감도 문턱 사이드 씬
                 string side = _gm.PendingSideScene; _gm.PendingSideScene = null;
                 int lvl = side.EndsWith("_3") ? 3 : side.EndsWith("_2") ? 2 : 1;
-                CoastToast.Show(Loc.T($"사이드 해금 · {side}", $"Side unlocked · {side}"));
-                bool doneVn = false;
-                ChapterVN.Play(side, () => doneVn = true);
-                while (!doneVn) yield return null;
-                Affinity.Reward(Save, lvl);
-                _gm.Persist();
-                Refresh();
-                CoastToast.Show(Loc.T($"호감도 {lvl}단계 — 보상을 받았어요.", $"Affinity level {lvl} — reward received."));
+                Affinity.Reward(Save, lvl); _gm.Persist(); Refresh();
             }
             if (!string.IsNullOrEmpty(_gm.PendingWeekNote))
             {

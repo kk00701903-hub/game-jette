@@ -338,8 +338,8 @@ namespace CoastRun
             if (tex == null) return false;
             if (!_sideMats.TryGetValue(key, out var mat) || mat == null)
             {
-                var shader = Shader.Find("CoastRun/ChromaUnlit") ?? CoastMaterials.UnlitShader;
-                mat = new Material(shader);
+                var shader = CoastMaterials.Require("CoastRun/ChromaUnlit", "CoastRun/UnlitCurved", "Universal Render Pipeline/Unlit", "Sprites/Default");
+                mat = CoastMaterials.NewMat(shader);
                 tex.wrapMode = TextureWrapMode.Repeat;
                 if (mat.HasProperty("_BaseMap")) mat.SetTexture("_BaseMap", tex); else mat.mainTexture = tex;
                 if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", Color.white);

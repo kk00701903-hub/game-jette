@@ -68,9 +68,15 @@ namespace CoastRun
         /// 통일 글꼴(Jua/Pretendard-Bold)이면 가짜 볼드를 끈다 — Jua 는 단일 굵기라 Bold 스타일을 주면 뭉개진다.
         public static bool HasRealBold => _display != null || _bold != null;
 
-        /// 10차: 모바일 가독성 — 모든 헬퍼 글자를 한 번에 키운다(×1.15, 최소 14). 레이아웃 숫자는 그대로, Overflow 로 넘친다.
-        public const float TextScale = 1.4f;   // 14차-8: 폰 기준 한 단계 더(최소 19) // 11차: 갤럭시 S(6.7", 2340×1080) 기준 본문 16sp ≈ 기준 캔버스 22 → 최소 16
-        public static int Scaled(int size) => Mathf.Max(size >= 10 ? 19 : size, Mathf.RoundToInt(size * TextScale));
+        /// 10차: 모바일 가독성 — 헬퍼 글자 ×TextScale. 절대 하한 10(그 아래는 폰에서 안 보임).
+        public const float TextScale = 1.4f;
+        public const int MinFontSize = 10;
+        public static int Scaled(int size)
+        {
+            int s = Mathf.RoundToInt(Mathf.Max(1, size) * TextScale);
+            if (size >= 10) s = Mathf.Max(19, s);
+            return Mathf.Max(MinFontSize, s);
+        }
 
         public static Text MakeText(Transform parent, string name, string content, int size, TextAnchor align,
             Vector2 anchorMin, Vector2 anchorMax, Vector2 offsetMin, Vector2 offsetMax)

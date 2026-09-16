@@ -36,6 +36,12 @@ namespace CoastRun
             }
 
             EnsureCamera();
+            // 첫 오프닝이 바로 뜨면 M13 을 먼저 틀지 않음 — 모바일에서 오프닝 BGM 과 겹침
+            bool pendingOpen = gm.Save.chapter == 1 && !gm.Save.prologueSeen && !gm.Save.boundaryPending;
+            if (!pendingOpen)
+                TitleAudio.PlayRaising();   // 스토리 모드(육성) 배경 — BGM_M13 「하늘의 약속」
+            else
+                TitleAudio.StopMenuGlobal();
             _ui = gameObject.AddComponent<TamaRaisingUI>();
             _ui.Bind(gm);
 
@@ -46,9 +52,9 @@ namespace CoastRun
             }
             else if (gm.Save.phaseIndex == 0 && !gm.Save.HasQueuedSchedule)
             {
-                var ev = gm.RollRandomEvent();
-                if (ev.HasValue)
-                    _ui.ShowEvent(ev.Value);
+                var ev = gm.PeekRandomEvent();
+                if (ev != null)
+                    _ui.ShowEvent(ev);
             }
         }
 

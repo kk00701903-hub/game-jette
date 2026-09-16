@@ -105,20 +105,40 @@ namespace CoastRun
             return p;
         }
 
-        // ── 러닝 HUD: 위쪽 가운데 알약 「대회 이름 · 진행 · 남은 시간」 ──
+        // ── 러닝 HUD: 86차(사용자 시안) 큰 배너 — 노랑→하늘 그라데이션 알약(UI_Contest_Banner) + 깃발(UI_Contest_Flag) + 두 줄 파란 제목 + 오른쪽 「코인 120/120 · 2:26 · 3위」 ──
         private class ContestHud : MonoBehaviour
         {
-            private Canvas _canvas; private Text _t; private Image _pill; private bool _failShown;
+            private Canvas _canvas; private Text _t, _s; private Image _pill, _tint; private bool _failShown;
             private void Start()
             {
                 _canvas = CoastUiCanvas.Create("ContestHudCanvas", 300);
                 var root = CoastUiCanvas.Root(_canvas);
-                _pill = CoastUiArt.CutePill(root, "Pill", new Color(0.10f, 0.13f, 0.30f, 0.90f), 18, 3);
-                var rt = _pill.rectTransform; rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 1f); rt.pivot = new Vector2(0.5f, 1f);
-                rt.anchoredPosition = new Vector2(0f, -138f); rt.sizeDelta = new Vector2(460f, 50f); _pill.raycastTarget = false;
-                _t = CoastHudLayout.MakeText(rt, "T", "", 16, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(12f, 0f), new Vector2(-12f, 0f));
-                _t.color = Color.white; _t.fontStyle = FontStyle.Bold; CoastUiArt.OutlineText(_t, new Color(0f, 0f, 0f, 0.5f), 1.2f);
-                _t.resizeTextForBestFit = true; _t.resizeTextMinSize = 11; _t.resizeTextMaxSize = CoastHudLayout.Scaled(16);
+                var tex = ArtAssets.LoadTexture("UI_Contest_Banner");
+                _pill = CoastHudLayout.MakeImage(root, "Pill", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-300f, -297f), new Vector2(300f, -184f), Color.white);
+                if (tex != null) { _pill.sprite = CoastUiArt.AsSprite(tex); _pill.preserveAspect = false; }
+                else { _pill.sprite = CoastUiArt.RoundedRect(56); _pill.type = Image.Type.Sliced; _pill.color = new Color(1f, 0.93f, 0.50f); }
+                _pill.raycastTarget = false;
+                var rt = _pill.rectTransform;
+                _tint = CoastUiArt.Panel(rt, "Tint", new Color(0f, 0f, 0f, 0f), 52); _tint.raycastTarget = false;
+                _tint.rectTransform.anchorMin = Vector2.zero; _tint.rectTransform.anchorMax = Vector2.one; _tint.rectTransform.offsetMin = new Vector2(6f, 6f); _tint.rectTransform.offsetMax = new Vector2(-6f, -6f);
+                var ftex = ArtAssets.LoadTexture("UI_Contest_Flag");
+                var flag = CoastHudLayout.MakeImage(rt, "Flag", new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(10f, -48f), new Vector2(92f, 48f), Color.white);
+                if (ftex != null) { flag.sprite = CoastUiArt.AsSprite(ftex); flag.preserveAspect = true; } else flag.color = Color.clear;
+                flag.raycastTarget = false;
+                _t = CoastHudLayout.MakeText(rt, "T", "", 27, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(94f, 6f), new Vector2(-290f, -6f));
+                _t.color = new Color(0.01f, 0.08f, 0.58f); _t.fontStyle = FontStyle.Bold; CoastUiArt.OutlineText(_t, new Color(1f, 1f, 1f, 0.95f), 2.2f);
+                _t.horizontalOverflow = HorizontalWrapMode.Wrap; _t.resizeTextForBestFit = true; _t.resizeTextMinSize = 12; _t.resizeTextMaxSize = CoastHudLayout.Scaled(27);
+                var coin = CoastUiArt.Icon("Coin");
+                if (coin != null) { var ci = CoastHudLayout.MakeImage(rt, "CoinIc", new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-284f, -14f), new Vector2(-256f, 14f), Color.white); ci.sprite = coin; ci.preserveAspect = true; ci.raycastTarget = false; }
+                _s = CoastHudLayout.MakeText(rt, "S", "", 15, TextAnchor.MiddleLeft, new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(-252f, 10f), new Vector2(-14f, -10f));
+                _s.color = new Color(0.05f, 0.18f, 0.60f); _s.fontStyle = FontStyle.Bold; CoastUiArt.OutlineText(_s, new Color(1f, 1f, 1f, 0.9f), 1.4f);
+                _s.horizontalOverflow = HorizontalWrapMode.Wrap; _s.resizeTextForBestFit = true; _s.resizeTextMinSize = 10; _s.resizeTextMaxSize = CoastHudLayout.Scaled(15);
+                // 반짝이(시안: 왼쪽 위·오른쪽 위·오른쪽 아래)
+                foreach (var (ax, ay, sz) in new[] { (0.02f, 1.02f, 22), (0.96f, 1.0f, 18), (0.93f, 0.02f, 14) })
+                {
+                    var sp = CoastHudLayout.MakeText(rt, "Spark", "✦", sz, TextAnchor.MiddleCenter, new Vector2(ax, ay), new Vector2(ax, ay), new Vector2(-16f, -16f), new Vector2(16f, 16f));
+                    sp.color = new Color(1f, 0.95f, 0.55f); sp.raycastTarget = false; CoastUiArt.OutlineText(sp, new Color(1f, 1f, 1f, 0.8f), 1f);
+                }
             }
             private void Update()
             {
@@ -126,8 +146,12 @@ namespace CoastRun
                 var d = Current; float rem = Remaining;
                 bool met = GoalMet;
                 string rank = ContestRivals.RankText();   // 66차-1: 라이벌 순위
-                _t.text = $"{d.Name}  ·  {d.ShortGoal} {ProgressText()}  ·  {Mathf.FloorToInt(rem / 60f)}:{Mathf.FloorToInt(rem % 60f):00}" + (rank.Length > 0 ? $"  ·  {rank}" : "");
-                _pill.color = met ? new Color(0.15f, 0.45f, 0.25f, 0.92f) : rem < 20f ? new Color(0.55f, 0.15f, 0.15f, 0.92f) : new Color(0.10f, 0.13f, 0.30f, 0.90f);
+                string name = d.Name;
+                if (name.Length > 7 && !name.Contains("\n")) { int sp = name.IndexOf(' ', name.Length / 2 - 1); if (sp < 0) sp = name.LastIndexOf(' '); if (sp > 0) name = name.Substring(0, sp) + "\n" + name.Substring(sp + 1); }
+                _t.text = name;
+                string prog = d.goal == Goal.Finish ? Loc.T("완주", "Finish") : $"{Mathf.Min(Progress(), d.target)}/{d.target}";
+                _s.text = $"{prog}  ·  {Mathf.FloorToInt(rem / 60f)}:{Mathf.FloorToInt(rem % 60f):00}" + (rank.Length > 0 ? $"  ·  {rank}" : "");
+                _tint.color = met ? new Color(0.2f, 0.9f, 0.4f, 0.22f) : rem < 20f ? new Color(1f, 0.2f, 0.2f, 0.25f) : new Color(0f, 0f, 0f, 0f);
                 if (rem <= 0f && !met && !_failShown && d.goal != Goal.Finish)
                 {
                     // 시간 초과 — 목표를 못 채웠으면 그 자리에서 대회 종료

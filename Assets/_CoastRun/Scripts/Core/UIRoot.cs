@@ -4,7 +4,9 @@ using UnityEngine.UI;
 
 namespace CoastRun
 {
-    /// DDOL transition overlay — fade, white flash, loading art (not bare black).
+    /// DDOL transition overlay — solid fade / white flash only.
+    /// First-boot must never show UI_Loading_Mock (로딩중) — that art is retired;
+    /// the title scene plays Title_Bus.mp4 instead.
     /// Veil is parented to the Canvas (full bleed), not HudInset, so letterbox margins
     /// never show the live 3D world during a fade.
     public class UIRoot : MonoBehaviour
@@ -13,14 +15,6 @@ namespace CoastRun
         private Image _veil;
         private Image _loaderDot;
         private CanvasGroup _veilCg;
-        private Sprite _loadingSprite;
-        private bool _usingArt;
-        // 48차-8(사용자): 로딩 그림(UI_Loading_Mock) 위에 올라가는 %. 그림은 720×1280 시안 좌표라 1.5배 스케일 컨테이너 안에 그린다.
-        // 바를 가리던 LoadCover(남색 라운드)는 시안 초록 바 위에 검은 덩어리로 보여서 제거 — %만 애니.
-        private RectTransform _loadOverlay;
-        private Text _loadPct;
-        private float _loadT;
-        private const float LoadFillSeconds = 1.3f;
 
         public void EnsureBuilt()
         {
@@ -31,8 +25,6 @@ namespace CoastRun
             DontDestroyOnLoad(_canvas.gameObject);
 
             // Full-screen under the canvas root — NOT under PortraitSafeArea/HudInset.
-            // Inset padding + portrait letterbox left a black "card" with the run world
-            // peeking around the edges (exactly the bug the loading page was meant to hide).
             var veilGo = new GameObject("Veil", typeof(RectTransform), typeof(Image), typeof(CanvasGroup));
             veilGo.transform.SetParent(_canvas.transform, false);
             veilGo.transform.SetAsLastSibling();
@@ -42,16 +34,13 @@ namespace CoastRun
             rt.offsetMin = Vector2.zero;
             rt.offsetMax = Vector2.zero;
             _veil = veilGo.GetComponent<Image>();
+            _veil.sprite = null;
             _veil.color = Color.black;
             _veil.raycastTarget = true;
             _veil.preserveAspect = false;
             _veilCg = veilGo.GetComponent<CanvasGroup>();
             _veilCg.alpha = 0f;
             _veilCg.blocksRaycasts = false;
-
-            CacheLoadingSprite();
-            BuildLoadOverlay(veilGo.transform);
-            ApplyLoadingArt();
 
             var tipParent = CoastUiCanvas.Root(_canvas);
             var dotGo = new GameObject("LoaderDot", typeof(RectTransform), typeof(Image));
@@ -65,77 +54,11 @@ namespace CoastRun
             SetLoader(false);
         }
 
-        private void BuildLoadOverlay(Transform veil)
-        {
-            var go = new GameObject("LoadOverlay", typeof(RectTransform));
-            go.transform.SetParent(veil, false);
-            _loadOverlay = go.GetComponent<RectTransform>();
-            _loadOverlay.anchorMin = _loadOverlay.anchorMax = new Vector2(0.5f, 0.5f);
-            _loadOverlay.sizeDelta = new Vector2(720f, 1280f);
-            _loadOverlay.localScale = Vector3.one * 1.5f;   // 시안 좌표(720×1280) → 캔버스(1080×1920)
-
-            var tgo = new GameObject("LoadPct", typeof(RectTransform));
-            tgo.transform.SetParent(go.transform, false);
-            _loadPct = tgo.AddComponent<Text>();
-            _loadPct.font = CoastHudLayout.Font();
-            _loadPct.fontSize = 92; _loadPct.fontStyle = FontStyle.Bold;
-            _loadPct.alignment = TextAnchor.MiddleCenter;
-            _loadPct.color = new Color(0.80f, 0.93f, 1f);
-            _loadPct.raycastTarget = false;
-            _loadPct.horizontalOverflow = HorizontalWrapMode.Overflow; _loadPct.verticalOverflow = VerticalWrapMode.Overflow;
-            var prt = _loadPct.rectTransform;
-            prt.anchorMin = prt.anchorMax = new Vector2(0f, 1f);
-            prt.sizeDelta = new Vector2(520f, 150f);
-            prt.anchoredPosition = new Vector2(373f, -1105f);
-            CoastUiArt.OutlineText(_loadPct, Color.white, 4f);
-            var glow = tgo.AddComponent<Shadow>();
-            glow.effectColor = new Color(0.25f, 0.60f, 1f, 0.85f); glow.effectDistance = new Vector2(0f, -6f); glow.useGraphicAlpha = true;
-            SetLoadProgress(0f);
-        }
-
-        private void SetLoadProgress(float u)
-        {
-            if (_loadPct != null) _loadPct.text = Mathf.RoundToInt(Mathf.Clamp01(u) * 100f) + "%";
-        }
-
-        private void CacheLoadingSprite()
-        {
-            if (_loadingSprite != null) return;
-            var tex = Resources.Load<Texture2D>(ArtAssets.ResourceRoot + "UI_Loading_Mock")
-                ?? Resources.Load<Texture2D>(ArtAssets.ResourceRoot + "UI_LoadingScreen");
-            if (tex != null)
-                _loadingSprite = CoastUiArt.AsSprite(tex, 100f);
-        }
-
-        /// Prefer the painted loading page over a flat black rectangle.
-        private void ApplyLoadingArt()
-        {
-            CacheLoadingSprite();
-            if (_veil == null) return;
-            if (_loadingSprite != null)
-            {
-                _veil.sprite = _loadingSprite;
-                _veil.type = Image.Type.Simple;
-                _veil.preserveAspect = false;
-                _veil.color = Color.white;
-                _usingArt = true;
-            }
-            else
-            {
-                _veil.sprite = null;
-                _veil.color = Color.black;
-                _usingArt = false;
-            }
-            if (_loadOverlay != null) _loadOverlay.gameObject.SetActive(_usingArt);
-        }
-
         private void ApplySolid(Color c)
         {
             if (_veil == null) return;
             _veil.sprite = null;
             _veil.color = c;
-            _usingArt = false;
-            if (_loadOverlay != null) _loadOverlay.gameObject.SetActive(false);
         }
 
         /// 씬 전환 페이드 베일 알파(1=완전 가림). 챕터 시작 연출은 이게 내려간 뒤에 띄운다.
@@ -148,43 +71,28 @@ namespace CoastRun
             }
         }
 
-        /// 18차-5: 자기 치유 — 페이드 코루틴이 중간에 끊겨 '투명한데 입력만 막는' 베일이 남지 않게,
+        /// 18차-5: 페이드 코루틴이 중간에 끊겨 '투명한데 입력만 막는' 베일이 남지 않게,
         /// 매 프레임 알파와 레이캐스트 차단을 맞춘다(알파 1% 이하 = 통과).
         private void LateUpdate()
         {
             if (_veilCg == null) return;
             bool block = _veilCg.alpha > 0.01f;
             if (_veilCg.blocksRaycasts != block) _veilCg.blocksRaycasts = block;
-            // Keep veil above any late-spawned siblings on this canvas.
             if (block && _veil != null && _veil.transform.GetSiblingIndex() != _veil.transform.parent.childCount - 1)
                 _veil.transform.SetAsLastSibling();
-            // 로딩 그림이 덮고 있는 동안 숫자·바가 0→100% 로 올라간다(씬 로드 길이와 무관한 연출, 걷힐 때 100%).
-            if (_usingArt && _loadOverlay != null && _loadOverlay.gameObject.activeSelf)
-            {
-                if (_veilCg.alpha > 0.5f) _loadT += Time.unscaledDeltaTime;
-                float u = 1f - Mathf.Pow(1f - Mathf.Clamp01(_loadT / LoadFillSeconds), 1.6f);
-                if (_fadingOut) u = 1f;
-                SetLoadProgress(u);
-            }
         }
-        private bool _fadingOut;
 
         public void SetLoader(bool on)
         {
-            // Loading art already communicates progress — hide the tiny white dot when art is up.
             if (_loaderDot != null)
-                _loaderDot.enabled = on && !_usingArt;
+                _loaderDot.enabled = on;
         }
 
-        /// color null or black → loading art. Any other color → solid (e.g. white flash).
+        /// null → solid black. Pass a non-black color for flash/tint covers.
         public IEnumerator Fade(float from, float to, float duration, Color? color = null)
         {
             EnsureBuilt();
-            bool useArt = !color.HasValue || IsNearBlack(color.Value);
-            if (useArt) ApplyLoadingArt();
-            else ApplySolid(color.Value);
-            if (to > from) { _loadT = 0f; _fadingOut = false; SetLoadProgress(0f); }   // 덮기 시작 — 0%부터
-            else _fadingOut = true;                                                    // 걷기 — 100%
+            ApplySolid(color ?? Color.black);
 
             _veilCg.blocksRaycasts = true;
             float t = 0f;
@@ -200,10 +108,7 @@ namespace CoastRun
             _veilCg.alpha = to;
             _veilCg.blocksRaycasts = to > 0.01f;
             if (to <= 0.01f)
-            {
-                _fadingOut = false; _loadT = 0f; SetLoadProgress(0f);
-                ApplyLoadingArt(); // restore default look for the next cover
-            }
+                ApplySolid(Color.black);
         }
 
         public IEnumerator WhiteFlash(float flashSeconds, float fadeSeconds)
@@ -220,22 +125,15 @@ namespace CoastRun
             }
 
             yield return Fade(1f, 0f, fadeSeconds, Color.white);
-            ApplyLoadingArt();
+            ApplySolid(Color.black);
         }
 
         public void Snap(float alpha, Color? color = null)
         {
             EnsureBuilt();
-            bool useArt = !color.HasValue || IsNearBlack(color.Value);
-            if (useArt) ApplyLoadingArt();
-            else ApplySolid(color.Value);
-            if (alpha > 0.5f) { _loadT = 0f; _fadingOut = false; SetLoadProgress(0f); }
+            ApplySolid(color ?? Color.black);
             _veilCg.alpha = alpha;
             _veilCg.blocksRaycasts = alpha > 0.01f;
         }
-
-        private static bool IsNearBlack(Color c) =>
-            c.r < 0.08f && c.g < 0.08f && c.b < 0.08f && c.a > 0.5f;
     }
 }
-

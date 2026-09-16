@@ -63,34 +63,38 @@ namespace CoastRun
             var st = save.stats;
             int week = save.week;
             if (firstVisit)
-                _lines.Add(Loc.T("아가씨, 기억은 없어도 몸은 기억합니다. 아래 칸에 이번 주 할 일을 넣어 보세요.", "Miss, your body remembers even if you don't. Fill this week's slots below."));
+                _lines.Add(Loc.T("아가씨, 기억은 없어도 몸은 기억합니다. 아래 밥·놀기·알바를 눌러 카드를 골라 보세요.", "Miss, your body remembers. Tap Feed, Play or Work and pick a card."));
             if (st.Burnout)
-                _lines.Add(Loc.T("지금은 무리입니다. 이번 주는 휴식으로 채우시지요.", "Not now. Fill this week with rest."));
+                _lines.Add(Loc.T("지금은 무리입니다. 밥으로 쉬시는 게 좋겠습니다.", "Not now. Rest with Feed."));
             else if (st.stamina > 0 && st.stress / (float)st.stamina >= 0.7f)
-                _lines.Add(Loc.T("스트레스가 높습니다. 휴식 카드 한 장이면 다음 주가 편해집니다.", "Stress is high. One rest card makes next week easier."));
-            // PM: 게이트 임박·체력 부족 조언
+                _lines.Add(Loc.T("스트레스가 높습니다. 밥(휴식)이나 쓰다듬기로 기운을 돌려 주세요.", "Stress is high. Feed/rest or pet Haneul to recover."));
             int need = StoryGate.Required(save);
             int have = StoryGate.Stamina(save);
             bool gateSoon = week >= Timeline.WeekEnd(save.chapter);
             if (have < need)
             {
                 if (gateSoon)
-                    _lines.Add(Loc.T($"이번 주가 게이트입니다. 체력 {have}/{need} — 체력 카드를 넣으셔야 달릴 수 있습니다.", $"Gate week. Stamina {have}/{need} — put stamina cards or you can't run."));
+                    _lines.Add(Loc.T($"이번 주가 게이트입니다. 체력 {have}/{need} — 밥·연습으로 체력을 올리셔야 달립니다.", $"Gate week. Stamina {have}/{need} — Feed/Play to raise it or you can't run."));
                 else
-                    _lines.Add(Loc.T($"스토리 게이트까지 체력 {need - have}이 모자랍니다. 체육·오름을 넣어 두세요.", $"Need {need - have} more stamina for the story gate. Gym or oreum helps."));
+                    _lines.Add(Loc.T($"스토리 게이트까지 체력 {need - have}이 모자랍니다. 목표 리본을 보며 밥·놀기를 고르세요.", $"Need {need - have} more stamina. Use the goal ribbon when picking Feed/Play."));
             }
             if (st.money < 60)
-                _lines.Add(Loc.T("지갑이 가볍습니다. 알바 한 칸 넣어 두면 교육비를 댈 수 있습니다.", "Purse is light. One job slot pays for lessons."));
+                _lines.Add(Loc.T("지갑이 가볍습니다. 알바 카드를 골라 두면 장보기·교육비를 댑니다.", "Purse is light. Pick a Work card for shopping and lessons."));
+            var warn = Survival.Warning(save);
+            if (warn != null)
+                _lines.Add(Loc.T("생활이 위험합니다. 장보기부터 하세요 — " + warn, "Survival risk — open Shop. " + warn));
             int lowest = Mathf.Min(st.stamina, Mathf.Min(st.agility, st.charm));
             string low = lowest == st.stamina ? Loc.T("체력", "stamina") : lowest == st.agility ? Loc.T("순발력", "agility") : Loc.T("매력", "charm");
-            _lines.Add(Loc.T($"지금 가장 낮은 건 {low}입니다. 그쪽 교육을 넣으시면 달리기가 달라집니다.", $"{low} is lowest right now. A lesson there changes the run."));
+            _lines.Add(Loc.T($"지금 가장 낮은 건 {low}입니다. 놀기에서 교육 카드가 뜨면 골라 보세요.", $"{low} is lowest. If a Lesson card appears under Play, take it."));
             var rec = save.CurrentChapter;
-            if (rec != null && rec.heartsTarget > 0)
+            if (rec != null)
             {
-                int left = rec.heartsTarget - save.chapterHearts;
-                if (left > 0) _lines.Add(Loc.T($"이번 장 하트가 {left}개 남았습니다. 달리기에서 모아 오시면 됩니다.", $"{left} hearts left this chapter. Collect them on the run."));
+                int target = rec.heartsTarget > 0 ? rec.heartsTarget : ChapterGrading.HeartTarget(save.chapter);
+                int sCut = Mathf.CeilToInt(target * ChapterGrading.S_Ratio);
+                int left = sCut - save.chapterHearts;
+                if (left > 0) _lines.Add(Loc.T($"S컷까지 하트 {left}개. 대회와 대성공으로 모으세요.", $"{left} hearts to S-cut. Contests and great successes help."));
             }
-            _lines.Add(Loc.T("[자동 배치]를 누르시면 제가 이번 주를 짜 드립니다. 마음에 안 드는 칸만 바꾸세요.", "Tap [Auto plan] and I'll fill the week. Change only what you dislike."));
+            _lines.Add(Loc.T("자동을 켜면 제가 밥·알바를 규칙대로 돌립니다. 카드 고르기는 직접 하실 때 더 재밌습니다.", "Auto follows simple rules. Picking cards yourself is more fun."));
             _lines.Add(Loc.T("송전탑은 여전히 창밖에 있습니다. 약속한 생일까지, 제가 세어 두겠습니다.", "The tower is still out the window. I'll count the days to the promised birthday."));
             _idx = 0;
             Show(0);

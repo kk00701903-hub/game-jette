@@ -93,6 +93,9 @@ namespace CoastRun.EditorTools
         [MenuItem("Coast Run/Dev/Donate - Reset seen")] public static void DonateReset() { PlayerPrefs.DeleteKey(Donation.SeenKey); PlayerPrefs.Save(); }
         // 55차: 턴·생존·대회 확인용
         [MenuItem("Coast Run/Dev/Life - Week pass")] public static void WeekPass() { if (!Application.isPlaying || !GameManager.Active) return; var s = GameManager.I.Save; var rep = Survival.WeekTick(s); WeekPassUI.Show(s.week, s.week + 1, Timeline.SeasonOf(s.week + 1), rep, "다음 턴: 챕터 4 이야기 → 대회 「봄 사진 콘테스트」", () => Debug.LogWarning("[Dev] week pass done")); }
+        [MenuItem("Coast Run/Dev/Life - Week pass (hold 60s)")] public static void WeekPassHold() { if (!Application.isPlaying || !GameManager.Active) return; float keep = WeekPassUI.AutoCloseSeconds; WeekPassUI.AutoCloseSeconds = 60f; var s = GameManager.I.Save; var rep = Survival.WeekTick(s); WeekPassUI.Show(s.week, s.week + 1, Timeline.SeasonOf(s.week + 1), rep, "…하늘이 일어나지 못한다", () => { WeekPassUI.AutoCloseSeconds = keep; Debug.LogWarning("[Dev] week pass done"); }); }
+        [MenuItem("Coast Run/Dev/UI - Home (Room)")] public static void UiHomeRoom() { if (Application.isPlaying && GameManager.Active) HomeUI.Open(GameManager.I, null, null); }
+        [MenuItem("Coast Run/Dev/UI - Shop")] public static void UiShop() { if (Application.isPlaying && GameManager.Active) ShopUI.Open(GameManager.I, 0); }
         [MenuItem("Coast Run/Dev/Life - Grocery")] public static void Grocery() { if (Application.isPlaying) GroceryUI.Open(GameManager.I); }
         [MenuItem("Coast Run/Dev/Life - Game over")] public static void GameOver() { if (Application.isPlaying && GameManager.Active) GameOverUI.Show(GameManager.I, CoastUiArt.AsSprite(ArtAssets.LoadTexture("Raise_Girl_Pose_Cry")), () => Debug.LogWarning("[Dev] revived")); }
         [MenuItem("Coast Run/Dev/Life - Starve (rice 0, cond 5)")] public static void Starve() { if (Application.isPlaying && GameManager.Active) { var s = GameManager.I.Save; s.rice = 0; s.sideDish = 0; s.condition = 5; s.hunger = 10; GameManager.I.Persist(); } }
@@ -130,6 +133,21 @@ namespace CoastRun.EditorTools
         [MenuItem("Coast Run/Dev/Cine - CS6")] public static void CineCs6() { if (Application.isPlaying) CinematicPlayer.Play("CS6", () => Debug.LogWarning("[Dev] cine done")); }
         [MenuItem("Coast Run/Dev/Cine - CS7")] public static void CineCs7() { if (Application.isPlaying) CinematicPlayer.Play("CS7", () => Debug.LogWarning("[Dev] cine done")); }
         [MenuItem("Coast Run/Dev/Cine - CS8")] public static void CineCs8() { if (Application.isPlaying) CinematicPlayer.Play("CS8", () => Debug.LogWarning("[Dev] cine done")); }
+        // 85차: 보조 컷씬·엔딩 B/TRUE·단서 카드
+        [MenuItem("Coast Run/Dev/Cine - EV1")] public static void CineEv1() { if (Application.isPlaying) CinematicPlayer.Play("EV1", () => Debug.LogWarning("[Dev] cine done")); }
+        [MenuItem("Coast Run/Dev/Cine - EV5")] public static void CineEv5() { if (Application.isPlaying) CinematicPlayer.Play("EV5", () => Debug.LogWarning("[Dev] cine done")); }
+        [MenuItem("Coast Run/Dev/Cine - EV9")] public static void CineEv9() { if (Application.isPlaying) CinematicPlayer.Play("EV9", () => Debug.LogWarning("[Dev] cine done")); }
+        [MenuItem("Coast Run/Dev/Cine - EV10")] public static void CineEv10() { if (Application.isPlaying) CinematicPlayer.Play("EV10", () => Debug.LogWarning("[Dev] cine done")); }
+        [MenuItem("Coast Run/Dev/Cine - END_B")] public static void CineEndB() { if (Application.isPlaying) CinematicPlayer.Play("END_B", () => Debug.LogWarning("[Dev] cine done")); }
+        [MenuItem("Coast Run/Dev/Cine - END_TRUE")] public static void CineEndTrue() { if (Application.isPlaying) CinematicPlayer.Play("END_TRUE", () => Debug.LogWarning("[Dev] cine done")); }
+        [MenuItem("Coast Run/Dev/Clue - Card CS4 (돌)")] public static void ClueCs4() { if (Application.isPlaying && GameManager.I != null && GameManager.I.Save != null) { GameManager.I.Save.clueMask &= ~(int)ClueSystem.Clue.Stones; ClueSystem.ShowAfterScene(GameManager.I.Save, "CS4", () => Debug.LogWarning("[Dev] clue " + ClueSystem.Summary(GameManager.I.Save))); } }
+        [MenuItem("Coast Run/Dev/Clue - Card CS7 (이름)")] public static void ClueCs7() { if (Application.isPlaying && GameManager.I != null && GameManager.I.Save != null) { GameManager.I.Save.clueMask &= ~(int)ClueSystem.Clue.Name; ClueSystem.ShowAfterScene(GameManager.I.Save, "CS7", () => Debug.LogWarning("[Dev] clue " + ClueSystem.Summary(GameManager.I.Save))); } }
+        [MenuItem("Coast Run/Dev/Kpop - Start")] public static void KpopStart() { if (Application.isPlaying) ArcadeRun.StartKpop(GameManager.Ensure()); }
+        [MenuItem("Coast Run/Dev/Kpop - Log pet")] public static void KpopPet() { var gm = GameManager.I; var sv = gm != null ? gm.PeekSave() : null; Debug.LogWarning($"[Dev] pet save={(sv != null ? sv.equippedPet.ToString() : "nosave")} owned={(sv != null ? sv.ownedPetMask : 0)} tuning={RunTuning.Pet} inst={(PetCompanion.Instance != null)}"); }
+        [MenuItem("Coast Run/Dev/UI - Donate")] public static void UiDonate() { if (Application.isPlaying) DonateUI.Open(); }
+        [MenuItem("Coast Run/Dev/UI - Status")] public static void UiStatus() { if (Application.isPlaying) StatusUI.Open(GameManager.I); }
+        [MenuItem("Coast Run/Dev/Contest - HUD test (ch1)")] public static void ContestHud() { if (Application.isPlaying) StoryContest.Begin(1); }
+        [MenuItem("Coast Run/Dev/Clue - Log")] public static void ClueLog() { if (Application.isPlaying && GameManager.I != null && GameManager.I.Save != null) Debug.LogWarning("[Dev] " + ClueSystem.Summary(GameManager.I.Save) + " → " + ClueSystem.EndingId(GameManager.I.Save.clueMask)); }
         [MenuItem("Coast Run/Dev/Contest - Close all")] public static void ContestClose() { ContestIntroUI.Close(); ContestResultUI.Close(); WeekPassUI.Close(); GroceryUI.Close(); GameOverUI.Close(); Time.timeScale = 1f; }
         // 56차-2(사용자): 글자가 상자를 넘는지 검사 — 화면의 모든 Text 를 훑어 preferred 크기가 rect 보다 크면 경로·글자·크기를 로그로.
         [MenuItem("Coast Run/Dev/UI - Overflow audit")]

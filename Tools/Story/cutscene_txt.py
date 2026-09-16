@@ -176,6 +176,9 @@ def import_(folder):
         out.append(f'            {{ {ch}, "{cs_escape(titles[ch])}" }},')
     out += ["        };", "", "        public static readonly Dictionary<string, VnLine[]> Scenes = new Dictionary<string, VnLine[]>", "        {"]
     for sid, lines in scenes:
+        if not lines:   # 85차: 빈 씬(컷씬 없는 챕터·Close) → 길이 0 배열 (new[] {} 는 컴파일 안 됨)
+            out.append(f'            {{ "{sid}", new VnLine[0] }},')
+            continue
         out.append(f'            {{ "{sid}", new[]')
         out.append("            {")
         for kind, a, b, c, d in lines:

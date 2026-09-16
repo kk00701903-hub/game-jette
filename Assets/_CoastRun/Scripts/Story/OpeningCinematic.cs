@@ -6,10 +6,8 @@ using UnityEngine.Video;
 
 namespace CoastRun
 {
-    /// 시네마틱 오프닝 — 1분 37초. 「돌아온 제주」(BGM_Opening, 1:33부터 페이드아웃) 길이에 맞춘다.
-    /// 12차: 어린 시절 제주의 여름 — 돌담길·구슬치기·딱지치기·첫사랑 — 을 앞에 넣어 9컷으로. 컷마다 StreamingAssets/Opening/<clip>.mp4 가 있으면
-    /// 그 길이만큼(10초) 재생하고, 없으면 tex 스틸(그것도 없으면 fallback 배경)을 dur 초 켄번즈. 새 컷의 영상·스틸은 Tools/KlingGen/make_opening_memory.py 로 뽑는다.
-    /// 첫 실행에 자동 재생, 타이틀의 「오프닝」 버튼으로 다시 볼 수 있다. 탭 = 다음 컷, 길게 = 스킵.
+    /// 시네마틱 오프닝 — 「너와 나의 주파수」(BGM_M3). 컷마다 StreamingAssets/Opening/<clip>.mp4 가 있으면
+    /// 그 길이만큼 재생하고, 없으면 tex 스틸(그것도 없으면 fallback 배경)을 dur 초 켄번즈.
     public class OpeningCinematic : MonoBehaviour
     {
         public const string SeenKey = "CoastRun_OpeningSeen";
@@ -37,7 +35,7 @@ namespace CoastRun
 
         public static void Play(Action onDone)
         {
-            // 68차: 오프닝은 공용 시네마틱(CinematicTable "OPEN" — 9컷 영상/스틸 + 자막 + M5 1:37). 옛 VN 「PRO」·3컷 플레이스홀더는 폴백.
+            // 68차: 오프닝은 공용 시네마틱(CinematicTable "OPEN" — 9컷 영상/스틸 + 자막 + M3). 옛 VN 「PRO」·3컷 플레이스홀더는 폴백.
             if (CinematicTable.Get("OPEN") != null)
             {
                 PlayerPrefs.SetInt(SeenKey, 1); PlayerPrefs.Save();
@@ -73,6 +71,8 @@ namespace CoastRun
         {
             _onDone = onDone;
             IsPlaying = true;
+            TitleAudio.StopMenuGlobal();
+            VnMusic.Stop(0f);
             PlayerPrefs.SetInt(SeenKey, 1);
             PlayerPrefs.Save();
             BuildUi();
@@ -145,7 +145,7 @@ namespace CoastRun
             _music = music.AddComponent<AudioSource>();
             _music.playOnAwake = false;
             _music.spatialBlend = 0f;
-            _music.clip = CoastBgmLibrary.Load("BGM_Opening");
+            _music.clip = CoastBgmLibrary.Load("BGM_M3") ?? CoastBgmLibrary.Load("BGM_Opening");
             _music.volume = 0.85f;
         }
 
@@ -295,6 +295,9 @@ namespace CoastRun
             if (_canvas != null) Destroy(_canvas.gameObject);
             Destroy(gameObject);
             cb?.Invoke();
+            if (!IsPlaying && !CinematicPlayer.IsPlaying && !ChapterVN.IsPlaying
+                && UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == CoastScenes.Raising)
+                TitleAudio.PlayRaising();
         }
     }
 }

@@ -120,9 +120,10 @@ namespace CoastRun
                 Dev("dev_skate", "스케이트 연습", "해안도로", StatKind.Agility, 40, st: 1, ag: 3, ch: 0, stress: 9, money: 0, glyph: "보드"),
                 Dev("dev_dance", "댄스 연습", "청소년센터", StatKind.Charm, 40, st: -1, ag: 1, ch: 3, stress: 10, money: -10, glyph: "댄스"),
                 Dev("dev_radio", "라디오 편지", "내 방", StatKind.Charm, 25, st: 0, ag: 0, ch: 2, stress: 3, money: 0, hearts: 2, glyph: "편지", sense: 2),
-                // ── 휴식 ──
-                Rest("rest_home", "집에서 뒹굴기", "우리 집", stress: -25, st: 0, glyph: "집"),
-                Rest("rest_sea", "바다 수영", "함덕 해변", stress: -18, st: 1, bonus: SeasonKind.Summer, glyph: "수영"),
+                Dev("rest_sea", "바다 수영", "함덕 해변", StatKind.Stamina, 15, st: 1, ag: 1, ch: 0, stress: -12, money: 0, glyph: "수영"),   // 밥이 아니라 놀기(스트레스↓)
+                // ── 휴식(밥) ──
+                Rest("rest_home", "집밥 먹고 쉬기", "우리 집", stress: -25, st: 0, glyph: "밥"),
+                Rest("rest_nap", "낮잠", "우리 집", stress: -20, st: 1, glyph: "잠"),
                 // ── 스토리 ──
                 new ScheduleDef
                 {
@@ -132,6 +133,9 @@ namespace CoastRun
             };
             _byId = new Dictionary<string, ScheduleDef>();
             foreach (var d in _all) _byId[d.id] = d;
+            // 바다 수영: 여름에 더 효과(옛 Rest 보너스 유지)
+            if (_byId.TryGetValue("rest_sea", out var sea))
+            { sea.hasBonusSeason = true; sea.bonusSeason = SeasonKind.Summer; sea.seasonBonus = 1.33f; }
         }
 
         private static ScheduleDef Ng(ScheduleDef d) { d.ngPlusOnly = true; return d; }

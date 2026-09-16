@@ -59,6 +59,8 @@ namespace CoastRun
             (10, "Game 2", "Game 2"),
             (11, "오운완", "Workout Done"),
             (12, "Peek a boo", "Peek a boo"),
+            (13, "하늘의 약속", "Promise in the Sky"),
+            (14, "우산 (inst)", "Umbrella (inst)"),
         };
 
         /// 48차: 곡 번호 → 제목(K-POP 한 곡 달리기 HUD·결과 카드).
@@ -67,6 +69,19 @@ namespace CoastRun
             foreach (var t in All) if (t.num == num) return Loc.T(t.ko, t.en);
             foreach (var e in Extra) if (e.num == num) return Loc.T(e.ko, e.en);
             return "M" + num;
+        }
+
+        /// BGM 키(`BGM_M3`, `M3`, `M3s` 등) → 표시용 제목. 컷씬 좌상단 NOW PLAYING.
+        public static string TitleFromBgm(string key)
+        {
+            if (string.IsNullOrEmpty(key)) return "";
+            string k = key.Trim().ToUpperInvariant();
+            if (k.StartsWith("BGM_")) k = k.Substring(4);
+            while (k.Length > 1 && (k.EndsWith("S") || k.EndsWith("R") || k.EndsWith("W")))
+                k = k.Substring(0, k.Length - 1);
+            if (k.StartsWith("M") && int.TryParse(k.Substring(1), out int n) && n > 0)
+                return TitleOf(n);
+            return "";
         }
 
         public static int SCount(MetaProfile p)

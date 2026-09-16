@@ -54,6 +54,12 @@
       "args": [
         "C:\\dev\\game\\Tools\\Mcp\\pexels_mcp_server.py"
       ]
+    },
+    "android": {
+      "command": "C:\\Users\\ares2\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+      "args": [
+        "C:\\dev\\game\\Tools\\Mcp\\android_mcp_server.py"
+      ]
     }
   }
 }

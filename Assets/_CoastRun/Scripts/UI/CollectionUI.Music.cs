@@ -37,14 +37,13 @@ namespace CoastRun
             var sp = CoastUiArt.Art("UI_Music_Mock"); if (sp != null) art.sprite = sp; else art.color = new Color(0.62f, 0.52f, 0.78f);
             art.raycastTarget = true;
 
-            // 52차(사용자): 「7/7」 수집 수 삭제 → 그 자리(COLLECTED 배지)를 「AI 생성 음원」 표시 필로 덮는다.
+            // 레코드 상단 안내 — 스트리밍 OST 홍보만
             int owned = RecordTable.UnlockedCount(p);
-            // 74차(사용자): 스트리밍 안내 — 유튜브뮤직·아이튠즈·타이달·스포티파이에서 「Our frequency」 검색. AI 표시와 한 알약에 두 줄.
             var aiRt = MMRect(root, "AiTag", 150f, 404f, 920f, 496f);
             var aiPill = CoastUiArt.CutePill(aiRt, "Pill", new Color(0.99f, 0.95f, 0.84f), 16, 3); aiPill.raycastTarget = false;
             Stretch(aiPill.rectTransform);
-            var aiL = CoastOrnate.Label(aiPill.transform, "T", Loc.T("✦ AI 생성 음원 · 가상 듀오 우히&히시\n유튜브뮤직 · 아이튠즈 · 타이달 · 스포티파이에서 「Our frequency」 검색해 들어요", "✦ AI-generated music · virtual duo\nSearch \"Our frequency\" on YouTube Music · iTunes · TIDAL · Spotify"), 11, new Color(0.45f, 0.28f, 0.12f)); aiL.fontStyle = FontStyle.Bold;
-            Stretch(aiL.rectTransform); aiL.horizontalOverflow = HorizontalWrapMode.Wrap; aiL.resizeTextForBestFit = true; aiL.resizeTextMinSize = 8; aiL.resizeTextMaxSize = CoastHudLayout.Scaled(11); aiL.lineSpacing = 1.1f;
+            var aiL = CoastOrnate.Label(aiPill.transform, "T", Loc.T("유튜브 뮤직, 스포티파이, 아이튠즈에서 OST (Our frequency) 많은 사랑해주세요", "Please support our OST (Our frequency) on YouTube Music, Spotify & iTunes"), 12, new Color(0.45f, 0.28f, 0.12f)); aiL.fontStyle = FontStyle.Bold;
+            Stretch(aiL.rectTransform); aiL.horizontalOverflow = HorizontalWrapMode.Wrap; aiL.resizeTextForBestFit = true; aiL.resizeTextMinSize = 9; aiL.resizeTextMaxSize = CoastHudLayout.Scaled(13); aiL.lineSpacing = 1.1f;
 
             // 52차(사용자): 홈으로 가기 버튼. 72차(사용자): 「돌아가기」는 없애고 홈 하나로 — 시안에 박힌 좌상단 「<」 동그라미 자리를
             //   파란 둥근 홈 버튼(새 집 아이콘)으로 덮는다(제목 글자와 안 겹치는 유일한 빈 자리).
@@ -162,9 +161,9 @@ namespace CoastRun
             ab.onClick.AddListener(() =>
             {
                 CoastPrefs.Vibrate();
-                if (_playAllOn) { StopPlayAll(); _preview.Stop(); _playingNum = 0; ShowMockRecords(); return; }
+                if (_playAllOn) { StopPlayAll(); _preview.Stop(); _playingNum = 0; TitleAudio.SetBedVolume(0.85f); ShowMockRecords(); return; }
                 if (owned == 0) { Toast(Loc.T("아직 열린 곡이 없어요", "No tracks unlocked yet")); return; }
-                _playAllOn = true; _playAll = StartCoroutine(PlayAllCo());
+                _playAllOn = true; TitleAudio.SetBedVolume(0f); _playAll = StartCoroutine(PlayAllCo());
             });
             // 72차: 옛 「뒤로」 투명 히트 영역 삭제 — 같은 자리에 홈 버튼이 있다.
         }

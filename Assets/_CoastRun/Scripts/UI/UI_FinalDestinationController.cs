@@ -420,8 +420,9 @@ namespace CoastRun
                 _canvas = CoastUiCanvas.Create("JourneyHUD", 105);
 
             // No full-width navy chrome — floating journey widgets only.
+            // RunHudChrome 과 같은 HudFit — 좁은 폰에서 체력/여정/코인 2줄이 같이 축소
             var rootGo = new GameObject("JourneyHudRoot", typeof(RectTransform));
-            rootGo.transform.SetParent(CoastUiCanvas.Root(_canvas), false);
+            rootGo.transform.SetParent(CoastUiCanvas.HudFitRoot(_canvas), false);
             _root = rootGo.GetComponent<RectTransform>();
             _root.anchorMin = Vector2.zero;
             _root.anchorMax = Vector2.one;

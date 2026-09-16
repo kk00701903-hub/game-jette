@@ -21,7 +21,7 @@ namespace CoastRun
         private static readonly Color Cream = new Color(0.99f, 0.96f, 0.90f);
         private static readonly Color Coffee = new Color(0.45f, 0.28f, 0.16f);
         private static readonly Color Rose = new Color(0.93f, 0.22f, 0.52f);
-        private static readonly Color PillOff = new Color(0.93f, 0.88f, 0.80f);
+        private static readonly Color PillOff = new Color(0.945f, 0.894f, 0.804f);
         private static readonly Color PillOn = new Color(1f, 0.80f, 0.35f);
 
         // ── 우상단 떠 있는 아이콘 ──
@@ -91,7 +91,34 @@ namespace CoastRun
             }
         }
 
-        // ── 팝업 ──
+        // ── 팝업 ── 86차(사용자 시안): 전체 화면 페이지 — 시안 그림(UI_Donate_BG: 꽃 테두리·갈색 카드·컵·제목을 그대로 구움) 위에
+        //    본문 상자 · 「★ 선물 고르기」 · 알약 4개(선택 = 노랑+반짝) · 분홍 결제 버튼 · 「다음에 할게요」 · 바닥 안내를 시안 좌표(720×1280)에 올린다.
+        private static RectTransform _page;
+        private static readonly Text[] _giftSparks = new Text[8];
+        private static readonly Color BoxFill = new Color(0.945f, 0.894f, 0.804f);      // 241,228,205
+        private static readonly Color BoxLine = new Color(0.635f, 0.478f, 0.353f);      // 162,122,90
+        private static readonly Color PillLine = new Color(0.337f, 0.184f, 0.094f);     // 86,47,24
+        private static readonly Color PillOnFill = new Color(1f, 0.906f, 0.51f);         // 255,231,130
+        private static readonly Color PinkFill = new Color(0.941f, 0.369f, 0.596f);      // 240,94,152
+        private static readonly Color PinkLine = new Color(0.62f, 0.16f, 0.36f);
+        private static readonly Color LaterFill = new Color(0.824f, 0.796f, 0.753f);     // 210,203,192
+
+        /// 시안 좌표(720×1280, 왼쪽 위 원점)로 놓기.
+        private static RectTransform Place(RectTransform rt, float x0, float y0, float x1, float y1)
+        {
+            rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f); rt.pivot = new Vector2(0f, 1f);
+            rt.anchoredPosition = new Vector2(x0, -y0); rt.sizeDelta = new Vector2(x1 - x0, y1 - y0);
+            return rt;
+        }
+        /// 테두리 있는 둥근 상자(바깥 = 테두리색, 안쪽 = 채움).
+        private static Image Box(Transform parent, string name, Color fill, Color line, int width, int radius)
+        {
+            var outer = CoastUiArt.Panel(parent, name, line, radius);
+            var inner = CoastUiArt.Panel(outer.transform, "Fill", fill, Mathf.Max(2, radius - width));
+            var r = inner.rectTransform; r.anchorMin = Vector2.zero; r.anchorMax = Vector2.one; r.offsetMin = new Vector2(width, width); r.offsetMax = new Vector2(-width, -width);
+            return outer;
+        }
+
         public static void Open(Action onClose = null)
         {
             Close();
@@ -100,80 +127,108 @@ namespace CoastRun
             _canvas = CoastUiCanvas.Create("DonateCanvas", 472);
             _root = CoastUiCanvas.Root(_canvas);
             var pad = CoastUiCanvas.HudPad;
-            var dim = CoastHudLayout.MakeImage(_root, "Dim", Vector2.zero, Vector2.one, new Vector2(-pad - 400f, -pad - 400f), new Vector2(pad + 400f, pad + 400f), new Color(0.05f, 0.03f, 0.08f, 0.72f));
-            dim.raycastTarget = true;
-            var dimBtn = dim.gameObject.AddComponent<Button>(); dimBtn.transition = Selectable.Transition.None; dimBtn.onClick.AddListener(Close);
+            // 시안 배경(전체 화면) — 없으면 크림 판
+            var bgTex = ArtAssets.LoadTexture("UI_Donate_BG");
+            var bg = CoastHudLayout.MakeImage(_root, "BG", Vector2.zero, Vector2.one, new Vector2(-pad - 400f, -pad - 400f), new Vector2(pad + 400f, pad + 400f), new Color(0.99f, 0.93f, 0.84f));
+            bg.raycastTarget = true;
+            var page = new GameObject("Page", typeof(RectTransform)).GetComponent<RectTransform>();
+            page.SetParent(_root, false); page.anchorMin = page.anchorMax = new Vector2(0.5f, 0.5f); page.pivot = new Vector2(0.5f, 0.5f); page.sizeDelta = new Vector2(720f, 1280f); page.anchoredPosition = Vector2.zero;
+            _page = page;
+            // 86차-2 규칙: 시안 그림(UI_Donate_BG)에는 프레임·컵·꽃만 굽고, 글자는 전부 코드에서 Loc.T로 그린다(다국어).
+            if (bgTex != null)
+            {
+                bg.color = new Color(0.99f, 0.93f, 0.84f);
+                var art = CoastHudLayout.MakeImage(page, "Art", Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, Color.white);
+                art.sprite = CoastUiArt.AsSprite(bgTex); art.preserveAspect = false; art.raycastTarget = false;
+            }
+            else
+            {
+                // 그림이 없을 때만: 컵을 따로
+                var cup = ArtAssets.LoadTexture("UI_Donate_Cup");
+                var head = CoastHudLayout.MakeImage(page, "Cup", Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero, Color.white);
+                Place(head.rectTransform, 300f, 112f, 420f, 250f);
+                if (cup != null) { head.sprite = CoastUiArt.AsSprite(cup); head.preserveAspect = true; } else head.color = new Color(1f, 0.86f, 0.45f);
+                head.raycastTarget = false;
+            }
+            // 제목(항상 글자로) — 시안: 금색 굵은 글씨 + 갈색 외곽선, 커피콩 ☕
+            var title = CoastHudLayout.MakeText(page, "Title", Loc.T("커피 한 잔 값, 기부 부탁드려요 ☕", "A coffee's worth — please donate ☕"), 27, TextAnchor.MiddleCenter, Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero);
+            Place(title.rectTransform, 70f, 258f, 650f, 326f); title.color = new Color(1f, 0.80f, 0.22f); title.fontStyle = FontStyle.Bold; CoastUiArt.OutlineText(title, new Color(0.40f, 0.18f, 0.05f), 3f);
+            title.resizeTextForBestFit = true; title.resizeTextMinSize = 16; title.resizeTextMaxSize = CoastHudLayout.Scaled(27); title.raycastTarget = false;
 
-            var card = CoastUiArt.CutePill(_root, "Card", Cream, 30, 6);
-            var crt = card.rectTransform; crt.anchorMin = crt.anchorMax = new Vector2(0.5f, 0.5f); crt.pivot = new Vector2(0.5f, 0.5f);
-            crt.anchoredPosition = new Vector2(0f, 10f); crt.sizeDelta = new Vector2(640f, 1070f); card.raycastTarget = true;   // 74차: 선물 4개
-
-            // 머리: 커피잔 + 제목
-            var cup = ArtAssets.LoadTexture("UI_Donate_Cup");
-            var head = CoastHudLayout.MakeImage(crt, "Cup", new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-60f, -150f), new Vector2(60f, -30f), Color.white);
-            if (cup != null) { head.sprite = CoastUiArt.AsSprite(cup); head.preserveAspect = true; }
-            else { head.sprite = CoastUiArt.RoundedRect(40); head.type = Image.Type.Sliced; head.color = new Color(1f, 0.86f, 0.45f); var g = CoastHudLayout.MakeText(head.rectTransform, "G", "☕", 56, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(0f, 8f), Vector2.zero); g.color = Coffee; }
-            head.raycastTarget = false;
-            var title = CoastHudLayout.MakeText(crt, "Title", Loc.T("커피 한 잔 값, 기부 부탁드려요 ☕", "A coffee's worth — please donate ☕"), 24, TextAnchor.MiddleCenter, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(20f, -200f), new Vector2(-20f, -156f));
-            title.color = Ink; title.fontStyle = FontStyle.Bold; title.horizontalOverflow = HorizontalWrapMode.Wrap;
-
-            // 본문(개발자 메시지)
-            string bodyKo = "이 게임은 잠깐 짬짬이 하는 러닝 게임에까지 광고와 현질이 넘쳐나는 게 짜증났던 개발자가 만들었어요. 그래서 광고도, 강제 결제도 없습니다.\n\n" +
-                            "또 하나의 목적은 K-POP을 전 세계에 널리 알리는 것. 가상 듀오 우히&히시의 노래를 달리면서 들어 주세요.\n\n" +
+            // 본문 상자
+            var box = Box(page, "BodyBox", BoxFill, BoxLine, 3, 26); Place(box.rectTransform, 101f, 343f, 620f, 660f);
+            string bodyKo = "이 게임은 잠깐 잠깐 하는 러닝 게임이에요!\n광고와 연결이 끊기는 게 짜증나서 기부만으로 만들었어요.\n그래서 광고도, 강제 결제도 없어요.\n\n" +
+                            "또 하나의 목적은 K-POP을 전 세계에 널리 알리는 것.\n가끔 듀오 우리히히의 노래를 잠깐만 들려줄게요.\n\n" +
                             "다만 꾸준한 업데이트를 위해 커피 한 잔 값(" + Donation.PriceLabel + ") 정도 기부해 주시면 더 감사하겠습니다. 기부하신 분께는 작은 선물이 있어요 — 여러 번 기부하셔도 좋아요.";
-            string bodyEn = "This game was made by a developer fed up with ads and paywalls even in quick pick-up-and-play runners. So: no ads, no forced purchases.\n\n" +
-                            "The other goal is to spread K-POP worldwide — run to the songs of the virtual duo Woohee & Heesi.\n\n" +
+            string bodyEn = "This is a quick pick-up-and-play runner!\nAds and dropped connections were annoying, so it runs on donations only.\nNo ads, no forced purchases.\n\n" +
+                            "The other goal is to spread K-POP worldwide.\nNow and then you'll hear a bit of the duo Woohee & Heesi.\n\n" +
                             "To keep the updates coming, a coffee's worth (" + Donation.PriceLabel + ") would mean a lot. Donors get a small gift — and you can donate more than once.";
-            var body = CoastHudLayout.MakeText(crt, "Body", Loc.T(bodyKo, bodyEn), 15, TextAnchor.UpperLeft, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(34f, -520f), new Vector2(-34f, -206f));
-            body.color = new Color(0.30f, 0.22f, 0.16f); body.horizontalOverflow = HorizontalWrapMode.Wrap; body.verticalOverflow = VerticalWrapMode.Truncate; body.lineSpacing = 1.25f;
+            var body = CoastHudLayout.MakeText(box.transform, "Body", Loc.T(bodyKo, bodyEn), 14, TextAnchor.MiddleLeft, Vector2.zero, Vector2.one, new Vector2(28f, 16f), new Vector2(-24f, -18f));
+            body.color = new Color(0.24f, 0.16f, 0.10f); body.fontStyle = FontStyle.Bold; body.horizontalOverflow = HorizontalWrapMode.Wrap; body.verticalOverflow = VerticalWrapMode.Truncate; body.lineSpacing = 1.15f;
+            body.resizeTextForBestFit = true; body.resizeTextMinSize = 12; body.resizeTextMaxSize = CoastHudLayout.Scaled(14);
 
             // 선물 고르기
-            var gl = CoastHudLayout.MakeText(crt, "GiftLabel", Loc.T("선물 고르기", "Pick your gift"), 15, TextAnchor.MiddleLeft, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(34f, -556f), new Vector2(-34f, -530f));
-            gl.color = Coffee; gl.fontStyle = FontStyle.Bold;
-            string[] giftKo = { "♪  히든 트랙 2곡 (레코드 + K-POP 런)", "★  모든 게임 열림 (히든 패스코드)", "♥  아무것도 안 받을래요", "♫  OST 잠금해제 (레코드 전곡)" };
-            string[] giftEn = { "♪  2 hidden tracks (records + K-POP run)", "★  Everything unlocked (hidden passcode)", "♥  Nothing, thanks", "♫  Unlock the OST (all records)" };
+            var gl = CoastHudLayout.MakeText(page, "GiftLabel", Loc.T("★ 선물 고르기", "★ Pick your gift"), 24, TextAnchor.MiddleCenter, Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero);
+            Place(gl.rectTransform, 101f, 680f, 620f, 728f); gl.color = new Color(0.22f, 0.13f, 0.06f); gl.fontStyle = FontStyle.Bold;
+            string[] giftKo = { "♫  히든 트랙 2곡 (레코드 + K-POP 편)", "★  모든 게임 열림 (히든 패스코드)", "♥  아무것도 안 받을래요", "♫  OST 잠금해제 (레코드 전곡)" };
+            string[] giftEn = { "♫  2 hidden tracks (records + K-POP run)", "★  Everything unlocked (hidden passcode)", "♥  Nothing, thanks", "♫  Unlock the OST (all records)" };
             Donation.Gift[] kinds = { Donation.Gift.HiddenTrack, Donation.Gift.UnlockAll, Donation.Gift.None, Donation.Gift.Ost };   // 74차: ④ OST
+            float[] py = { 735f, 813f, 888f, 963f }; float[] ph = { 62f, 59f, 59f, 59f };
             for (int i = 0; i < 4; i++)
             {
                 int idx = i;
-                var pill = CoastUiArt.CutePill(crt, "Gift" + i, PillOff, 16, 3);
-                var prt = pill.rectTransform; prt.anchorMin = prt.anchorMax = new Vector2(0.5f, 1f); prt.pivot = new Vector2(0.5f, 1f);
-                prt.anchoredPosition = new Vector2(0f, -562f - i * 56f); prt.sizeDelta = new Vector2(572f, 50f); pill.raycastTarget = true;
+                var pill = Box(page, "Gift" + i, PillOff, PillLine, 3, 30); Place(pill.rectTransform, 101f, py[i], 620f, py[i] + ph[i]); pill.raycastTarget = true;
                 var b = pill.gameObject.AddComponent<Button>(); b.transition = Selectable.Transition.None;
                 b.onClick.AddListener(() => { CoastPrefs.Vibrate(); _gift = kinds[idx]; RefreshGifts(); });
-                var t = CoastHudLayout.MakeText(prt, "T", Loc.T(giftKo[i], giftEn[i]), 16, TextAnchor.MiddleLeft, Vector2.zero, Vector2.one, new Vector2(22f, 2f), new Vector2(-16f, 0f));
-                t.color = Ink; t.fontStyle = FontStyle.Bold;
+                var t = CoastHudLayout.MakeText(pill.transform, "T", Loc.T(giftKo[i], giftEn[i]), 22, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(16f, 3f), new Vector2(-16f, 0f));
+                t.color = new Color(0.16f, 0.10f, 0.05f); t.fontStyle = FontStyle.Bold; t.resizeTextForBestFit = true; t.resizeTextMinSize = 12; t.resizeTextMaxSize = CoastHudLayout.Scaled(22);
                 _giftPills[i] = pill;
+                // 선택 반짝이(왼쪽 위·오른쪽 아래)
+                for (int k = 0; k < 2; k++)
+                {
+                    var sp = CoastHudLayout.MakeText(pill.transform, "Spark" + k, "✦", 22, TextAnchor.MiddleCenter, k == 0 ? new Vector2(0f, 1f) : new Vector2(1f, 0f), k == 0 ? new Vector2(0f, 1f) : new Vector2(1f, 0f), k == 0 ? new Vector2(-22f, -12f) : new Vector2(-2f, -28f), k == 0 ? new Vector2(10f, 20f) : new Vector2(30f, 4f));
+                    sp.color = new Color(1f, 0.93f, 0.45f); sp.raycastTarget = false; CoastUiArt.OutlineText(sp, new Color(0.6f, 0.4f, 0.05f, 0.8f), 1.2f);
+                    _giftSparks[i * 2 + k] = sp;
+                }
             }
             _gift = Donation.Gift.HiddenTrack; RefreshGifts();
 
-            // 결제 버튼
-            var pay = CoastUiArt.GlossyPill(crt, "Pay", Rose, 26, 10);
-            var pyt = pay.rectTransform; pyt.anchorMin = pyt.anchorMax = new Vector2(0.5f, 0f); pyt.pivot = new Vector2(0.5f, 0f); pyt.anchoredPosition = new Vector2(0f, 118f); pyt.sizeDelta = new Vector2(520f, 78f); pay.raycastTarget = true;
+            // 결제 버튼(분홍)
+            var pay = Box(page, "Pay", PinkFill, PinkLine, 3, 30); Place(pay.rectTransform, 98f, 1051f, 623f, 1126f); pay.raycastTarget = true;
+            var lip = CoastUiArt.Panel(pay.transform, "Lip", new Color(0.72f, 0.20f, 0.44f), 26); lip.raycastTarget = false;
+            var lrt0 = lip.rectTransform; lrt0.anchorMin = Vector2.zero; lrt0.anchorMax = new Vector2(1f, 0.28f); lrt0.offsetMin = new Vector2(3f, 3f); lrt0.offsetMax = new Vector2(-3f, 0f);
+            var gloss = CoastUiArt.Panel(pay.transform, "Gloss", new Color(1f, 1f, 1f, 0.22f), 22); gloss.raycastTarget = false;
+            var grt = gloss.rectTransform; grt.anchorMin = new Vector2(0f, 0.55f); grt.anchorMax = new Vector2(1f, 1f); grt.offsetMin = new Vector2(10f, 0f); grt.offsetMax = new Vector2(-10f, -6f);
             _payBtn = pay.gameObject.AddComponent<Button>(); _payBtn.transition = Selectable.Transition.None;
             _payBtn.onClick.AddListener(Pay);
-            var pt = CoastHudLayout.MakeText(pyt, "T", Loc.T($"☕ 커피 한 잔 기부하기 · {Donation.PriceLabel}", $"☕ Buy me a coffee · {Donation.PriceLabel}"), 22, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(0f, 4f), new Vector2(0f, 2f));
-            pt.color = Color.white; pt.fontStyle = FontStyle.Bold; CoastUiArt.OutlineText(pt, new Color(0f, 0f, 0f, 0.35f), 1.5f);
-            var ps = CoastHudLayout.MakeText(crt, "PaySub", Loc.T("Google Play 결제 · 자율 기부", "Google Play billing · voluntary"), 12, TextAnchor.MiddleCenter, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 96f), new Vector2(0f, 116f));
-            ps.color = new Color(0.45f, 0.38f, 0.32f);
+            var pt = CoastHudLayout.MakeText(pay.transform, "T", Loc.T($"☕ 커피 한 잔 기부하기 · {Donation.PriceLabel}", $"☕ Buy me a coffee · {Donation.PriceLabel}"), 28, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(0f, 4f), new Vector2(0f, 2f));
+            pt.color = Color.white; pt.fontStyle = FontStyle.Bold; CoastUiArt.OutlineText(pt, new Color(0.45f, 0.05f, 0.22f, 0.9f), 2.2f);
+            pt.resizeTextForBestFit = true; pt.resizeTextMinSize = 16; pt.resizeTextMaxSize = CoastHudLayout.Scaled(28);
 
-            // 다음에 / 잔 수
-            var later = CoastUiArt.CutePill(crt, "Later", new Color(0.86f, 0.82f, 0.76f), 18, 3);
-            var lrt = later.rectTransform; lrt.anchorMin = lrt.anchorMax = new Vector2(0.5f, 0f); lrt.pivot = new Vector2(0.5f, 0f); lrt.anchoredPosition = new Vector2(0f, 40f); lrt.sizeDelta = new Vector2(240f, 50f); later.raycastTarget = true;
+            // 다음에 / 바닥 안내 / 결제 상태
+            var later = Box(page, "Later", LaterFill, new Color(0.62f, 0.58f, 0.52f), 2, 18); Place(later.rectTransform, 248f, 1185f, 473f, 1221f); later.raycastTarget = true;
             var lb = later.gameObject.AddComponent<Button>(); lb.transition = Selectable.Transition.None; lb.onClick.AddListener(() => { CoastPrefs.Vibrate(); Close(); });
-            var lt = CoastHudLayout.MakeText(lrt, "T", Loc.T("다음에 할게요", "Maybe later"), 17, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(0f, 2f), Vector2.zero);
-            lt.color = Ink; lt.fontStyle = FontStyle.Bold;
-            _cups = CoastHudLayout.MakeText(crt, "Cups", "", 13, TextAnchor.MiddleCenter, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(0f, 12f), new Vector2(0f, 34f));
-            _cups.color = Coffee; _cups.fontStyle = FontStyle.Bold;
-            _status = CoastHudLayout.MakeText(crt, "Status", "", 14, TextAnchor.MiddleCenter, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(20f, 200f), new Vector2(-20f, 250f));
-            _status.color = new Color(0.1f, 0.5f, 0.25f); _status.fontStyle = FontStyle.Bold; _status.horizontalOverflow = HorizontalWrapMode.Wrap;
+            var lt = CoastHudLayout.MakeText(later.transform, "T", Loc.T("다음에 할게요", "Maybe later"), 16, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(0f, 2f), Vector2.zero);
+            lt.color = new Color(0.16f, 0.10f, 0.05f); lt.fontStyle = FontStyle.Bold;
+            _cups = CoastHudLayout.MakeText(page, "Cups", "", 12, TextAnchor.MiddleCenter, Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero);
+            Place(_cups.rectTransform, 60f, 1234f, 660f, 1260f); _cups.color = new Color(0.30f, 0.20f, 0.12f); _cups.fontStyle = FontStyle.Bold;
+            _cups.resizeTextForBestFit = true; _cups.resizeTextMinSize = 10; _cups.resizeTextMaxSize = CoastHudLayout.Scaled(12);
+            _status = CoastHudLayout.MakeText(page, "Status", "", 13, TextAnchor.MiddleCenter, Vector2.zero, Vector2.zero, Vector2.zero, Vector2.zero);
+            Place(_status.rectTransform, 80f, 1130f, 640f, 1182f); _status.color = new Color(0.1f, 0.5f, 0.25f); _status.fontStyle = FontStyle.Bold; _status.horizontalOverflow = HorizontalWrapMode.Wrap;
             RefreshCups();
         }
 
         private static void RefreshGifts()
         {
             Donation.Gift[] kinds = { Donation.Gift.HiddenTrack, Donation.Gift.UnlockAll, Donation.Gift.None, Donation.Gift.Ost };
-            for (int i = 0; i < 4; i++) if (_giftPills[i] != null) _giftPills[i].color = kinds[i] == _gift ? PillOn : PillOff;
+            for (int i = 0; i < 4; i++)
+            {
+                if (_giftPills[i] == null) continue;
+                bool on = kinds[i] == _gift;
+                var fill = _giftPills[i].transform.Find("Fill"); var fi = fill != null ? fill.GetComponent<Image>() : null;
+                if (fi != null) fi.color = on ? PillOnFill : PillOff;
+                for (int k = 0; k < 2; k++) if (_giftSparks[i * 2 + k] != null) _giftSparks[i * 2 + k].gameObject.SetActive(on);
+            }
         }
 
         private static void RefreshCups()
@@ -183,7 +238,7 @@ namespace CoastRun
             string extra = "";
             if (Donation.HiddenTrack) extra += Loc.T(" · 히든 트랙 열림", " · hidden tracks on");
             if (Donation.AllOpen) extra += Loc.T($" · 패스코드 {Donation.DonorPasscode}", $" · passcode {Donation.DonorPasscode}");
-            _cups.text = n > 0 ? Loc.T($"지금까지 {n}잔 ☕ 고마워요{extra}", $"{n} cup(s) so far ☕ thank you{extra}") : Loc.T("아직 0잔 — 광고 없이 만들고 있어요", "0 cups so far — made without ads");
+            _cups.text = n > 0 ? Loc.T($"Google Play 결제 · 자율 기부 · 지금까지 {n}잔 ☕ 고마워요{extra}", $"Google Play billing · voluntary · {n} cup(s) so far ☕ thank you{extra}") : Loc.T("Google Play 결제 · 자율 기부 · 아직 0잔 — 끊김 없이 안전해요", "Google Play billing · voluntary · 0 cups so far — safe and seamless");
         }
 
         private static void Pay()
@@ -214,7 +269,7 @@ namespace CoastRun
         public static void Close()
         {
             if (_canvas != null) UnityEngine.Object.Destroy(_canvas.gameObject);
-            _canvas = null; _root = null; _cups = null; _status = null; _payBtn = null;
+            _canvas = null; _root = null; _page = null; _cups = null; _status = null; _payBtn = null;
             var cb = _onClose; _onClose = null; cb?.Invoke();
         }
     }

@@ -25,6 +25,7 @@ Cursor 를 쓸 때는 `.cursor/mcp.json` 이 같은 목록을 갖고 있으니 �
 | `kling` | `Tools/Mcp/kling_mcp_server.py` | `.env` 의 `KLING_*` |
 | `mixamo` | `Tools/Mcp/mixamo_mcp_server.py` | `.env` 의 `MIXAMO_BEARER` — **신규** |
 | `pexels` | `Tools/Mcp/pexels_mcp_server.py` | `.env` 의 `PEXELS_API_KEY` — **신규** |
+| `android` | `Tools/Mcp/android_mcp_server.py` | `.env` 의 `ANDROID_*` — adb/emulator 래퍼 (Cursor 의 터미널 권한을 대신함) — **신규 2026-09-14** |
 
 ## mixamo
 
@@ -48,6 +49,26 @@ Mixamo 는 공개 API 키가 없어서 로그인 세션 토큰을 쓴다.
 `.env` 의 `PEXELS_API_KEY` 를 그대로 쓴다. 별도 설정 없음.
 도구: `pexels_ping` / `pexels_search_photos` / `pexels_search_videos` /
 `pexels_curated` / `pexels_download` (기본 저장 위치 `Tools/Art/_pexels/`).
+
+## android
+
+Cursor 에서는 에이전트가 PowerShell 로 `adb`/`emulator.exe` 를 직접 돌렸다(터미널 auto-run 권한).
+Claude 데스크톱은 그 권한이 없으므로 `android_mcp_server.py` 가 같은 일을 MCP 도구로 제공한다.
+경로·기본값은 `.env` 의 `ANDROID_SDK_ROOT / ANDROID_ADB / ANDROID_EMULATOR / ANDROID_AVD / ANDROID_AVD_ALT / ANDROID_PKG / ANDROID_ACTIVITY`.
+
+도구: `android_ping` / `android_devices` / `android_avds` / `android_start_avd` / `android_kill_avd` /
+`android_install` / `android_launch` / `android_stop_app` / `android_screencap` / `android_logcat` /
+`android_input` / `android_shell` / `android_props`
+
+전형적 흐름(실기기 USB 연결 후):
+`android_ping` → `android_install`(Builds/CoastRun.apk) → `android_launch`(boot=run) → `android_screencap`(name=device_run) → `android_logcat`
+
+> 이 PC 에선 에뮬레이터로 Unity 6 APK 화면을 볼 수 없다(ARM APK ↔ x86_64 AVD SIGILL, ARM64 AVD 는 QEMU2 부팅 불가).
+> 상세: `EMU_VISUAL.md`. 실기기 또는 에디터 Play(`unity_shot`) 로 확인한다.
+
+PC 에서 직접 점검: `python Tools\Mcp\android_mcp_server.py --selftest`
+
+Claude 데스크톱 등록: 앱 설정 → 개발자 → 구성 편집 에 `claude_desktop_mcp_android.json` 의 `android` 항목을 `mcpServers` 안에 붙여 넣고 앱 완전 재시작.
 
 ## 문제가 생기면
 

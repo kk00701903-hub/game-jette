@@ -39,9 +39,14 @@ namespace CoastRun
             _canvas = CoastUiCanvas.Create("ShopCanvas", 462);
             _root = CoastUiCanvas.Root(_canvas);
             var pad = CoastUiCanvas.HudPad;
-            var dim = CoastHudLayout.MakeImage(_root, "Dim", Vector2.zero, Vector2.one, new Vector2(-pad - 400f, -pad - 400f), new Vector2(pad + 400f, pad + 400f), new Color(0.05f, 0.04f, 0.10f, 0.72f));
+            // 94차 시안: 어두운 딤 → 라벤더 파스텔 바탕 + 꽃 장식(글자 없음)
+            var dim = CoastHudLayout.MakeImage(_root, "Dim", Vector2.zero, Vector2.one, new Vector2(-pad - 400f, -pad - 400f), new Vector2(pad + 400f, pad + 400f), new Color(0.90f, 0.85f, 0.96f, 0.985f));
             dim.raycastTarget = true;
             var db = dim.gameObject.AddComponent<Button>(); db.transition = Selectable.Transition.None; db.onClick.AddListener(Close);
+            var deco = new GameObject("Deco", typeof(RectTransform)).GetComponent<RectTransform>();
+            deco.SetParent(_root, false);
+            deco.anchorMin = Vector2.zero; deco.anchorMax = Vector2.one; deco.offsetMin = new Vector2(-pad + 4f, -pad + 4f); deco.offsetMax = new Vector2(pad - 4f, pad - 4f);
+            HomeUI.SprinklePlayDecor(deco);
             if (_tab == 1) PetShop.NotifyUnlockToast(save);
             Build();
         }
@@ -57,32 +62,79 @@ namespace CoastRun
                 if (c != null && c.name == "Card") UnityEngine.Object.Destroy(c.gameObject);
             }
 
-            float h = _tab == 0 ? 1040f : 920f;
+            // 94차 시안: 카드 안 맨 위에 보라 헤더(집 아이콘 「상점」 · 코인 돈 · ♥ · 나가기), 탭·지갑·칩은 그만큼 아래로
+            float h = _tab == 0 ? 1150f : 1060f;
             var card = CoastUiArt.Panel(_root, "Card", Gold, 34); card.raycastTarget = true;
             var crt = card.rectTransform; crt.anchorMin = crt.anchorMax = new Vector2(0.5f, 0.5f); crt.pivot = new Vector2(0.5f, 0.5f);
-            crt.anchoredPosition = new Vector2(0f, 10f); crt.sizeDelta = new Vector2(668f, h);
+            crt.anchoredPosition = new Vector2(0f, 0f); crt.sizeDelta = new Vector2(684f, h);
             var inner = CoastUiArt.Panel(crt, "Inner", new Color(0.996f, 0.96f, 0.85f), 30); inner.raycastTarget = false;
             inner.rectTransform.anchorMin = Vector2.zero; inner.rectTransform.anchorMax = Vector2.one;
             inner.rectTransform.offsetMin = new Vector2(6f, 6f); inner.rectTransform.offsetMax = new Vector2(-6f, -6f);
 
+            BuildHeader(crt, save);
             Tab(crt, 0, Loc.T("일반상점", "Shop"), -152f);
             Tab(crt, 1, Loc.T("펫상점", "Pet Shop"), 152f);
 
             string walletTxt = _tab == 0
-                ? Loc.T($"★ 돈 {LevelSystem.FormatK(save.stats.money)}G  ·  Lv {Mathf.Max(1, save.level)} ★", $"★ Money {LevelSystem.FormatK(save.stats.money)}G  ·  Lv {Mathf.Max(1, save.level)} ★")
+                ? Loc.T($"★ {LevelSystem.FormatK(save.stats.money)}G  ·  Lv {Mathf.Max(1, save.level)} ★", $"★ {LevelSystem.FormatK(save.stats.money)}G  ·  Lv {Mathf.Max(1, save.level)} ★")
                 : Loc.T($"★ 포인트 {CoinWallet.TotalStatic:N0}  ·  Lv {Mathf.Max(1, save.level)} ★", $"★ Points {CoinWallet.TotalStatic:N0}  ·  Lv {Mathf.Max(1, save.level)} ★");
-            var wallet = CoastHudLayout.MakeText(crt, "Wallet", walletTxt, 22, TextAnchor.MiddleCenter, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -200f), new Vector2(0f, -160f));
-            wallet.color = new Color(0.62f, 0.36f, 0.04f); wallet.fontStyle = FontStyle.Bold;
+            var wpill = CoastUiArt.GlossyPill(crt, "WalletPill", new Color(0.52f, 0.40f, 0.82f), 22, 6); wpill.raycastTarget = false;
+            var wrt = wpill.rectTransform; wrt.anchorMin = wrt.anchorMax = new Vector2(0.5f, 1f); wrt.pivot = new Vector2(0.5f, 1f);
+            wrt.anchoredPosition = new Vector2(0f, -HeaderShift - 158f); wrt.sizeDelta = new Vector2(300f, 46f);
+            var wallet = CoastHudLayout.MakeText(wrt, "Wallet", walletTxt, 20, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(8f, 3f), new Vector2(-8f, 0f));
+            wallet.color = Color.white; wallet.fontStyle = FontStyle.Bold;
+            wallet.resizeTextForBestFit = true; wallet.resizeTextMinSize = 12; wallet.resizeTextMaxSize = CoastHudLayout.Scaled(20);
 
             if (_tab == 0) BuildGoods(crt, save);
             else BuildPets(crt, save);
 
-            var close = CoastUiArt.GlossyPill(crt, "Close", new Color(0.60f, 0.62f, 0.70f), 20, 7);
-            var clrt = close.rectTransform; clrt.anchorMin = clrt.anchorMax = new Vector2(0.5f, 0f); clrt.pivot = new Vector2(0.5f, 0f);
-            clrt.anchoredPosition = new Vector2(0f, 14f); clrt.sizeDelta = new Vector2(300f, 54f); close.raycastTarget = true;
-            var ct = CoastHudLayout.MakeText(clrt, "T", Loc.T("닫기", "Close"), 24, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(0f, 4f), Vector2.zero);
-            ct.color = Color.white; ct.fontStyle = FontStyle.Bold;
-            var cb = close.gameObject.AddComponent<Button>(); cb.transition = Selectable.Transition.None; cb.onClick.AddListener(Close);
+            if (_tab == 1)
+            {
+                var close = CoastUiArt.GlossyPill(crt, "Close", new Color(0.60f, 0.62f, 0.70f), 20, 7);
+                var clrt = close.rectTransform; clrt.anchorMin = clrt.anchorMax = new Vector2(0.5f, 0f); clrt.pivot = new Vector2(0.5f, 0f);
+                clrt.anchoredPosition = new Vector2(0f, 14f); clrt.sizeDelta = new Vector2(300f, 54f); close.raycastTarget = true;
+                var ct = CoastHudLayout.MakeText(clrt, "T", Loc.T("닫기", "Close"), 24, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(0f, 4f), Vector2.zero);
+                ct.color = Color.white; ct.fontStyle = FontStyle.Bold;
+                var cb = close.gameObject.AddComponent<Button>(); cb.transition = Selectable.Transition.None; cb.onClick.AddListener(Close);
+            }
+        }
+
+        /// 헤더 높이만큼 아래 요소를 내리는 값.
+        private const float HeaderShift = 70f;
+
+        private static void BuildHeader(RectTransform crt, SaveData save)
+        {
+            var head = CoastUiArt.CutePill(crt, "Head", new Color(0.42f, 0.30f, 0.58f), 22, 4); head.raycastTarget = false;
+            var hrt = head.rectTransform; hrt.anchorMin = new Vector2(0f, 1f); hrt.anchorMax = new Vector2(1f, 1f); hrt.pivot = new Vector2(0.5f, 1f);
+            hrt.anchoredPosition = new Vector2(0f, -14f); hrt.sizeDelta = new Vector2(-28f, 62f);
+            var homeIc = CoastUiArt.Icon("Home");
+            if (homeIc != null)
+            {
+                var hi = new GameObject("Ic", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
+                hi.transform.SetParent(hrt, false); hi.sprite = homeIc; hi.preserveAspect = true; hi.raycastTarget = false;
+                hi.rectTransform.anchorMin = hi.rectTransform.anchorMax = new Vector2(0f, 0.5f); hi.rectTransform.pivot = new Vector2(0f, 0.5f);
+                hi.rectTransform.anchoredPosition = new Vector2(16f, 0f); hi.rectTransform.sizeDelta = new Vector2(36f, 36f);
+            }
+            var title = CoastHudLayout.MakeText(hrt, "Title", Loc.T("상점", "Shop"), 26, TextAnchor.MiddleLeft, Vector2.zero, Vector2.one, new Vector2(homeIc != null ? 62f : 20f, 0f), new Vector2(-300f, 0f));
+            title.color = Color.white; title.fontStyle = FontStyle.Bold; CoastUiArt.OutlineText(title, new Color(0f, 0f, 0f, 0.35f), 1.5f);
+            var coinIc = CoastUiArt.Icon("Coin");
+            if (coinIc != null)
+            {
+                var ci = new GameObject("Coin", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
+                ci.transform.SetParent(hrt, false); ci.sprite = coinIc; ci.preserveAspect = true; ci.raycastTarget = false;
+                ci.rectTransform.anchorMin = ci.rectTransform.anchorMax = new Vector2(1f, 0.5f); ci.rectTransform.pivot = new Vector2(1f, 0.5f);
+                ci.rectTransform.anchoredPosition = new Vector2(-236f, 0f); ci.rectTransform.sizeDelta = new Vector2(28f, 28f);
+            }
+            var money = CoastHudLayout.MakeText(hrt, "Money", Loc.T($"{LevelSystem.FormatK(save.stats.money)}G", $"{LevelSystem.FormatK(save.stats.money)}G"), 20, TextAnchor.MiddleLeft, new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(-232f, 0f), new Vector2(-150f, 0f));
+            money.color = new Color(1f, 0.88f, 0.50f); money.fontStyle = FontStyle.Bold;
+            var hearts = CoastHudLayout.MakeText(hrt, "Hearts", $"♥{Mathf.Max(0, save.stats.hearts)}", 20, TextAnchor.MiddleLeft, new Vector2(1f, 0f), new Vector2(1f, 1f), new Vector2(-148f, 0f), new Vector2(-96f, 0f));
+            hearts.color = new Color(1f, 0.55f, 0.70f); hearts.fontStyle = FontStyle.Bold;
+            var leave = CoastUiArt.GlossyPill(hrt, "Leave", new Color(0.66f, 0.60f, 0.76f), 16, 5);
+            var lrt = leave.rectTransform; lrt.anchorMin = lrt.anchorMax = new Vector2(1f, 0.5f); lrt.pivot = new Vector2(1f, 0.5f);
+            lrt.anchoredPosition = new Vector2(-8f, 0f); lrt.sizeDelta = new Vector2(84f, 42f); leave.raycastTarget = true;
+            var lt = CoastHudLayout.MakeText(lrt, "T", Loc.T("나가기", "Leave"), 15, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(0f, 2f), Vector2.zero);
+            lt.color = Color.white; lt.fontStyle = FontStyle.Bold;
+            var lb = leave.gameObject.AddComponent<Button>(); lb.transition = Selectable.Transition.None; lb.onClick.AddListener(() => { CoastPrefs.Vibrate(); Close(); });
         }
 
         private static void BuildGoods(RectTransform crt, SaveData save)
@@ -95,7 +147,7 @@ namespace CoastRun
                 bool on = _cat == cat;
                 var pill = CoastUiArt.GlossyPill(crt, "Cat" + i, on ? new Color(1f, 0.86f, 0.30f) : new Color(0.88f, 0.82f, 0.70f), 14, 4);
                 var prt = pill.rectTransform; prt.anchorMin = prt.anchorMax = new Vector2(0f, 1f); prt.pivot = new Vector2(0f, 1f);
-                prt.anchoredPosition = new Vector2(14f + i * (chipW + 5f), -214f); prt.sizeDelta = new Vector2(chipW, 42f); pill.raycastTarget = true;
+                prt.anchoredPosition = new Vector2(14f + i * (chipW + 5f), -HeaderShift - 214f); prt.sizeDelta = new Vector2(chipW, 42f); pill.raycastTarget = true;
                 var t = CoastHudLayout.MakeText(prt, "T", LifeItems.CatLabel(cat), 12, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
                 t.color = on ? new Color(0.40f, 0.22f, 0.04f) : Navy; t.fontStyle = FontStyle.Bold;
                 t.resizeTextForBestFit = true; t.resizeTextMinSize = 8; t.resizeTextMaxSize = 12;
@@ -109,8 +161,9 @@ namespace CoastRun
                 : _cat == LifeItemCat.BasicDish || _cat == LifeItemCat.PremiumDish
                     ? Loc.T("완제품 요리 — 「밥」 버튼으로 식사하면 소진돼요.", "Ready meals — Feed button consumes them.")
                     : Loc.T("약·케어는 보유 가방에서 바로 사용.", "Medicine/care — use from your bag.");
-            var ht = CoastHudLayout.MakeText(crt, "Hint", hint, 13, TextAnchor.MiddleCenter, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(16f, -268f), new Vector2(-16f, -236f));
+            var ht = CoastHudLayout.MakeText(crt, "Hint", hint, 12, TextAnchor.MiddleCenter, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(16f, -HeaderShift - 290f), new Vector2(-16f, -HeaderShift - 260f));
             ht.color = new Color(0.45f, 0.32f, 0.18f); ht.horizontalOverflow = HorizontalWrapMode.Wrap;
+            ht.resizeTextForBestFit = true; ht.resizeTextMinSize = 8; ht.resizeTextMaxSize = CoastHudLayout.Scaled(12);
 
             var items = new List<LifeItemDef>();
             foreach (var d in LifeItems.ShopOf(_cat)) items.Add(d);
@@ -123,7 +176,7 @@ namespace CoastRun
             scrollGo.transform.SetParent(crt, false);
             var srt = scrollGo.GetComponent<RectTransform>();
             srt.anchorMin = new Vector2(0f, 0f); srt.anchorMax = new Vector2(1f, 1f);
-            srt.offsetMin = new Vector2(18f, 200f); srt.offsetMax = new Vector2(-18f, -280f);
+            srt.offsetMin = new Vector2(18f, 176f); srt.offsetMax = new Vector2(-18f, -HeaderShift - 294f);
             scrollGo.GetComponent<Image>().color = new Color(1f, 1f, 1f, 0.02f);
             var sr = scrollGo.GetComponent<ScrollRect>(); sr.horizontal = false; sr.vertical = true; sr.movementType = ScrollRect.MovementType.Clamped;
             var content = new GameObject("Content", typeof(RectTransform)).GetComponent<RectTransform>();
@@ -157,16 +210,36 @@ namespace CoastRun
                 }
 
                 int have = LifeItems.Count(save, d.id);
-                var nm = CoastHudLayout.MakeText(row.transform, "N", LifeItems.Name(d), 22, TextAnchor.MiddleLeft, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(94f, -44f), new Vector2(-20f, -6f));
+                var nm = CoastHudLayout.MakeText(row.transform, "N", LifeItems.Name(d), 22, TextAnchor.MiddleLeft, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(94f, -44f), new Vector2(-96f, -6f));
                 nm.color = Navy; nm.fontStyle = FontStyle.Bold;
                 string line2 = $"{d.price}G" + (have > 0 ? Loc.T($" · 보유 {have}", $" · have {have}") : "") + " · " + LifeItems.EffectText(d);
-                var bl = CoastHudLayout.MakeText(row.transform, "B", line2, 13, TextAnchor.UpperLeft, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(94f, 8f), new Vector2(-12f, -46f));
+                var bl = CoastHudLayout.MakeText(row.transform, "B", line2, 13, TextAnchor.UpperLeft, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(94f, 8f), new Vector2(-96f, -46f));
                 bl.color = new Color(0.28f, 0.24f, 0.36f); bl.horizontalOverflow = HorizontalWrapMode.Wrap;
                 bl.resizeTextForBestFit = true; bl.resizeTextMinSize = 10; bl.resizeTextMaxSize = 13;
 
                 string id = d.id;
                 var btn = row.gameObject.AddComponent<Button>(); btn.transition = Selectable.Transition.None;
                 btn.onClick.AddListener(() => { CoastPrefs.Vibrate(); _pickId = id; _qty = 1; Build(); });
+
+                // 94차 시안: 줄 오른쪽 노랑 장바구니 버튼 — 고르고 바로 1개 구매
+                var cartPill = CoastUiArt.GlossyPill(row.transform, "Cart", new Color(1f, 0.82f, 0.30f), 14, 5);
+                var cprt = cartPill.rectTransform; cprt.anchorMin = cprt.anchorMax = new Vector2(1f, 0.5f); cprt.pivot = new Vector2(1f, 0.5f);
+                cprt.anchoredPosition = new Vector2(-12f, 0f); cprt.sizeDelta = new Vector2(72f, 52f); cartPill.raycastTarget = true;
+                var cartIc = CoastUiArt.Icon("Cart");
+                if (cartIc != null)
+                {
+                    var ci = new GameObject("Ic", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
+                    ci.transform.SetParent(cprt, false); ci.sprite = cartIc; ci.preserveAspect = true; ci.raycastTarget = false; ci.color = new Color(0.40f, 0.26f, 0.08f);
+                    ci.rectTransform.anchorMin = ci.rectTransform.anchorMax = new Vector2(0.5f, 0.5f); ci.rectTransform.anchoredPosition = new Vector2(0f, 2f); ci.rectTransform.sizeDelta = new Vector2(30f, 30f);
+                }
+                var cbtn = cartPill.gameObject.AddComponent<Button>(); cbtn.transition = Selectable.Transition.None;
+                var dd = d;
+                cbtn.onClick.AddListener(() =>
+                {
+                    CoastPrefs.Vibrate(); _pickId = id; _qty = 1;
+                    if (LifeItems.Buy(save, id, 1)) Bought(Loc.T($"{LifeItems.Name(dd)} ×1 구매!", $"Bought {LifeItems.Name(dd)} ×1!"));
+                    else Short();
+                });
                 y += rowH + 8f;
             }
             content.sizeDelta = new Vector2(0f, Mathf.Max(y + 8f, 120f));
@@ -179,7 +252,16 @@ namespace CoastRun
         {
             var bar = CoastUiArt.Panel(crt, "QtyBar", new Color(1f, 0.98f, 0.92f), 18); bar.raycastTarget = false;
             var brt = bar.rectTransform; brt.anchorMin = new Vector2(0f, 0f); brt.anchorMax = new Vector2(1f, 0f);
-            brt.offsetMin = new Vector2(18f, 78f); brt.offsetMax = new Vector2(-18f, 188f);
+            brt.offsetMin = new Vector2(18f, 44f); brt.offsetMax = new Vector2(-18f, 166f);
+            // 94차 시안: 오른쪽 아래 「닫기」(구매 아래) · 맨 아래 작은 안내 띠
+            var close = CoastUiArt.GlossyPill(brt, "Close", new Color(0.60f, 0.62f, 0.72f), 16, 6);
+            var clrt = close.rectTransform; clrt.anchorMin = clrt.anchorMax = new Vector2(1f, 0f); clrt.pivot = new Vector2(1f, 0f);
+            clrt.anchoredPosition = new Vector2(-12f, 8f); clrt.sizeDelta = new Vector2(150f, 48f); close.raycastTarget = true;
+            var ct = CoastHudLayout.MakeText(clrt, "T", Loc.T("닫기", "Close"), 20, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(0f, 3f), Vector2.zero);
+            ct.color = Color.white; ct.fontStyle = FontStyle.Bold;
+            var cb = close.gameObject.AddComponent<Button>(); cb.transition = Selectable.Transition.None; cb.onClick.AddListener(Close);
+            var foot = CoastHudLayout.MakeText(crt, "Foot", Loc.T("❀  선택한 아이템을 구매하면 가방에 들어가요  ❀", "❀  Bought items go to your bag  ❀"), 12, TextAnchor.MiddleCenter, new Vector2(0f, 0f), new Vector2(1f, 0f), new Vector2(24f, 12f), new Vector2(-24f, 38f));
+            foot.color = new Color(0.45f, 0.32f, 0.28f); foot.raycastTarget = false;
 
             var def = string.IsNullOrEmpty(_pickId) ? (LifeItemDef?)null : LifeItems.Get(_pickId);
             if (!def.HasValue)
@@ -192,7 +274,7 @@ namespace CoastRun
             int total = d.price * _qty;
             bool can = save.stats.money >= total;
 
-            var label = CoastHudLayout.MakeText(brt, "L", Loc.T($"{LifeItems.Name(d)} × {_qty}  =  {total}G", $"{LifeItems.Name(d)} × {_qty}  =  {total}G"), 20, TextAnchor.MiddleLeft, new Vector2(0f, 0.45f), new Vector2(1f, 1f), new Vector2(16f, 0f), new Vector2(-160f, 0f));
+            var label = CoastHudLayout.MakeText(brt, "L", Loc.T($"{LifeItems.Name(d)} × {_qty}  =  {total}G", $"{LifeItems.Name(d)} × {_qty}  =  {total}G"), 22, TextAnchor.MiddleLeft, new Vector2(0f, 0.5f), new Vector2(1f, 1f), new Vector2(16f, 0f), new Vector2(-170f, -4f));
             label.color = Navy; label.fontStyle = FontStyle.Bold;
             label.resizeTextForBestFit = true; label.resizeTextMinSize = 12; label.resizeTextMaxSize = 20;
 
@@ -206,8 +288,8 @@ namespace CoastRun
             MakeQtyBtn(brt, "P", "+", new Vector2(0f, 0f), new Vector2(140f, 12f), () => { _qty = Mathf.Min(99, _qty + 1); Build(); });
 
             var buy = CoastUiArt.GlossyPill(brt, "Buy", can ? new Color(0.30f, 0.62f, 1f) : new Color(0.55f, 0.57f, 0.64f), 18, 6);
-            var buyRt = buy.rectTransform; buyRt.anchorMin = buyRt.anchorMax = new Vector2(1f, 0.5f); buyRt.pivot = new Vector2(1f, 0.5f);
-            buyRt.anchoredPosition = new Vector2(-12f, 0f); buyRt.sizeDelta = new Vector2(150f, 56f); buy.raycastTarget = true;
+            var buyRt = buy.rectTransform; buyRt.anchorMin = buyRt.anchorMax = new Vector2(1f, 1f); buyRt.pivot = new Vector2(1f, 1f);
+            buyRt.anchoredPosition = new Vector2(-12f, -10f); buyRt.sizeDelta = new Vector2(150f, 50f); buy.raycastTarget = true;
             var bt = CoastHudLayout.MakeText(buyRt, "T", Loc.T("구매", "Buy"), 22, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(0f, 3f), Vector2.zero);
             bt.color = Color.white; bt.fontStyle = FontStyle.Bold;
             var bb = buy.gameObject.AddComponent<Button>(); bb.transition = Selectable.Transition.None;
@@ -233,7 +315,7 @@ namespace CoastRun
 
         private static void BuildPets(RectTransform crt, SaveData save)
         {
-            const float rowH = 138f, rowGap = 14f, top = 236f;
+            const float rowH = 138f, rowGap = 14f, top = 236f + HeaderShift;
             bool unlocked = PetShop.Unlocked(save);
             var kinds = PetShop.ForSale;
             Color[] rowCols = { new Color(1f, 0.95f, 0.76f), new Color(1f, 0.82f, 0.88f), new Color(0.86f, 0.80f, 0.98f), new Color(0.80f, 0.95f, 0.84f) };
@@ -259,7 +341,7 @@ namespace CoastRun
             bool on = _tab == idx;
             var pill = CoastUiArt.GlossyPill(crt, "Tab" + idx, on ? new Color(1f, 0.86f, 0.30f) : new Color(0.86f, 0.80f, 0.68f), 30, 8);
             var rt = pill.rectTransform; rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 1f); rt.pivot = new Vector2(0.5f, 1f);
-            rt.anchoredPosition = new Vector2(x, -56f); rt.sizeDelta = new Vector2(288f, 84f); pill.raycastTarget = true;
+            rt.anchoredPosition = new Vector2(x, -HeaderShift - 60f); rt.sizeDelta = new Vector2(288f, 80f); pill.raycastTarget = true;
             var ic = CoastUiArt.Art("Icon_Cart");
             if (ic != null)
             {

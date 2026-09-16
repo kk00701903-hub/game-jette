@@ -39,6 +39,7 @@ namespace CoastRun
         ///   파스텔 줄 4개(노랑·분홍·보라·초록: 흰 초상 틀(UI_Pet_<Kind>, 시안 초상) · 이름 · 설명 · 금 알약 「◆ 800c · Lv3 ◆」 · 파란 젤리 「구매」(못 사면 회색)) + 회색 「닫기」.
         private static void Build(SaveData save)
         {
+            PetShop.EnsureEquipped(save);
             foreach (Transform c in _root) if (c.name == "Card") UnityEngine.Object.Destroy(c.gameObject);
             bool unlocked = PetShop.Unlocked(save);
             var kinds = PetShop.ForSale;
@@ -75,7 +76,7 @@ namespace CoastRun
 
             if (!unlocked)
             {
-                var lockT = CoastHudLayout.MakeText(crt, "Lock", Loc.T($"펫은 스토리 {PetShop.UnlockWeek}주차부터 데려올 수 있어요\n(지금 {save.week}주차)\n\n러닝에서 모은 코인으로 사요(레벨 조건 있음).", $"Pets unlock on story week {PetShop.UnlockWeek}\n(now week {save.week})\n\nBuy with coins from runs (level required)."), 18, TextAnchor.MiddleCenter, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(30f, 80f), new Vector2(-30f, -230f));
+                var lockT = CoastHudLayout.MakeText(crt, "Lock", Loc.T($"펫은 {PetShop.UnlockWeek}주차 또는 대회 {PetShop.UnlockContests}회 클리어 후 데려올 수 있어요\n(지금 {save.week}주차 · 대회 {PetShop.ContestsCleared(save)}회)\n\n러닝에서 모은 코인으로 사요(레벨 조건 있음).", $"Pets unlock at week {PetShop.UnlockWeek} or after {PetShop.UnlockContests} contests\n(now week {save.week} · {PetShop.ContestsCleared(save)} contests)\n\nBuy with coins from runs (level required)."), 18, TextAnchor.MiddleCenter, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(30f, 80f), new Vector2(-30f, -230f));
                 lockT.color = Navy; lockT.horizontalOverflow = HorizontalWrapMode.Wrap;
             }
             else
@@ -109,7 +110,7 @@ namespace CoastRun
                     var pprt = pp.rectTransform; pprt.anchorMin = pprt.anchorMax = new Vector2(1f, 1f); pprt.pivot = new Vector2(1f, 1f); pprt.anchoredPosition = new Vector2(-12f, -10f); pprt.sizeDelta = new Vector2(150f, 34f);
                     var price = CoastHudLayout.MakeText(pprt, "T", priceTxt, 15, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(4f, 2f), Vector2.zero);
                     price.color = new Color(0.45f, 0.24f, 0f); price.fontStyle = FontStyle.Bold; price.resizeTextForBestFit = true; price.resizeTextMinSize = 9; price.resizeTextMaxSize = CoastHudLayout.Scaled(15);
-                    string label = !owned ? Loc.T("구매", "Buy") : equipped ? Loc.T("해제", "Unequip") : Loc.T("장착", "Equip");
+                    string label = !owned ? Loc.T("구매", "Buy") : equipped ? Loc.T("장착 중", "Equipped") : Loc.T("장착", "Equip");
                     Color col = !owned ? (PetShop.CanAfford(save, k) ? new Color(0.30f, 0.62f, 1f) : new Color(0.55f, 0.57f, 0.64f)) : equipped ? new Color(0.55f, 0.57f, 0.64f) : new Color(0.30f, 0.62f, 1f);
                     var btn = CoastUiArt.GlossyPill(row.transform, "Act", col, 22, 8);
                     var brt = btn.rectTransform; brt.anchorMin = brt.anchorMax = new Vector2(1f, 0f); brt.pivot = new Vector2(1f, 0f); brt.anchoredPosition = new Vector2(-12f, 10f); brt.sizeDelta = new Vector2(150f, 56f); btn.raycastTarget = true;
@@ -134,8 +135,7 @@ namespace CoastRun
                 if (PetShop.TryBuy(save, k)) { CoastToast.Show(Loc.T($"{PetCompanion.Names[(int)k]}를 데려왔어!", $"{PetCompanion.Names[(int)k]} joined!")); CoastAudioManager.PlayAnywhere(CoastSfx.RankS, 0.6f); _gm.Persist(); }
                 else { CoastToast.Show(Loc.T($"코인이 모자라거나 레벨(Lv{PetShop.LevelReq[k]}) 이 부족해 — 러닝에서 더 모아 오자", $"Not enough coins or level (Lv{PetShop.LevelReq[k]}) — run more!")); CoastAudioManager.PlayAnywhere(CoastSfx.NearMiss, 0.5f); }
             }
-            else if (save.equippedPet == k) { save.equippedPet = PetKind.None; _gm.Persist(); }
-            else { PetShop.Equip(save, k); _gm.Persist(); }
+            else if (save.equippedPet != k) { PetShop.Equip(save, k); _gm.Persist(); }
             Build(save);
         }
 

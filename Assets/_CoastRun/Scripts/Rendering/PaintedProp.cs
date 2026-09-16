@@ -44,8 +44,8 @@ namespace CoastRun
             quad.transform.localScale = new Vector3(w, height, 1f);
             quad.transform.localPosition = new Vector3(0f, height * 0.5f + groundLift, zOffset);
 
-            var shader = Shader.Find("CoastRun/ChromaUnlit") ?? CoastMaterials.UnlitShader;
-            var mat = new Material(shader);
+            var shader = CoastMaterials.Require("CoastRun/ChromaUnlit", "CoastRun/UnlitCurved", "Universal Render Pipeline/Unlit", "Sprites/Default");
+            var mat = CoastMaterials.NewMat(shader);
             if (mat.HasProperty("_BaseMap")) mat.SetTexture("_BaseMap", tex); else mat.mainTexture = tex;
             // 하트처럼 분홍이 본체인 스프라이트는 핑크 에지 제거를 끈다(키 거리만으로 자른다).
             // 14차-3: 하트도 Kling 빨간 하트로 바뀌어 핑크 에지 제거를 그대로 둔다(예전 분홍 하트 예외 삭제).
@@ -76,7 +76,7 @@ namespace CoastRun
                 CoastEditUtil.DestroyCollider(back);
                 back.transform.localPosition = new Vector3(0.028f, -0.012f, 0.06f);
                 back.transform.localScale = new Vector3(1.035f, 1.0f, 1f);
-                var bm = new Material(shader);
+                var bm = CoastMaterials.NewMat(shader);
                 if (bm.HasProperty("_BaseMap")) bm.SetTexture("_BaseMap", tex); else bm.mainTexture = tex;
                 if (bm.HasProperty("_BaseColor")) bm.SetColor("_BaseColor", new Color(0.22f, 0.20f, 0.28f, 1f));
                 if (bm.HasProperty("_KeyColor")) bm.SetColor("_KeyColor", new Color(1f, 0f, 1f, 1f));
@@ -109,8 +109,8 @@ namespace CoastRun
             quad.transform.localScale = new Vector3(w, length, 1f);
             quad.transform.localPosition = new Vector3(0f, lift, 0f);
             quad.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-            var shader = Shader.Find("CoastRun/ChromaUnlit") ?? CoastMaterials.UnlitShader;
-            var mat = new Material(shader);
+            var shader = CoastMaterials.Require("CoastRun/ChromaUnlit", "CoastRun/UnlitCurved", "Universal Render Pipeline/Unlit", "Sprites/Default");
+            var mat = CoastMaterials.NewMat(shader);
             if (mat.HasProperty("_BaseMap")) mat.SetTexture("_BaseMap", tex); else mat.mainTexture = tex;
             if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", Color.white);
             if (mat.HasProperty("_KeyColor")) mat.SetColor("_KeyColor", new Color(1f, 0f, 1f, 1f));

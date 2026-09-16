@@ -965,10 +965,8 @@ namespace CoastRun
             var r = go.GetComponent<Renderer>();
             if (r == null)
                 return;
-            var shader = Shader.Find("Universal Render Pipeline/Lit") ?? Shader.Find("Standard");
-            if (shader == null)
-                return;
-            var m = new Material(shader);
+            var shader = CoastMaterials.Require("Universal Render Pipeline/Lit", "Universal Render Pipeline/Simple Lit", "Sprites/Default");
+            var m = CoastMaterials.NewMat(shader);
             m.color = color;
             r.sharedMaterial = m;
         }

@@ -18,7 +18,8 @@ namespace CoastRun
         RadioSting,     // 라디오 스팅어(엔딩·편지)
         MenuOpen,       // 패널 열림
         Fail,           // 실패·잠수
-        Boost           // 48차-11: 2단 점프 「뿡→쓩」 (저음 툭 + 위로 휘는 휘파람 노이즈)
+        Boost,          // 48차-11: 2단 점프 「뿡→쓩」 (저음 툭 + 위로 휘는 휘파람 노이즈)
+        Shutter         // 86차(사용자): 컬렉션 카드 「찰칵」 — 음악 스팅어 대신 카메라 셔터(절차 합성, 배경음과 안 섞임)
     }
 
     /// Procedural ambient + skate SFX (no external clips required).
@@ -395,6 +396,8 @@ namespace CoastRun
         // ── Resources 오버라이드 + 어디서나 재생 ─────────────────────────
         private static readonly System.Collections.Generic.Dictionary<CoastSfx, AudioClip> _resClips = new System.Collections.Generic.Dictionary<CoastSfx, AudioClip>();
         private static AudioSource _anySrc;
+        private static AudioClip _shutter;
+        private static AudioClip ShutterClip => _shutter ?? (_shutter = ResourceClip(CoastSfx.Shutter) ?? ProceduralAudio.CreateShutter());
 
         /// Resources/CoastRun/SFX/SFX_<kind>.(ogg|wav) 가 있으면 그 클립(한 번만 로드), 없으면 null.
         public static AudioClip ResourceClip(CoastSfx kind)
@@ -415,6 +418,7 @@ namespace CoastRun
                 switch (kind)
                 {
                     case CoastSfx.CardReveal: case CoastSfx.RankS: clip = ProceduralAudio.CreateBlip(1320f, 0.12f); break;
+                    case CoastSfx.Shutter: clip = ProceduralAudio.CreateShutter(); break;
                     case CoastSfx.ChapterClear: case CoastSfx.Purchase: clip = ProceduralAudio.CreateBlip(880f, 0.14f); break;
                     case CoastSfx.Fail: clip = ProceduralAudio.CreateBlip(220f, 0.18f); break;
                     default: clip = ProceduralAudio.CreateBlip(660f, 0.06f); break;
@@ -497,6 +501,8 @@ namespace CoastRun
                 case CoastSfx.RadioSting:
                 case CoastSfx.MenuOpen:
                     clip = _clipJump; vol = 0.3f; pitch = 1f; break;
+                case CoastSfx.Shutter:
+                    clip = ShutterClip; vol = 0.55f; pitch = 1f; break;
                 default:
                     return;
             }
@@ -614,6 +620,33 @@ namespace CoastRun
                 data[i] = Mathf.Clamp(wave * 0.6f, -0.9f, 0.9f);
             }
             var clip = AudioClip.Create("Whoosh", samples, 1, sampleRate, false);
+            clip.SetData(data, 0);
+            return clip;
+        }
+
+        /// 86차: 카메라 셔터 「찰칵」 — 짧은 노이즈 클릭 두 번(찰·칵, 45 ms 간격), 음정 없음.
+        public static AudioClip CreateShutter()
+        {
+            int sampleRate = 44100; float seconds = 0.14f;
+            int samples = Mathf.CeilToInt(sampleRate * seconds);
+            var data = new float[samples];
+            var rng = new System.Random(7);
+            float[] starts = { 0f, 0.045f }; float[] lens = { 0.018f, 0.032f }; float[] amps = { 0.9f, 0.7f };
+            for (int i = 0; i < samples; i++)
+            {
+                float t = i / (float)sampleRate; float v = 0f;
+                for (int k = 0; k < 2; k++)
+                {
+                    float dt = t - starts[k];
+                    if (dt < 0f || dt > lens[k]) continue;
+                    float env = 1f - dt / lens[k]; env *= env;
+                    float noise = (float)(rng.NextDouble() * 2.0 - 1.0);
+                    float click = Mathf.Sin(2f * Mathf.PI * (k == 0 ? 2600f : 1900f) * dt) * 0.35f;
+                    v += (noise * 0.65f + click) * env * amps[k];
+                }
+                data[i] = Mathf.Clamp(v, -1f, 1f) * 0.6f;
+            }
+            var clip = AudioClip.Create("Shutter", samples, 1, sampleRate, false);
             clip.SetData(data, 0);
             return clip;
         }

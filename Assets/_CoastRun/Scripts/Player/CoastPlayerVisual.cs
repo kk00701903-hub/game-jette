@@ -146,8 +146,8 @@ namespace CoastRun
             quad.transform.localScale = new Vector3(0.95f, 1.45f, 1f);
             CoastEditUtil.DestroyCollider(quad);
 
-            var shader = Shader.Find("CoastRun/ChromaUnlit") ?? CoastMaterials.UnlitShader;
-            var mat = new Material(shader);
+            var shader = CoastMaterials.Require("CoastRun/ChromaUnlit", "CoastRun/UnlitCurved", "Universal Render Pipeline/Unlit", "Sprites/Default");
+            var mat = CoastMaterials.NewMat(shader);
             if (mat.HasProperty("_BaseMap"))
                 mat.SetTexture("_BaseMap", tex);
             else

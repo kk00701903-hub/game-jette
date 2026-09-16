@@ -5,7 +5,7 @@ namespace CoastRun
 {
     /// 언어팩(ko / en). 한글 원문을 키로 쓰는 인라인 방식 — `Loc.T("설정", "Settings")` —
     /// 과, 데이터(챕터 제목·스케줄 이름)용 사전 `Loc.Data(id)`를 함께 제공한다.
-    /// 첫 실행은 기기 언어(한국어면 ko, 그 외 en), 설정에서 바꾸면 PlayerPrefs에 남는다.
+    /// 첫 실행은 기기/스토어 언어(미지원이면 ko), 설정에서 한 번 고르면 PlayerPrefs에 남는다.
     public static class Loc
     {
         public const string PrefKey = "CoastRun_Lang";
@@ -28,7 +28,7 @@ namespace CoastRun
             }
             set
             {
-                _lang = System.Array.IndexOf(Langs, value) >= 0 ? value : "en";
+                _lang = System.Array.IndexOf(Langs, value) >= 0 ? value : "ko";
                 PlayerPrefs.SetString(PrefKey, _lang);
                 PlayerPrefs.Save();
             }
@@ -36,6 +36,7 @@ namespace CoastRun
 
         static string FromSystem()
         {
+            // 스토어/기기 언어. 지원 목록에 없으면 기본 한국어.
             switch (Application.systemLanguage)
             {
                 case SystemLanguage.Korean: return "ko";
@@ -43,7 +44,8 @@ namespace CoastRun
                 case SystemLanguage.Indonesian: return "id";
                 case SystemLanguage.Thai: return "th";
                 case SystemLanguage.Spanish: return "es";
-                default: return "en";
+                case SystemLanguage.English: return "en";
+                default: return "ko";
             }
         }
 
@@ -69,7 +71,16 @@ namespace CoastRun
                 default: return "English";
             }
         }
-        public static string NextLang => Langs[(System.Array.IndexOf(Langs, Lang) + 1) % Langs.Length];
+        /// 설정에서 고른 언어를 저장하고 적용. (한 번 고르면 PrefKey에 남음)
+        public static void SetLang(string code)
+        {
+            Lang = code;
+            _table = null;
+            _tableLang = null;
+        }
+
+        public static string LanguageButtonLabel() =>
+            Loc.T($"언어: {Native(Lang)}", Tr("Language") + $": {Native(Lang)}");
 
         /// 인라인: 한글 원문 / 영어 (그 외 언어는 영어를 키로 번역표 조회, 없으면 영어).
         public static string T(string ko, string en) => IsKo ? ko : Tr(en);
@@ -114,18 +125,18 @@ namespace CoastRun
         private static readonly Dictionary<string, string> En = new Dictionary<string, string>
         {
             // 챕터 제목
-            { "ch.1", "Name" }, { "ch.2", "Sumbi Breath" }, { "ch.3", "The Back" }, { "ch.4", "Heart" },
-            { "ch.5", "Pass Through" }, { "ch.6", "Footprints" }, { "ch.7", "Our Base" }, { "ch.8", "Fresh Paint" },
-            { "ch.9", "Candle Out" }, { "ch.10", "Twelve Candles" }, { "ch.11", "Back in the Rain" }, { "ch.12", "New Wheel" },
-            { "ch.13", "That Night" }, { "ch.14", "That Spot" }, { "ch.15", "Twenty" }, { "ch.16", "Passing By" },
-            { "ch.17", "Quiet" }, { "ch.18", "One of Two" }, { "ch.19", "Chrysanthemum" }, { "ch.20", "Frequency" },
+            { "ch.1", "이름" }, { "ch.2", "손가락 사이로" }, { "ch.3", "하트" }, { "ch.4", "열일곱 번" },
+            { "ch.5", "우리 기지" }, { "ch.6", "우유 한 팩" }, { "ch.7", "열두 개의 초" }, { "ch.8", "달력" },
+            { "ch.9", "찢어진 소매" }, { "ch.10", "그 밤" }, { "ch.11", "물때" }, { "ch.12", "스무 살" },
+            { "ch.13", "첫눈" }, { "ch.14", "국화" }, { "ch.15", "스무 번째" }, { "ch.16", "Passing by" },
+            { "ch.17", "둘 중 하나" }, { "ch.18", "Quiet" }, { "ch.19", "전날 밤" }, { "ch.20", "주파수" },
             // 계절
             { "season.봄", "Spring" }, { "season.여름", "Summer" }, { "season.가을", "Autumn" }, { "season.겨울", "Winter" },
             // 스케줄 이름
             { "sched.job_orange", "Tangerine Farm" }, { "sched.job_haenyeo", "Help the Haenyeo" }, { "sched.job_cafe", "Beach Cafe" },
             { "sched.job_delivery", "Scooter Delivery" }, { "sched.dev_oreum", "Oreum Walk" }, { "sched.dev_skate", "Skate Practice" },
-            { "sched.dev_dance", "Dance Practice" }, { "sched.dev_radio", "Radio Letter" }, { "sched.rest_home", "Laze at Home" },
-            { "sched.rest_sea", "Sea Swim" }, { "sched.story", "Go to the Tower" },
+            { "sched.dev_dance", "Dance Practice" }, { "sched.dev_radio", "Radio Letter" }, { "sched.rest_home", "Eat & Rest" },
+            { "sched.rest_nap", "Nap" }, { "sched.rest_sea", "Sea Swim" }, { "sched.story", "Go to the Tower" },
             { "sched.job_salon", "Salon Assistant" }, { "sched.job_market", "Market Porter" }, { "sched.job_sashimi", "Night Serving" },
             { "sched.job_night_delivery", "Late-night Delivery" }, { "sched.job_hall", "Village Hall Volunteer" }, { "sched.job_dangsan", "Shrine Preparation" },
             { "sched.job_tower_watch", "Tower Night Patrol" }, { "sched.job_lighthouse", "Lighthouse Cleaning" }, { "sched.job_tower_fix", "Tower Maintenance Helper" }, { "sched.job_dj_assist", "Radio Station Assistant" },

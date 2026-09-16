@@ -56,10 +56,16 @@ namespace CoastRun
         {
             get
             {
-                if (GameManager.Active) return GameManager.I.Save.equippedPet;
-                return (PetKind)Mathf.Clamp(PlayerPrefs.GetInt(PrefsKey, 0), 0, 3);
+                if (GameManager.Active && GameManager.I.Save != null) return GameManager.I.Save.equippedPet;
+                return (PetKind)Mathf.Clamp(PlayerPrefs.GetInt(PrefsKey, 0), 0, (int)PetKind.BlackPig);
             }
-            set { PlayerPrefs.SetInt(PrefsKey, (int)value); PlayerPrefs.Save(); }
+            set
+            {
+                PlayerPrefs.SetInt(PrefsKey, (int)value);
+                PlayerPrefs.Save();
+                if (GameManager.Active && GameManager.I.Save != null)
+                    GameManager.I.Save.equippedPet = value;
+            }
         }
 
         private PlayerController _player;
@@ -81,7 +87,19 @@ namespace CoastRun
 
         public static PetCompanion Create(PlayerController player, HealthSystem health)
         {
-            var kind = GameManager.Active ? GameManager.I.Save.equippedPet : Selected;
+            // RunTuning(스토리/K-POP 시작 시 equippedPet 반영) 우선
+            var kind = RunTuning.Pet;
+            if (kind == PetKind.None && GameManager.Active && GameManager.I.Save != null)
+                kind = GameManager.I.Save.equippedPet;
+            // 86차(사용자): 스토리에서 산 펫이 K-POP 러닝에 안 보임 — 타이틀에서 바로 K-POP 으로 오면 gm.Save 가 null 이라 디스크 세이브(PeekSave)의 장착 펫을 본다.
+            if (kind == PetKind.None && GameManager.I != null)
+            {
+                var disk = GameManager.I.PeekSave();
+                if (disk != null) kind = disk.equippedPet != PetKind.None ? disk.equippedPet : PetShop.FirstOwned(disk);
+            }
+            if (kind == PetKind.None)
+                kind = Selected;
+            Debug.Log($"[Pet] Create kind={kind} tuning={RunTuning.Pet} kpop={ArcadeRun.KpopMode}");
             if (kind == PetKind.None)
                 return null;
             var go = new GameObject("Pet");
@@ -134,22 +152,19 @@ namespace CoastRun
             if (Instance == this) Instance = null;
         }
 
-        /// 66차(사용자): 펫은 Kling 으로 다시 그린 **뒷모습 그림**(Resources/CoastRun/Obs_Pet_<Kind>.png, 마젠타 키잉) 빌보드만 쓴다 —
-        ///   옛 Blender FBX(Pet_*.fbx)·절차 조형(BuildBird/Pig/Thug)은 삭제. 그림이 없으면 작은 공 하나(폴백).
+        /// 66차: PaintedProp 빌보드 우선. 없으면 절차형 3D 피겨(CoastFigureMesh).
         private void Build()
         {
             _body = new GameObject("Body").transform;
             _body.SetParent(transform, false);
             if (PaintedProp.Available("Pet_" + _kind))
             {
-                // 73차(사용자): 주인공(≈1.6 m)의 35 % ≈ 0.56 m. 오토바이는 바퀴까지라 살짝 크게.
                 float h = _kind == PetKind.BikerThug ? 0.64f : 0.56f;
                 PaintedProp.Attach(_body, "Pet_" + _kind, h, replace: false, outline: true);
                 return;
             }
-            var ball = GameObject.CreatePrimitive(PrimitiveType.Sphere); ball.name = "PetFallback"; Destroy(ball.GetComponent<Collider>());
-            ball.transform.SetParent(_body, false); ball.transform.localPosition = new Vector3(0f, 0.25f, 0f); ball.transform.localScale = Vector3.one * 0.4f;
-            ball.GetComponent<Renderer>().sharedMaterial = CoastMaterials.CreateToon(new Color(0.95f, 0.8f, 0.3f), null, null, 0.3f);
+            float hh = _kind == PetKind.BikerThug ? 0.64f : 0.56f;
+            CoastFigureMesh.BuildPet(_body, _kind, hh);
         }
 
 

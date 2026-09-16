@@ -12,8 +12,9 @@ namespace CoastRun
 
         public void ShowEvent(RandomEventResult ev)
         {
+            // Legacy path (already applied). Prefer Peek + choice modal when possible.
             _busy = true;
-            var modal = Modal("EventPopup", 560f, 440f, out var panel);
+            var modal = Modal("EventPopup", 560f, 480f, out var panel);
             var tag = Label(panel, "Tag", Loc.T("돌발 이벤트", "Random event"), 15, new Color(0.55f, 0.5f, 0.7f));
             Place(tag.rectTransform, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -12f), new Vector2(0f, 24f), new Vector2(0.5f, 1f));
             var t = Label(panel, "Title", Loc.Data("ev." + ev.def.id, ev.def.title), 26, Navy);
@@ -65,6 +66,7 @@ namespace CoastRun
         public void OpenShop()
         {
             if (_busy || Save == null) return;
+            PetShop.EnsureEquipped(Save);
             if (_shopModal != null) Destroy(_shopModal);
             var kinds = PetShop.ForSale;
             _shopModal = Modal("ShopPopup", 620f, 150f + kinds.Length * 148f + 70f, out var panel);
@@ -123,7 +125,7 @@ namespace CoastRun
                 ci.raycastTarget = false;
                 var price = Label(pp.transform, "Price", owned ? (equipped ? Loc.T("장착 중", "Equipped") : Loc.T("보유", "Owned")) : $"{PetShop.Price[k]:N0}", 15, Hex("#7A4A00")); price.alignment = TextAnchor.MiddleRight;
                 price.fontStyle = FontStyle.Bold; price.rectTransform.offsetMin = new Vector2(34f, 0f); price.rectTransform.offsetMax = new Vector2(-10f, 0f);
-                string label = !owned ? Loc.T("구매", "Buy") : equipped ? Loc.T("해제", "Unequip") : Loc.T("장착", "Equip");
+                string label = !owned ? Loc.T("구매", "Buy") : equipped ? Loc.T("장착 중", "Equipped") : Loc.T("장착", "Equip");
                 Color col = !owned ? (PetShop.CanAfford(Save, k) ? Hex("#4EA8FF") : new Color(0.65f, 0.65f, 0.7f)) : equipped ? new Color(0.6f, 0.62f, 0.7f) : Hex("#4EA8FF");
                 BigButton(card.transform, "Act", label, col, new Vector2(1f, 0f), new Vector2(-14f, 12f), new Vector2(128f, 46f), () => ShopAct(k));
             }
@@ -139,7 +141,7 @@ namespace CoastRun
             _modalPrimary = closeShop;
         }
 
-        /// 구매 → 장착 → 해제 순환. 에디터 키(1~3)와 버튼이 공유.
+        /// 구매 시 자동 장착. 보유 펫끼리만 교체(해제/없음 없음).
         public void ShopAct(PetKind k)
         {
             if (Save == null) return;
@@ -148,8 +150,7 @@ namespace CoastRun
                 if (PetShop.TryBuy(Save, k)) { Toast($"{PetCompanion.Names[(int)k]}를 데려왔어!"); _gm.Persist(); }
                 else Toast("돈이 모자라.");
             }
-            else if (Save.equippedPet == k) { Save.equippedPet = PetKind.None; _gm.Persist(); }
-            else { PetShop.Equip(Save, k); _gm.Persist(); }
+            else if (Save.equippedPet != k) { PetShop.Equip(Save, k); _gm.Persist(); }
             OpenShop();
         }
 

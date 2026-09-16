@@ -44,7 +44,7 @@ namespace CoastRun
         {
             var go = SpawnInner(id, parent, worldPos, lane);
             EnsureHazardRing(go, id);
-            // 71차(사용자): 장애물별 피해 = 최대 체력 비율(크기·무게순). 버스 60 % · 석상 45 % · 관광객 35 % · 허들/바리케이드/스쿠터 30 % · 상자/슬라임 25 % …
+            // 피해 = HUD 게이지 % (표 DamageFrac). K-POP·스토리 동일.
             if (go != null) { float f = DamageFrac(id); foreach (var hz in go.GetComponentsInChildren<ObstacleHazard>(true)) hz.DamageMul = f; }
             // 38차: 도로 점유표에 등록 + 근처 코인·말랑이 걷어내기(오리 장애물은 전 레인)
             bool wide = id == ObstacleId.OverheadBar || id == ObstacleId.Clothesline || id == ObstacleId.LanternString;
@@ -55,30 +55,43 @@ namespace CoastRun
             return go;
         }
 
-        /// 71차: 장애물별 피해 비율. 74차(사용자): **HP 30~60** 범위로 — 버스 60 · 석상 50 · 관광객 45 · 허들/바리케이드/스쿠터 40 · 상자/슬라임 35 · 나머지 30(HealthSystem 이 30~60 으로 한 번 더 클램프).
+        /// 장애물별 피해(HUD 게이지 0~100 기준 %). K-POP·스토리 공통.
+        /// 버스 60 · 석상/바위 50 · 관광객/태풍 45 · 허들·바리케이드·스쿠터 40 · 상자·슬라임·미사일 35 · 그 외 30.
         public static float DamageFrac(ObstacleId id)
         {
             switch (id)
             {
-                case ObstacleId.ParkedBus: return 0.60f;
-                case ObstacleId.StoneStatue: return 0.50f;
-                case ObstacleId.TouristCluster: return 0.45f;
+                case ObstacleId.ParkedBus: return Frac.Bus;
+                case ObstacleId.StoneStatue: return Frac.Heavy;
+                case ObstacleId.TouristCluster: return Frac.Crowd;
                 case ObstacleId.OverheadBar:
                 case ObstacleId.Clothesline:
-                case ObstacleId.LanternString: return 0.40f;   // 허들류(숙이기)
+                case ObstacleId.LanternString: return Frac.Duck;   // 숙이기
                 case ObstacleId.Barrier:
-                case ObstacleId.ScooterParked: return 0.40f;
+                case ObstacleId.ScooterParked: return Frac.Mid;
                 case ObstacleId.CrateStack:
                 case ObstacleId.DeliveryBox:
-                case ObstacleId.Slime: return 0.35f;
-                case ObstacleId.BikeFallen: return 0.30f;
-                case ObstacleId.SnowDrift: return 0.30f;
-                case ObstacleId.TrafficCone: return 0.30f;
-                case ObstacleId.WetFloorSign: return 0.30f;
-                case ObstacleId.LeafDrift: return 0.30f;
-                case ObstacleId.PuddleSlow: return 0.30f;
-                default: return ObstacleHazard.DefaultFrac;
+                case ObstacleId.Slime: return Frac.Box;
+                case ObstacleId.BikeFallen:
+                case ObstacleId.SnowDrift:
+                case ObstacleId.TrafficCone:
+                case ObstacleId.WetFloorSign:
+                case ObstacleId.LeafDrift:
+                case ObstacleId.PuddleSlow: return Frac.Light;
+                default: return Frac.Light;
             }
+        }
+
+        /// 마주 오는 차·하늘 장애물 등 카탈로그 밖 출처용 공통 상수.
+        public static class Frac
+        {
+            public const float Bus = 0.60f;     // −60
+            public const float Heavy = 0.50f;   // 석상·승합·바위 −50
+            public const float Crowd = 0.45f;   // 관광객·태풍 −45
+            public const float Duck = 0.40f;    // 허들·빨랫줄·등불 −40
+            public const float Mid = 0.40f;     // 바리케이드·스쿠터 −40
+            public const float Box = 0.35f;     // 상자·택배·슬라임·미사일 −35
+            public const float Light = 0.30f;   // 콘·자전거·눈·낙엽·웅덩이·귤 −30
         }
 
         /// 모든 장애물에 붉은 깜빡이 링. 종류별 크기를 맞추고, 이미 있으면 크기만 보정.

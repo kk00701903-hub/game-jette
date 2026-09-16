@@ -237,12 +237,13 @@ namespace CoastRun
         private void ToggleRecord(RecordTable.Track t)
         {
             var p = GameManager.I != null ? GameManager.I.Profile : null;
-            if (_playingNum == t.num) { _preview.Stop(); _playingNum = 0; Refresh(); return; }
+            if (_playingNum == t.num) { _preview.Stop(); _playingNum = 0; TitleAudio.SetBedVolume(0.85f); Refresh(); return; }
             var clip = CoastBgmLibrary.Load(t.Clip);
             if (clip == null) { Toast(Loc.T("음악 파일이 없어 (BGM/" + t.Clip + ")", "Missing " + t.Clip)); return; }
             _preview.Stop(); _preview.clip = clip; _preview.time = 0f; _preview.loop = true; _preview.Play();
             _playingNum = t.num;
             RecordTable.MarkSeen(p, t);
+            TitleAudio.SetBedVolume(0f);   // 스토리 BGM과 레코드 미리듣기 겹침 방지
             CoastAudioManager.Instance?.SetBedMuted(true);
             Refresh();
         }
@@ -435,7 +436,7 @@ namespace CoastRun
                 yield return null;
             }
             card.localScale = Vector3.one; card.localRotation = Quaternion.identity;
-            CoastAudioManager.PlayAnywhere(CoastSfx.CardReveal);
+            CoastAudioManager.PlayAnywhere(CoastSfx.Shutter);   // 86차(사용자): 배경음과 섞이는 스팅어 대신 「찰칵」만
         }
 
         private IEnumerator Flip(RectTransform card, Action atHalf)
@@ -669,6 +670,7 @@ namespace CoastRun
         {
             IsOpen = false;
             if (_preview != null) _preview.Stop();
+            TitleAudio.SetBedVolume(0.85f);
             CoastAudioManager.Instance?.SetBedMuted(false);
             var cb = _onClose; _onClose = null;
             if (_canvas != null) Destroy(_canvas.gameObject);

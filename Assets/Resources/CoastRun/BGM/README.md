@@ -5,6 +5,7 @@
 | 파일 | 어디서 |
 |---|---|
 | `BGM_M5.ogg` | 부팅·타이틀·메인 (`TitleAudio` / `CoastBgmLibrary.Menu`) |
+| `BGM_M13.wav` | 스토리 모드(육성 허브) (`TitleAudio.PlayRaising` / `CoastBgmLibrary.RaisingHub`) |
 | `BGM_M2 / M4 / M7 / M8 / M11 / M12` | K-POP 한 곡 달리기 (`ArcadeRun.KpopTracks`) |
 | `BGM_M9 / M10` | 스토리 러닝 — 홀수 스테이지 M9, 짝수 스테이지 M10 (`CoastBgmLibrary.Story`) |
 | `BGM_M1~M7` | 레코드(컬렉션) 화면 재생 |

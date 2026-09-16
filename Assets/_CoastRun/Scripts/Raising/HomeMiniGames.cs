@@ -7,7 +7,7 @@ using UnityEngine.UI;
 namespace CoastRun
 {
     /// 30차: 집 미니게임 3종. Start(kind, host, rewardable, onDone(rewardG)).
-    ///   윷놀이(Yut)  — 윷 4개 던지기, 20칸 직선 트랙, 도담(AI)과 경주. 상대 말을 잡으면 출발로. 이기면 60G, 지면 0.
+            ///   윷놀이(Yut)  — 윷 4개 던지기, 둘레+가운데 X 지름길, 갈림길 최단코스. 도담(AI)과 경주. 이기면 60G.
     ///   구슬치기(Marbles) — 끌어서 쏘기(방향·세기), 마당 밖으로 밀어낸 구슬 ×8G, 3발.
     ///   공기놀이(Gonggi) — 왕복하는 손이 노란 구간에 있을 때 [잡기], 5번, 성공 ×10G (전부 성공 +20G).
     public static class HomeMiniGames
@@ -110,30 +110,46 @@ namespace CoastRun
         {
             protected override string Title => Loc.T("윷놀이", "Yut Nori");
             private const int Cells = 20;
-            private int _me, _ai;            // 0 = 출발 전, Cells = 도착
+            private const int NCenter = 20, N5c = 21, Nc15 = 22, N10c = 23, Nc0 = 24, NodeCount = 25;
+            private const float BoardScale = 1.30f;
+            private enum Route { Outer, Cut5, Cut10 }
+            private int _meNode, _aiNode;
+            private Route _meRoute = Route.Outer, _aiRoute = Route.Outer;
             private bool _myTurn = true, _busy;
             private Image _meTok, _aiTok;
             private readonly Image[] _sticks = new Image[4];
             private Text _result;
             private Button _throwBtn;
-            private readonly List<Vector2> _cellPos = new List<Vector2>();
+            private readonly Vector2[] _nodePos = new Vector2[NodeCount];
 
             protected override void Build(Transform foot)
             {
-                // 트랙: 네모 둘레 20칸(모서리 포함), 출발 = 왼쪽 아래
-                for (int i = 0; i <= Cells; i++) _cellPos.Add(CellAnchor(i));
+                BuildBoardGraph();
+                // 바깥 둘레
                 for (int i = 0; i < Cells; i++)
                 {
                     bool corner = i % 5 == 0;
-                    var c = Dot(Field, "Cell" + i, _cellPos[i], corner ? new Vector2(34f, 34f) : new Vector2(22f, 22f), corner ? new Color(0.55f, 0.35f, 0.25f) : new Color(0.75f, 0.60f, 0.45f));
-                    if (i == 0) Txt(c.transform, "S", Loc.T("출발", "Start"), 10, Cream, TextAnchor.MiddleCenter);
+                    float sz = corner ? 40f : 34f;
+                    Dot(Field, "CellRim" + i, _nodePos[i], new Vector2(sz, sz), new Color(0.42f, 0.26f, 0.12f));
+                    var fill = Dot(Field, "Cell" + i, _nodePos[i], new Vector2(sz * 0.78f, sz * 0.78f), corner ? new Color(1f, 0.86f, 0.42f) : new Color(0.96f, 0.90f, 0.78f));
+                    if (i == 0) Txt(fill.transform, "S", Loc.T("출발", "Start"), 10, Cream, TextAnchor.MiddleCenter);
                 }
-                _meTok = Dot(Field, "Me", _cellPos[0], new Vector2(30f, 30f), Coral);
+                // X 지름길 칸
+                int[] cross = { N5c, N10c, Nc15, Nc0, NCenter };
+                for (int i = 0; i < cross.Length; i++)
+                {
+                    float sz = cross[i] == NCenter ? 44f : 32f;
+                    Dot(Field, "XRim" + i, _nodePos[cross[i]], new Vector2(sz, sz), new Color(0.42f, 0.26f, 0.12f));
+                    Dot(Field, "X" + i, _nodePos[cross[i]], new Vector2(sz * 0.78f, sz * 0.78f), cross[i] == NCenter ? new Color(1f, 0.86f, 0.42f) : new Color(0.96f, 0.90f, 0.78f));
+                }
+                // X 선
+                DrawLine(_nodePos[5], _nodePos[15]);
+                DrawLine(_nodePos[10], _nodePos[0]);
+                _meTok = Dot(Field, "Me", _nodePos[0], new Vector2(32f, 32f), Coral);
                 Txt(_meTok.transform, "T", Loc.T("나", "Me"), 10, Color.white, TextAnchor.MiddleCenter);
-                _aiTok = Dot(Field, "Ai", _cellPos[0], new Vector2(30f, 30f), Sky);
-                _aiTok.rectTransform.anchoredPosition = new Vector2(10f, -8f);
+                _aiTok = Dot(Field, "Ai", _nodePos[0], new Vector2(32f, 32f), Sky);
+                _aiTok.rectTransform.anchoredPosition = new Vector2(8f, -6f);
                 Txt(_aiTok.transform, "T", Loc.T("도담", "Dodam"), 9, Color.white, TextAnchor.MiddleCenter);
-                // 윷 4개(가운데)
                 for (int i = 0; i < 4; i++)
                 {
                     var st = CoastUiArt.Panel(Field, "Stick" + i, new Color(0.85f, 0.70f, 0.50f), 8);
@@ -144,24 +160,88 @@ namespace CoastRun
                 _result = Txt(Field, "Res", Loc.T("[던지기]를 눌러 시작", "Press [Throw] to start"), 20, Navy, TextAnchor.MiddleCenter);
                 Rect(_result.rectTransform, new Vector2(0.2f, 0.28f), new Vector2(0.8f, 0.40f), Vector2.zero, Vector2.zero);
                 _throwBtn = Btn(foot, "Throw", Loc.T("던지기", "Throw"), Coral, new Vector2(1f, 0.5f), new Vector2(-12f, 0f), new Vector2(160f, 54f), () => { if (_myTurn && !_busy) StartCoroutine(Turn(true)); });
-                Status.text = Loc.T("내 차례. 도담이보다 먼저 한 바퀴!", "Your turn. Get around before Dodam!");
+                Status.text = Loc.T("내 차례. 갈림길에 걸리면 X 지름길로!", "Your turn. Land on a fork → X shortcut!");
+            }
+
+            private void DrawLine(Vector2 a, Vector2 b)
+            {
+                var line = CoastUiArt.Panel(Field, "XL", new Color(0.55f, 0.35f, 0.18f, 0.85f), 4);
+                var rt = line.rectTransform;
+                rt.anchorMin = rt.anchorMax = (a + b) * 0.5f;
+                rt.pivot = new Vector2(0.5f, 0.5f);
+                Vector2 d = b - a;
+                // Field is normalized anchors — approximate pixel length via parent size later; use delta in anchor space scaled
+                float len = d.magnitude * 520f;
+                rt.sizeDelta = new Vector2(Mathf.Max(8f, len), 6f);
+                rt.localRotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg);
+            }
+
+            private void BuildBoardGraph()
+            {
+                for (int i = 0; i < Cells; i++) _nodePos[i] = CellAnchor(i);
+                var c = new Vector2(0.5f, 0.5f);
+                _nodePos[NCenter] = c;
+                _nodePos[N5c] = Vector2.Lerp(_nodePos[5], c, 0.5f);
+                _nodePos[Nc15] = Vector2.Lerp(c, _nodePos[15], 0.5f);
+                _nodePos[N10c] = Vector2.Lerp(_nodePos[10], c, 0.5f);
+                _nodePos[Nc0] = Vector2.Lerp(c, _nodePos[0], 0.5f);
             }
 
             private static Vector2 CellAnchor(int i)
             {
-                // 왼쪽 아래(0) → 오른쪽 아래(5) → 오른쪽 위(10) → 왼쪽 위(15) → 왼쪽 아래(20)
-                float l = 0.10f, r = 0.90f, b = 0.10f, t = 0.90f;
-                i = Mathf.Clamp(i, 0, Cells);
+                float half = Mathf.Min(0.48f, 0.40f * BoardScale); // 130%, 화면 밖으로 안 나가게 클램프
+                float l = 0.5f - half, r = 0.5f + half, b = 0.5f - half, t = 0.5f + half;
+                i = ((i % Cells) + Cells) % Cells;
                 if (i <= 5) return new Vector2(Mathf.Lerp(l, r, i / 5f), b);
                 if (i <= 10) return new Vector2(r, Mathf.Lerp(b, t, (i - 5) / 5f));
                 if (i <= 15) return new Vector2(Mathf.Lerp(r, l, (i - 10) / 5f), t);
                 return new Vector2(l, Mathf.Lerp(t, b, (i - 15) / 5f));
             }
 
+            /// 한 칸 전진. 지름길은 모서리에 착지한 뒤에만(CommitCornerShortcut).
+            private static int StepOnce(ref int node, ref Route route, out bool finished)
+            {
+                finished = false;
+                if (route == Route.Cut5)
+                {
+                    if (node == 5) node = N5c;
+                    else if (node == N5c) node = NCenter;
+                    else if (node == NCenter) node = Nc15;
+                    else if (node == Nc15) { node = 15; route = Route.Outer; }
+                    else { route = Route.Outer; node = (node + 1) % Cells; }
+                }
+                else if (route == Route.Cut10)
+                {
+                    if (node == 10) node = N10c;
+                    else if (node == N10c) node = NCenter;
+                    else if (node == NCenter) node = Nc0;
+                    else if (node == Nc0) { node = 0; route = Route.Outer; finished = true; }
+                    else { route = Route.Outer; node = (node + 1) % Cells; }
+                }
+                else
+                {
+                    node = (node + 1) % Cells;
+                    if (node == 0) finished = true;
+                }
+                return node;
+            }
+
+            private static void CommitCornerShortcut(ref int node, ref Route route)
+            {
+                if (route != Route.Outer) return;
+                if (node == 5) route = Route.Cut5;
+                else if (node == 10) route = Route.Cut10;
+            }
+
+            private void PlaceTok(Image tok, int node, bool ai)
+            {
+                tok.rectTransform.anchorMin = tok.rectTransform.anchorMax = _nodePos[Mathf.Clamp(node, 0, NodeCount - 1)];
+                tok.rectTransform.anchoredPosition = ai ? new Vector2(8f, -6f) : Vector2.zero;
+            }
+
             private System.Collections.IEnumerator Turn(bool me)
             {
                 _busy = true;
-                // 던지기 연출: 0.6초 동안 뒤집기
                 float t = 0f;
                 bool[] flat = new bool[4];
                 while (t < 0.6f)
@@ -180,23 +260,34 @@ namespace CoastRun
                 switch (flats) { case 1: move = 1; name = "도"; break; case 2: move = 2; name = "개"; break; case 3: move = 3; name = "걸"; break; case 4: move = 4; name = "윷"; again = true; break; default: move = 5; name = "모"; again = true; break; }
                 _result.text = (me ? Loc.T("나: ", "Me: ") : Loc.T("도담: ", "Dodam: ")) + name + $" (+{move})" + (again ? Loc.T("  한 번 더!", "  again!") : "");
                 yield return new WaitForSecondsRealtime(0.5f);
-                // 이동(한 칸씩)
+                bool won = false;
                 for (int k = 0; k < move; k++)
                 {
-                    if (me) _me = Mathf.Min(Cells, _me + 1); else _ai = Mathf.Min(Cells, _ai + 1);
-                    var tok = me ? _meTok : _aiTok; int pos = me ? _me : _ai;
-                    tok.rectTransform.anchorMin = tok.rectTransform.anchorMax = _cellPos[pos];
-                    tok.rectTransform.anchoredPosition = me ? Vector2.zero : new Vector2(10f, -8f);
+                    if (me)
+                    {
+                        StepOnce(ref _meNode, ref _meRoute, out bool fin);
+                        PlaceTok(_meTok, _meNode, false);
+                        if (fin) won = true;
+                    }
+                    else
+                    {
+                        StepOnce(ref _aiNode, ref _aiRoute, out bool fin);
+                        PlaceTok(_aiTok, _aiNode, true);
+                        if (fin) won = true;
+                    }
+                    var tok = me ? _meTok : _aiTok;
                     tok.rectTransform.localScale = Vector3.one * 1.25f;
                     yield return new WaitForSecondsRealtime(0.12f);
                     tok.rectTransform.localScale = Vector3.one;
+                    if (won) break;
                 }
-                // 잡기
-                if (me && _me == _ai && _ai > 0 && _ai < Cells) { _ai = 0; _aiTok.rectTransform.anchorMin = _aiTok.rectTransform.anchorMax = _cellPos[0]; _result.text += Loc.T("  도담이를 잡았다!", "  Caught Dodam!"); again = true; }
-                if (!me && _ai == _me && _me > 0 && _me < Cells) { _me = 0; _meTok.rectTransform.anchorMin = _meTok.rectTransform.anchorMax = _cellPos[0]; _result.text += Loc.T("  잡혔다…", "  Caught…"); again = true; }
+                if (me) CommitCornerShortcut(ref _meNode, ref _meRoute);
+                else CommitCornerShortcut(ref _aiNode, ref _aiRoute);
+                if (me && _aiNode != 0 && _meNode == _aiNode && !won) { _aiNode = 0; _aiRoute = Route.Outer; PlaceTok(_aiTok, 0, true); _result.text += Loc.T("  도담이를 잡았다!", "  Caught Dodam!"); again = true; }
+                if (!me && _meNode != 0 && _aiNode == _meNode && !won) { _meNode = 0; _meRoute = Route.Outer; PlaceTok(_meTok, 0, false); _result.text += Loc.T("  잡혔다…", "  Caught…"); again = true; }
                 yield return new WaitForSecondsRealtime(0.4f);
-                if (_me >= Cells) { Status.text = Loc.T("이겼다! 60G", "You win! 60G"); _result.text = Loc.T("승리!", "Victory!"); yield return new WaitForSecondsRealtime(1.0f); Finish(60); yield break; }
-                if (_ai >= Cells) { Status.text = Loc.T("도담이가 먼저 들어왔어. 다음에 또!", "Dodam got home first. Next time!"); _result.text = Loc.T("패배…", "Lost…"); yield return new WaitForSecondsRealtime(1.2f); Finish(0); yield break; }
+                if (me && won) { Status.text = Loc.T("이겼다! 60G", "You win! 60G"); _result.text = Loc.T("승리!", "Victory!"); yield return new WaitForSecondsRealtime(1.0f); Finish(60); yield break; }
+                if (!me && won) { Status.text = Loc.T("도담이가 먼저 들어왔어. 다음에 또!", "Dodam got home first. Next time!"); _result.text = Loc.T("패배…", "Lost…"); yield return new WaitForSecondsRealtime(1.2f); Finish(0); yield break; }
                 _busy = false;
                 if (again) { if (!me) StartCoroutine(Turn(false)); else Status.text = Loc.T("한 번 더 던져!", "Throw again!"); yield break; }
                 _myTurn = !me;

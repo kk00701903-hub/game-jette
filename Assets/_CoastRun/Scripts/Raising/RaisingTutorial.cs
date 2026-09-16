@@ -37,26 +37,25 @@ namespace CoastRun
 
         public static List<Step> DefaultSteps()
         {
+            return TamaSteps();
+        }
+
+        /// TamaRaisingUI 대상 이름에 맞춘 튜토리얼(밥·놀기·알바·다음 턴·생존).
+        public static List<Step> TamaSteps()
+        {
             return new List<Step>
             {
-                new Step { target = null, ko = "아가씨, 처음이시죠? 집사 도담입니다.\n이 방에서 뭘 할 수 있는지 하나씩 보여 드릴게요.", en = "Miss, first time here? I'm Dodam, your butler.\nLet me show you around." },
-                new Step { target = "Date", ko = "여기가 지금 <b>주차와 계절</b>이에요. 탭하면 챕터 달력이 열려요.\n챕터가 끝나는 주까지 체력을 키워야 러닝을 갈 수 있어요.", en = "This is the <b>week & season</b>. Tap to open the chapter calendar.\nRaise stamina before the chapter's last week to unlock the run." },
-                new Step { target = "Money", ko = "<b>G</b>는 상점·씨앗·가구에 써요.\n알바와 러닝, 베란다 꽃 판매로 벌 수 있어요.", en = "<b>G</b> buys pets, seeds and furniture.\nEarn it from jobs, runs and selling flowers." },
-                new Step { target = "Level", ko = "지금 <b>챕터</b>예요. 챕터의 마지막 주에 러닝이 열리고,\n체력이 모자라면 한 주가 더 늘어나요.", en = "The current <b>chapter</b>. The run opens on its last week;\nnot enough stamina means one more week." },
-                new Step { target = "Cond", ko = "<b>컨디션</b>이에요. 스트레스가 체력을 넘으면 부상!\n휴식 카드로 회복하세요.", en = "<b>Condition</b>. Stress above stamina means injury —\nrest to recover." },
-                new Step { target = "HeartsPlate", ko = "<b>말랑이 하트</b>. 러닝에서 젤리를 모으면 차고,\n많이 모을수록 챕터 등급이 올라가요.", en = "<b>Hearts</b> fill as you collect jellies on runs —\nmore hearts, better chapter grade." },
-                new Step { target = "ArcadeBtnSlot", ko = "<b>달리기</b>: 챕터와 상관없이 무한 러닝·오늘의 런을 바로 달려요.\n기록과 도장을 모으세요.", en = "<b>Run</b>: endless and daily runs anytime, independent of the story." },
-                new Step { target = "TimelineBtnSlot", ko = "<b>챕터</b>: 지나온 챕터를 다시 보고, 남은 주차를 확인해요.", en = "<b>Chapters</b>: revisit past chapters and check weeks left." },
-                new Step { target = "CollBtnSlot", ko = "<b>컬렉션</b>: 포토카드·앨범·업적이 모여요.", en = "<b>Album</b>: photocards, albums and achievements." },
-                new Step { target = "ShopBtnSlot", ko = "<b>상점</b>: 펫을 데려오면 러닝에서 코인을 끌어오거나 막아 줘요.", en = "<b>Shop</b>: pets help on runs — magnets, shields and more." },
-                new Step { target = "RhythmBtnSlot", ko = "<b>리듬</b>: 빡세게 / 보통 / 여유.\n성장은 빠르지만 스트레스도 빨라요 — 컨디션을 보며 고르세요.", en = "<b>Pace</b>: hard / normal / easy. Faster growth, faster stress." },
-                new Step { target = "TitleBtnSlot", ko = "<b>홈</b>: 타이틀로 돌아가요. 진행은 자동 저장되니 걱정 마세요.", en = "<b>Home</b>: back to the title. Progress autosaves." },
-                new Step { target = "TabBody", ko = "<b>스탯</b>이에요. 체력은 러닝 HP, 순발력은 속도가 돼요.\n옆으로 밀면 정신/생활 스탯도 보여요.", en = "<b>Stats</b>. Stamina becomes run HP, agility becomes speed.\nSwipe for mind & life stats.", butlerTop = true },
-                new Step { targets = new[] { "Chip0", "Chip1", "Chip2" }, ko = "이번 주 <b>스케줄 칸 3개</b>예요.\n알바·자기계발·휴식 카드를 넣으면 한 주가 굴러가요.", en = "This week's <b>three schedule slots</b>.\nFill them with job, growth and rest cards.", butlerTop = true },
-                new Step { target = "ScheduleHit", ko = "<b>[스케줄]</b>에서 카드를 골라 칸을 채워요.\n비워 두면 제가 알아서 채워 드려요.", en = "<b>[Plan]</b> to pick cards. Leave it empty and I'll fill it in.", butlerTop = true },
-                new Step { target = "RunHit", ko = "<b>[실행]</b>하면 한 주가 지나가고 결과가 나와요.\n챕터 마지막 주엔 여기서 러닝이 시작돼요!", en = "<b>[Go]</b> plays the week. On the chapter's last week, the run starts here!", butlerTop = true },
-                new Step { target = "StoryHit", ko = "<b>[방 꾸미기]</b> — 우리 집이에요.\n가구를 놓고, 베란다에서 꽃을 키워 팔고, 미니게임으로 G를 벌어요.", en = "<b>[Decorate]</b> — our home. Furniture, balcony flowers to sell, and mini-games for G.", butlerTop = true },
-                new Step { target = null, ko = "이 정도면 충분해요. 그럼 첫 주, 시작해 볼까요?\n(에디터에선 F1 로 다시 볼 수 있어요)", en = "That's the tour. Shall we start the first week?" },
+                new Step { target = null, ko = "아가씨, 처음이시죠? 집사 도담입니다.\n이 마당에서 뭘 할 수 있는지 짧게 보여 드릴게요.", en = "Miss, first time? I'm Dodam.\nA quick tour of this yard." },
+                new Step { target = "Week", ko = "여기가 <b>주차와 계절</b>이에요.\n챕터 끝까지 체력을 키워야 대회(러닝)에 갈 수 있어요.", en = "<b>Week & season</b>.\nRaise stamina before the chapter ends to enter the contest run." },
+                new Step { target = "GoalRibbon", ko = "<b>목표 리본</b>이에요. 게이트 체력 · ♥ S컷 · 쌀/옷을 한눈에 봐요.\n밥·알바를 고를 때 여기를 보세요.", en = "The <b>goal ribbon</b>: gate stamina, ♥ for S, rice/clothes.\nCheck it when you pick Feed or Work." },
+                new Step { target = "Money", ko = "<b>G</b>는 장보기·교육·마이룸에 써요.\n알바로 벌고, 쌀이 떨어지면 장보기!", en = "<b>G</b> buys food, lessons and room stuff.\nEarn from jobs — shop when rice runs low!" },
+                new Step { target = "StatusBtn", ko = "<b>상태창</b>에서 체력·기운·평판을 자세히 봐요.", en = "<b>Status</b> shows stamina, energy and trust in detail." },
+                new Step { target = "RoomBtn", ko = "<b>마이룸</b> — 꾸미기·텃밭·미니게임으로 쉬거나 G를 벌어요.", en = "<b>My Room</b> — decorate, garden, mini-games." },
+                new Step { target = "ShopBtn", ko = "<b>장보기</b> — 쌀·반찬·옷, 그리고 펫.\n생존이 무너지면 일어나기 힘들어요.", en = "<b>Shop</b> — rice, sides, clothes, pets.\nSurvival matters." },
+                new Step { targets = new[] { "Act0", "Act1", "Act2" }, ko = "아래 <b>밥 · 놀기 · 알바</b>를 누르면 카드 두 장이 나와요.\n골라서 한 주를 채워 주세요. 주당 세 번!", en = "Tap <b>Feed · Play · Work</b> to pick from two cards.\nThree actions fill a week!", butlerTop = true },
+                new Step { target = "NextTurn", ko = "<b>다음 턴</b> — 한 주가 지나고 생활 결산이 나요.\n챕터 마지막 주면 이야기 → 대회로 이어져요.", en = "<b>Next turn</b> ends the week.\nOn the chapter's last week: story → contest.", butlerTop = true },
+                new Step { target = "Girl", ko = "하늘이를 <b>쓰다듬으면</b> 스트레스가 내려가요.\n탭하면 말도 걸어 줘요.", en = "<b>Pet</b> Haneul to lower stress.\nTap to chat.", butlerTop = true },
+                new Step { target = null, ko = "이 정도면 충분해요. 밥부터 눌러 볼까요?\n(에디터에선 F1 로 다시 볼 수 있어요)", en = "That's the tour. Try Feed?\n(Press F1 in the editor to replay.)" },
             };
         }
 

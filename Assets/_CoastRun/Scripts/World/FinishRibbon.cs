@@ -41,8 +41,8 @@ namespace CoastRun
                 CoastEditUtil.DestroyCollider(q);
                 q.transform.localPosition = new Vector3(0f, gh * 0.5f, 0f);
                 q.transform.localScale = new Vector3(gw, gh, 1f);
-                var shader = Shader.Find("CoastRun/ChromaUnlit") ?? CoastMaterials.UnlitShader;
-                var gm = new Material(shader);
+                var shader = CoastMaterials.Require("CoastRun/ChromaUnlit", "CoastRun/UnlitCurved", "Universal Render Pipeline/Unlit", "Sprites/Default");
+                var gm = CoastMaterials.NewMat(shader);
                 if (gm.HasProperty("_BaseMap")) gm.SetTexture("_BaseMap", gateTex); else gm.mainTexture = gateTex;
                 if (gm.HasProperty("_BaseColor")) gm.SetColor("_BaseColor", Color.white);
                 if (gm.HasProperty("_KeyColor")) gm.SetColor("_KeyColor", new Color(1f, 0f, 1f, 1f));

@@ -25,7 +25,10 @@ namespace CoastRun
         private ObstacleSpawner _obstacles;
         private System.Random _rng;
         private Transform _boss, _bossVis, _bossBlob;
+        private BossBody _body;
         private float _bossT, _bossLen, _attackT, _lat, _latTarget, _appear;
+        // 86차: 3D 스러운 움직임 — 앞뒤 스윙(원근)·기울기·윈드업
+        private float _latVel, _prevLat, _prevHover, _depth, _depthTarget, _windup;
         private int _chapter;
         private bool _rush;
         private readonly System.Collections.Generic.List<float> _bossAt = new System.Collections.Generic.List<float>();   // 곡 시각(초)
@@ -140,6 +143,13 @@ namespace CoastRun
             _boss = new GameObject("Boss_" + kind).transform;
             _boss.SetParent(SkyHazards.Root, false);
             _bossVis = SkyHazards.Visual(_boss, Art(kind), kind == Kind.Golem ? 7.8f : 6.9f, new Color(0.5f, 0.2f, 0.6f), outline: true);   // 52차: 3배
+            // 86차(사용자): 종이 인형처럼 보이던 보스 → 카메라를 향해 돌되 **기울기(롤·피치)·앞뒤 스윙(원근)·윈드업 스쿼시**를 얹는 BossBody
+            if (_bossVis != null)
+            {
+                var yb = _bossVis.GetComponent<YawBillboard>(); if (yb != null) Destroy(yb);
+                _body = _bossVis.gameObject.AddComponent<BossBody>(); _body.kind = kind; _body.baseScale = _bossVis.localScale;
+            }
+            _depth = 0f; _depthTarget = 0f; _latVel = 0f; _prevLat = 0f; _prevHover = Hover; _windup = 0f;
             // 떠 있는 보스의 바닥 그림자(직접 놓는 소프트 원판 — BlobShadow 는 호스트 높이를 따라가 버림)
             var sq = GameObject.CreatePrimitive(PrimitiveType.Quad); sq.name = "BossShadow"; Destroy(sq.GetComponent<Collider>());
             sq.transform.SetParent(SkyHazards.Root, false); sq.transform.rotation = Quaternion.Euler(90f, 0f, 0f); sq.transform.localScale = new Vector3(5.5f, 5.5f, 1f);
@@ -150,7 +160,8 @@ namespace CoastRun
             {
                 float dt = Time.deltaTime; _bossT += dt; _appear = Mathf.Min(1f, _appear + dt * 1.2f);
                 _attackT -= dt;
-                if (_attackT <= 0f) { Attack(kind); _attackT = AttackGap(kind); }
+                if (_attackT <= 0.32f && _windup <= 0f) _windup = 0.32f;   // 86차: 공격 직전 윈드업(부풀었다 튕김)
+                if (_attackT <= 0f) { Attack(kind); _attackT = AttackGap(kind); _body?.Recoil(); }
                 yield return null;
             }
             // 퇴장: 위로 날아가며 사라짐(Active 를 먼저 꺼서 FollowBoss 가 붙잡지 않게)
@@ -229,16 +240,61 @@ namespace CoastRun
         private void Bob(float amount) => _bob = amount;
 
         /// 보스는 주인공 앞 Ahead m, 높이 Hover m 에서 떠다닌다. 가끔 레인을 옮긴다.
+        /// 86차(사용자): **원근·3D 움직임** — 앞뒤로 스윙(22~34 m: 다가오면 커지고 멀어지면 작아짐), 옆으로 갈 땐 기울고(롤), 오르내릴 땐 숙이고(피치),
+        ///   종류별 리듬(갈매기 날갯짓 바운스·골렘 무겁게 느리게·도깨비 팽이처럼 회전+불규칙), 공격 전 부풀었다 튕기는 스쿼시, 그림자는 높이에 따라 커지고 옅어진다.
         private void FollowBoss()
         {
             if (_boss == null || _player == null) return;
-            if (_rng.Next(1000) < 8) _latTarget = (_rng.Next(3) - 1) * SkyHazards.LaneWidth * 0.8f;
-            _lat = Mathf.MoveTowards(_lat, _latTarget, Time.deltaTime * 2.2f);
-            _bob = Mathf.MoveTowards(_bob, 0f, Time.deltaTime * 1.5f);
-            float hover = Hover + Mathf.Sin(Time.time * 2.1f) * 0.45f + _bob * 2f;
-            float ahead = Mathf.Lerp(60f, Ahead, 1f - (1f - _appear) * (1f - _appear));
+            float dt = Time.deltaTime; if (dt <= 0f) return;
+            var kind = Current; float t = Time.time;
+            if (_rng.Next(1000) < (kind == Kind.Dokkaebi ? 16 : 8)) _latTarget = (_rng.Next(3) - 1) * SkyHazards.LaneWidth * (kind == Kind.Dokkaebi ? 1.0f : 0.8f);
+            if (_rng.Next(1000) < 6) _depthTarget = (float)(_rng.NextDouble() * 12.0 - 6.0);   // 앞뒤 스윙 목표(-6 가까이 ~ +6 멀리)
+            float latSpeed = kind == Kind.Golem ? 1.4f : kind == Kind.Dokkaebi ? 4.5f : 2.6f;
+            _lat = Mathf.SmoothDamp(_lat, _latTarget, ref _latVel, 0.55f / latSpeed * 1.2f, 20f, dt);
+            _depth = Mathf.MoveTowards(_depth, _depthTarget + (kind == Kind.Seagull ? Mathf.Sin(t * 0.7f) * 3f : 0f), dt * (kind == Kind.Golem ? 1.2f : 3f));
+            _bob = Mathf.MoveTowards(_bob, 0f, dt * 1.5f);
+            float rhythm = kind == Kind.Seagull ? Mathf.Sin(t * 5.2f) * 0.22f + Mathf.Sin(t * 1.3f) * 0.7f
+                         : kind == Kind.Golem ? Mathf.Sin(t * 1.1f) * 0.5f
+                         : Mathf.Sin(t * 2.4f) * 0.6f + Mathf.Sin(t * 5.7f) * 0.25f;
+            float hover = Hover + rhythm + _bob * 2f;
+            float ahead = Mathf.Lerp(60f, Ahead, 1f - (1f - _appear) * (1f - _appear)) + _depth * _appear;
             _boss.position = RoadPlacement.OnRoad(_player.PathDistance + ahead, _lat, hover);
-            if (_bossBlob != null) _bossBlob.position = RoadPlacement.OnRoad(_player.PathDistance + ahead, _lat, 0.03f);
+            if (_bossBlob != null)
+            {
+                _bossBlob.position = RoadPlacement.OnRoad(_player.PathDistance + ahead, _lat, 0.03f);
+                float hs = Mathf.Lerp(4.2f, 6.8f, Mathf.InverseLerp(3.5f, 8f, hover));
+                _bossBlob.localScale = new Vector3(hs, hs, 1f);
+            }
+            if (_body != null)
+            {
+                float vy = (hover - _prevHover) / dt; _prevHover = hover;
+                _body.roll = Mathf.Clamp(-_latVel * (kind == Kind.Golem ? 3f : 7f), -28f, 28f);
+                _body.pitch = Mathf.Clamp(-vy * (kind == Kind.Golem ? 2f : 5f), -18f, 18f) + (_depth < 0f ? -_depth * 1.2f : 0f);   // 다가올 땐 앞으로 숙임
+                _body.spin = kind == Kind.Dokkaebi ? Mathf.Sin(t * 3.1f) * 22f : 0f;
+                _body.squash = 0f;
+                if (_windup > 0f) { _windup -= dt; _body.squash = Mathf.Sin(Mathf.Clamp01(1f - _windup / 0.32f) * Mathf.PI) * 0.16f; }
+                _body.flap = kind == Kind.Seagull ? Mathf.Sin(t * 10.4f) * 0.04f : 0f;
+            }
+        }
+
+        /// 86차: 보스 스프라이트 몸 — 카메라 쪽으로 돌린 뒤(요 빌보드) 롤·피치·스핀·스쿼시를 얹는다. 회전축은 발끝이 아니라 몸 중심.
+        public class BossBody : MonoBehaviour
+        {
+            public Kind kind; public Vector3 baseScale = Vector3.one;
+            public float roll, pitch, spin, squash, flap;
+            private float _recoil;
+            public void Recoil() { _recoil = 0.28f; }
+            private void LateUpdate()
+            {
+                var cam = Camera.main; if (cam == null) return;
+                Vector3 toCam = cam.transform.position - transform.position; toCam.y = 0f;
+                var look = toCam.sqrMagnitude > 0.001f ? Quaternion.LookRotation(-toCam.normalized, Vector3.up) : Quaternion.identity;
+                float rc = 0f;
+                if (_recoil > 0f) { _recoil -= Time.deltaTime; rc = Mathf.Sin(Mathf.Clamp01(_recoil / 0.28f) * Mathf.PI) ; }
+                transform.rotation = look * Quaternion.Euler(pitch + rc * -10f, spin, roll);
+                float sx = 1f + squash * 0.9f - rc * 0.10f + flap, sy = 1f - squash * 0.6f + rc * 0.14f - flap;
+                transform.localScale = new Vector3(baseScale.x * sx, baseScale.y * sy, baseScale.z);
+            }
         }
     }
 }

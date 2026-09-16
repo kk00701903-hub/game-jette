@@ -72,6 +72,13 @@ namespace CoastRun
                 // alpha falloff makes it the soft disc it was meant to be.
                 // 12차: 휘는 셰이더로 — 곧게 그리던 그림자가 휜 도로에서 코인·소품과 떨어져 떠 있었다.
                 _sharedMat = CoastMaterials.CreateTexturedTransparentCurved(DiscTexture(), CoastPalette.BlobShadow);
+                if (_sharedMat == null)
+                {
+                    Debug.LogError("[BlobShadow] material create failed (shader missing)");
+                    Destroy(go);
+                    _quad = null;
+                    return;
+                }
                 _sharedMat.renderQueue = 2950;
             }
 

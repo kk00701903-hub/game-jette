@@ -41,7 +41,8 @@ namespace CoastRun
         public static string Alias(string name)
         {
             if (string.IsNullOrEmpty(name) || name.StartsWith("BGM_M")) return null;
-            if (name.StartsWith("BGM_Menu") || name == "BGM_Title") return "BGM_M5";
+            if (name.StartsWith("BGM_Menu") || name == "BGM_Title") return "BGM_M14";
+            if (name == "BGM_Opening") return "BGM_M3";
             if (name.StartsWith("BGM_End")) return name.Contains("Descent") ? "BGM_M1" : "BGM_M3";
             if (name.StartsWith("BGM_Memory") || name.StartsWith("BGM_Cine")) return "BGM_M6";
             if (name.StartsWith("BGM_CH") || name.StartsWith("Track_")) return "BGM_M9";
@@ -51,11 +52,15 @@ namespace CoastRun
 
         public static bool Has(string name) => Load(name) != null;
 
-        /// 48차-5(사용자): 첫 시작(스플래시)·메인 화면 음악은 레코드 M5 「돌아온 제주」. 없으면 BGM_Title → 옛 BGM_Menu(_Cleared).
+        /// 메인 화면(타이틀) BGM — M14 「우산 (inst)」. 없으면 M5 → Title → Menu 폴백.
         public static string Menu(bool cleared) =>
-            Has("BGM_M5") ? "BGM_M5"
+            Has("BGM_M14") ? "BGM_M14"
+            : Has("BGM_M5") ? "BGM_M5"
             : Has("BGM_Title") ? "BGM_Title"
             : cleared && Has("BGM_Menu_Cleared") ? "BGM_Menu_Cleared" : "BGM_Menu";
+
+        /// 스토리 모드(육성 허브 05_Raising) 배경 — M13 「하늘의 약속」. 없으면 메뉴곡으로 폴백.
+        public static string RaisingHub() => Has("BGM_M13") ? "BGM_M13" : Menu(false);
         /// 26차: K-POP 러닝모드 트랙 — Resources/CoastRun/BGM/BGM_KPOP_1.ogg … 순서대로. 없으면 null(챕터 스템으로 폴백).
         public static AudioClip Kpop(int index)
         {

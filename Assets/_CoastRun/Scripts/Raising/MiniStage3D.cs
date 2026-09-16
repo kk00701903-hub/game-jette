@@ -186,42 +186,43 @@ namespace CoastRun
             return q;
         }
 
-        /// 부드러운 원판(그림자·글로우) — URP Lit 투명 + 소프트 디스크 텍스처, 스페큘러 없음. (Particles/Unlit 은 무대 RT 에서 알파 0.55 아래가 안 보였다)
+        /// 부드러운 원판(그림자·글로우) — CoastRun/UnlitCurved SoftDisc.
+        /// URP Lit Transparent 는 모바일(Strip Unused Variants)에서 OutputAlpha→1 이 되어
+        /// 구슬 아래 갈색/검정 네모·흰 스파크 네모로 보였다.
         public static Material SoftDisc(Color color)
         {
-            var m = Lit(color, 0f, 0f, true);
-            if (m.HasProperty("_BaseMap")) m.SetTexture("_BaseMap", BlobShadow.SoftDisc());
-            if (m.HasProperty("_SpecularHighlights")) { m.SetFloat("_SpecularHighlights", 0f); m.EnableKeyword("_SPECULARHIGHLIGHTS_OFF"); }
+            var m = CoastMaterials.CreateTexturedTransparentNoFog(BlobShadow.SoftDisc(), color);
+            OpaqueAlpha(m);
             return m;
         }
 
-        /// 60차: 네온(발광) 재질 — 무궁화 레인 선. 바탕색 + 같은 색 발광.
+        /// 60차: 네온(발광) 재질 — 바탕색 + Emission. transparent면 SoftDisc(모바일 알파 안전).
         public static Material Neon(Color color, float glow = 1.6f, bool transparent = false)
         {
-            var m = Lit(color, 0.2f, 0f, transparent);
+            if (transparent)
+                return SoftDisc(new Color(color.r, color.g, color.b, Mathf.Clamp01(Mathf.Max(color.a, 0.35f))));
+            var m = Lit(color, 0.2f, 0f, false);
             if (m.HasProperty("_EmissionColor")) { m.SetColor("_EmissionColor", color * glow); m.EnableKeyword("_EMISSION"); m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.RealtimeEmissive; }
             return m;
         }
 
-        /// URP Lit 런타임 머티리얼(귀여운 반짝 구슬용). transparent 면 알파 블렌드.
+        /// URP Lit 런타임 머티리얼(귀여운 반짝 구슬용).
+        /// transparent 면 UnlitCurved 알파 — 모바일에서 Lit Transparent 배리언트 스트립 시
+        /// OutputAlpha→1(검은/갈색 네모)이 되던 경로를 피한다. 에디터·기기 동일.
         public static Material Lit(Color color, float smoothness = 0.6f, float metallic = 0f, bool transparent = false)
         {
-            var sh = Shader.Find("Universal Render Pipeline/Lit") ?? CoastMaterials.LitShader;
-            var m = new Material(sh);
+            if (transparent)
+            {
+                var soft = CoastMaterials.CreateTexturedTransparentNoFog(Texture2D.whiteTexture, color);
+                OpaqueAlpha(soft);
+                return soft;
+            }
+            var sh = CoastMaterials.Require("Universal Render Pipeline/Lit", "Universal Render Pipeline/Simple Lit", "Sprites/Default");
+            var m = CoastMaterials.NewMat(sh);
             if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", color); else m.color = color;
             if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", smoothness);
             if (m.HasProperty("_Metallic")) m.SetFloat("_Metallic", metallic);
-            // 하늘 반사(환경광 반사)가 러닝 씬 스카이박스를 비춰 하얗게 날리므로 끈다 — 하이라이트는 키 라이트 하나로
             if (m.HasProperty("_EnvironmentReflections")) { m.SetFloat("_EnvironmentReflections", 0f); m.EnableKeyword("_ENVIRONMENTREFLECTIONS_OFF"); }
-            if (transparent && m.HasProperty("_Surface"))
-            {
-                m.SetFloat("_Surface", 1f); m.SetFloat("_Blend", 0f);
-                m.SetInt("_SrcBlend", (int)BlendMode.SrcAlpha); m.SetInt("_DstBlend", (int)BlendMode.OneMinusSrcAlpha);
-                m.SetInt("_ZWrite", 0); m.renderQueue = 3000;
-                m.EnableKeyword("_SURFACE_TYPE_TRANSPARENT"); m.DisableKeyword("_ALPHATEST_ON");
-                m.SetOverrideTag("RenderType", "Transparent");
-                OpaqueAlpha(m);
-            }
             return m;
         }
 

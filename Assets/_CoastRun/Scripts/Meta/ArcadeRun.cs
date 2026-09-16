@@ -75,10 +75,23 @@ namespace CoastRun
     {
         /// 48차-11: 에디터 「도메인 리로드 없이 플레이」에서 정적 상태(KpopMode 등)가 다음 플레이로 새는 것 방지.
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetStatics()
+        private static void ResetStatics() => ClearSession();
+
+        /// 아케이드/K-POP 정적 플래그만 내린다(씬 이동 없음). 타이틀·육성·스토리 대회 진입 전에 호출 —
+        /// 일시정지›메인으로 등 Exit 없이 빠져나오면 Kind/KpopMode 가 남아 스토리 런이 K-POP 으로 오염된다.
+        public static void ClearSession()
         {
-            Kind = ArcadeKind.None; KpopMode = false; BossRush = false; BossesCleared = 0; KpopFinished = false; KpopElapsed = 0f; FeverInChorus = 0;
-            Conditions = new DailyCondition[0]; ConditionDone = new bool[3]; ObstacleSpawner.SeedOverride = null;
+            Kind = ArcadeKind.None;
+            KpopMode = false;
+            BossRush = false;
+            BossesCleared = 0;
+            KpopFinished = false;
+            KpopElapsed = 0f;
+            FeverInChorus = 0;
+            ReturnToRaising = false;
+            Conditions = new DailyCondition[0];
+            ConditionDone = new bool[3];
+            ObstacleSpawner.SeedOverride = null;
         }
         public static ArcadeKind Kind { get; private set; }
         public static bool Active => Kind != ArcadeKind.None;
@@ -163,6 +176,8 @@ namespace CoastRun
         public static int LastStampCoins { get; private set; }
         public static int LastAllClearCoins { get; private set; }
         public static bool LastAllClear { get; private set; }
+        /// 86차: 미션 3개 달성으로 이번 판 돈·젤리가 두 배였는지 / 이번 판 육성 돈·젤리 적립량(결과 창 표시)
+        public static bool LastDoubled; public static int LastMoney, LastJelly;
         public static bool LastNewBest { get; private set; }
 
         private const string PrefLastTrack = "CoastRun_KpopLastTrack";
@@ -244,6 +259,8 @@ namespace CoastRun
         {
             var p = gm != null ? gm.Profile : null;
             Kind = kind;
+            KpopMode = false; BossRush = false; BossesCleared = 0;   // 이전 K-POP 세션 찌꺼기 제거
+            KpopFinished = false; KpopElapsed = 0f; FeverInChorus = 0;
             ReturnToRaising = fromRaising;
             if (kind == ArcadeKind.Daily)
             {
@@ -269,10 +286,15 @@ namespace CoastRun
             RunTuning.Mode = (p != null && p.skateboardUnlocked && PlayerPrefs.GetInt("CoastRun_ArcadeBoard", 0) == 1) ? RunMode.Skateboard : RunMode.Running;
             if (RunTuning.Mode == RunMode.Skateboard) { RunTuning.SpeedMul = 1.3f; RunTuning.CoinMul = 1.3f; }
             RunTuning.Pet = PetCompanion.Selected;
+            if (gm != null)
+            {
+                var save = gm.PeekSave();
+                if (save != null) RunTuning.Pet = save.equippedPet;
+            }
             ObstacleSpawner.SeedOverride = Seed;
 
             var flow = GameDirector.Instance != null ? GameDirector.Instance.Flow : null;
-            UnityEngine.Object.FindAnyObjectByType<TitleAudio>()?.StopMenu();
+            TitleAudio.StopMenuGlobal();
             flow?.StartStoryRun(StageIndex, false);
         }
 
@@ -290,10 +312,10 @@ namespace CoastRun
             if (pick >= 1 && pick <= Timeline.Chapters) return pick;
             return Mathf.Clamp(KpopLastClear + 1, 1, Timeline.Chapters);
         }
-        /// K-POP 모드에서 스테이지를 클리어할 때(SceneFlowController.EnterStageClear) — 다음 자동 선택이 한 칸 나아간다. 고른 챕터는 초기화(다음엔 자동).
+        /// K-POP 한 곡 완주 시(SettleKpop) — 다음 자동 선택이 한 칸 나아간다. 고른 챕터가 그 스테이지면 초기화.
         public static void NoteKpopClear(int stage)
         {
-            if (!KpopMode) return;
+            if (!KpopMode || stage < 1) return;
             if (stage > KpopLastClear) PlayerPrefs.SetInt(PrefLastClear, Mathf.Clamp(stage, 1, Timeline.Chapters));
             if (KpopPick == stage) PlayerPrefs.SetInt(PrefPick, 0);
             PlayerPrefs.Save();
@@ -329,7 +351,7 @@ namespace CoastRun
             Distance = 0f; HitsFirst500 = 0; LastScore = 0; LastStamped = false;
             KpopTrack = PickTrack();
             KpopElapsed = 0f; KpopFinished = false; FeverInChorus = 0;
-            LastStampCoins = 0; LastAllClearCoins = 0; LastAllClear = false; LastNewBest = false;
+            LastStampCoins = 0; LastAllClearCoins = 0; LastAllClear = false; LastNewBest = false; LastDoubled = false; LastMoney = 0; LastJelly = 0;
 
             RunTuning.Configure(save);   // 세이브 null이면 Reset()과 같다
             RunTuning.HasSeason = true;
@@ -342,7 +364,7 @@ namespace CoastRun
             ObstacleSpawner.SeedOverride = Seed * 7 + chapter;
 
             var flow = GameDirector.Instance != null ? GameDirector.Instance.Flow : null;
-            UnityEngine.Object.FindAnyObjectByType<TitleAudio>()?.StopMenu();
+            TitleAudio.StopMenuGlobal();
             flow?.StartStoryRun(StageIndex, false);
         }
 
@@ -351,7 +373,7 @@ namespace CoastRun
         {
             Distance = 0f; HitsFirst500 = 0; ConditionDone = new bool[3];
             KpopElapsed = 0f; KpopFinished = false; FeverInChorus = 0;
-            LastStampCoins = 0; LastAllClearCoins = 0; LastAllClear = false; LastNewBest = false;
+            LastStampCoins = 0; LastAllClearCoins = 0; LastAllClear = false; LastNewBest = false; LastDoubled = false; LastMoney = 0; LastJelly = 0;
             if (KpopMode)
             {
                 // 오늘 이미 이룬 미션은 켜진 채로 시작(런을 넘어 누적) — 재도전 때 다시 안 시켜도 된다
@@ -462,9 +484,10 @@ namespace CoastRun
             }
             var wallet = UnityEngine.Object.FindAnyObjectByType<CoinWallet>();
 
-            // 도장: 오늘 첫 완주
+            // 도장: 오늘 첫 완주 + 챕터 진행(다음 챕터 해금·자동 선택)
             if (KpopFinished)
             {
+                NoteKpopClear(StageIndex);
                 p.kpopSongsFinished++;
                 if (p.lastDailyDate != Today)
                 {
@@ -494,11 +517,34 @@ namespace CoastRun
                 }
             }
             wallet?.Persist();
-            // 53차(사용자): K-POP 러닝에서 모은 돈이 육성 돈에도 쌓인다 + 완주·보스 경험치
-            if (gm.Save != null)
+            // 86차(사용자): 미션 3개를 다 하면 **그 판의 돈·젤리 ×2**. K-POP = 스토리용 돈·아이템 파밍(챕터 잠금 없음).
+            LastDoubled = all;
+            int jellies = s != null ? s.Jellies : 0;
+            LastJelly = all ? jellies * 2 : jellies;
+            if (LastJelly > 0) { JellyWallet.Add(LastJelly); JellyWallet.Flush(); LevelSystem.Add(LastJelly * LevelSystem.ExpJelly); }
+            // 53차: K-POP 코인 → 육성 돈. 타이틀에서 바로 K-POP 들어가면 gm.Save 가 null
+            // 이라서 디스크 세이브를 열어 적립한다(PeekSave와 동일). 니어미스도 스토리 러닝과 같이 포함.
+            LastMoney = 0;
+            if (gm != null)
             {
-                gm.Save.stats.money += (s != null ? s.CoinValue : 0) + LastStampCoins + LastAllClearCoins + BossesCleared * BossDirector.BossCoins;
-                gm.Persist();
+                var save = gm.Save ?? (gm.HasSave ? gm.SaveSys.Load() : null);
+                if (save != null)
+                {
+                    int gain = (s != null ? s.CoinValue + s.NearMissValue : 0)
+                             + LastStampCoins + LastAllClearCoins
+                             + BossesCleared * BossDirector.BossCoins;
+                    if (all) gain *= 2;
+                    LastMoney = gain;
+                    if (gain > 0)
+                    {
+                        save.stats.money += gain;
+                        save.stats.Clamp();
+                        if (gm.Save != null)
+                            gm.Persist();
+                        else
+                            gm.SaveSys.Write(save);
+                    }
+                }
             }
             LevelSystem.Add((KpopFinished ? LevelSystem.ExpKpopFinish : 0) + BossesCleared * LevelSystem.ExpBoss);
             gm.WriteProfileNow();
@@ -509,10 +555,7 @@ namespace CoastRun
         public static void Exit()
         {
             bool toRaising = ReturnToRaising && GameManager.Active;
-            Kind = ArcadeKind.None;
-            KpopMode = false;
-            KpopFinished = false; KpopElapsed = 0f; FeverInChorus = 0;
-            ObstacleSpawner.SeedOverride = null;
+            ClearSession();
             RunTuning.Reset();
             Time.timeScale = 1f;
             AudioListener.pause = false;

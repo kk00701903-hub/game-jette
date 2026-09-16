@@ -83,6 +83,7 @@ namespace CoastRun
             Save = SaveSys.CreateNew();
             Save.runMode = mode;
             ChapterGrading.InitRecords(Save);
+            if (DevUnlockAll) PetShop.UnlockAllPets(Save);
             Profile.playthroughsStarted++;
             SaveSys.WriteProfile(Profile);
             WriteMain();
@@ -102,23 +103,43 @@ namespace CoastRun
 
         public void EnterRaising()
         {
+            ArcadeRun.ClearSession();   // K-POP/아케이드 플래그가 남아 스토리 대회가 오염되지 않게
+            if (Save != null)
+            {
+                bool changed = false;
+                if (DevUnlockAll) changed |= PetShop.UnlockAllPets(Save);
+                changed |= PetShop.EnsureEquipped(Save);
+                if (changed) Persist();
+            }
             ScheduleTable.Playthrough = Save != null ? Save.playthrough : 1;
             SetPhase(GamePhase.Raising);
             var flow = Flow;
             if (flow != null) _ = flow.GoTo(FlowState.Raising, TransitionType.Fade);
         }
 
-        /// 육성 화면 복귀 시 30% 확률 돌발 이벤트. null이면 없음. 결과는 이미 스탯에 적용됨.
-        public RandomEventResult? RollRandomEvent()
+        /// 육성 화면 돌발 이벤트 — 스탯은 적용하지 않음. UI에서 선택 후 CommitRandomEvent.
+        public RandomEventDef PeekRandomEvent()
         {
             if (Save == null) return null;
             if (SaveSys.NextDouble() >= RandomEventTable.Chance) return null;
-            var ev = RandomEventTable.Pick(Timeline.SeasonOf(Save.week), SaveSys.NextDouble());
-            var res = RandomEventTable.Apply(ev, Save.stats);
+            return RandomEventTable.Pick(Timeline.SeasonOf(Save.week), SaveSys.NextDouble());
+        }
+
+        public RandomEventResult CommitRandomEvent(RandomEventDef ev, int choice)
+        {
+            var res = RandomEventTable.ApplyChoice(ev, Save.stats, choice);
             Save.chapterHearts += res.dHearts;
             WriteMain();
             OnSaveChanged?.Invoke(Save);
             return res;
+        }
+
+        /// 구 API: 피크 후 Eval 분기로 즉시 적용(레거시 RaisingUI).
+        public RandomEventResult? RollRandomEvent()
+        {
+            var ev = PeekRandomEvent();
+            if (ev == null) return null;
+            return CommitRandomEvent(ev, ev.Eval(Save.stats) ? 0 : 1);
         }
 
         /// 이번 주 페이즈 i 실행. Story면 null을 돌려주고 호출자가 StartStoryRun()으로 넘긴다.
@@ -140,16 +161,23 @@ namespace CoastRun
             if (def.id == "dev_radio" && result.outcome == Outcome.GreatSuccess) Collection.OnRadioGreat();
             Collection.CheckStatCards(Save.stats);
             var side = Affinity.OnSchedule(Save, def.id, result.outcome);
-            if (side != null && ChapterScript.Has(side)) PendingSideScene = side;
+            // 81차 이후: 옛 미니컷씬(SIDE_* ChapterVN)은 자동으로 안 튼다 — 호감 문턱 보상만 즉시.
+            if (side != null)
+            {
+                int lvl = side.EndsWith("_3") ? 3 : side.EndsWith("_2") ? 2 : 1;
+                Affinity.Reward(Save, lvl);
+                CoastToast.Show(Loc.T($"호감도 {Affinity.ShortName(Affinity.NpcOf(def.id))} · {lvl}단계 보상",
+                    $"Affinity {Affinity.ShortName(Affinity.NpcOf(def.id))} · Lv{lvl} reward"));
+            }
+            PendingSideScene = null;
             WriteMain();
             OnSaveChanged?.Invoke(Save);
             return result;
         }
 
-        /// 3페이즈가 끝났을 때. 반환: 강제 스토리 돌입이 필요한가.
         /// 주말에 번아웃 단계에서 나온 문장(육성 화면이 한 번 보여 주고 지운다).
         public string PendingWeekNote;
-        /// 6차: 이번 주말에 재생할 NPC 사이드 씬(SIDE_*). RaisingUI가 재생 후 비운다.
+        /// 레거시: 옛 SIDE 미니컷씬 큐. 더 이상 채우지 않음(호감 보상은 ResolvePhase에서 즉시).
         public string PendingSideScene;
 
         public bool AdvanceWeek()
@@ -203,6 +231,8 @@ namespace CoastRun
         public void StartStoryRun()
         {
             if (Save == null) return;
+            ArcadeRun.ClearSession();   // 스토리 대회는 아케이드/K-POP 플래그 없이
+            TitleAudio.StopMenuGlobal();   // 육성 BGM(M13) 끄고 러닝으로
             SetPhase(GamePhase.Run);
             RunTuning.Configure(Save);
             RunTuning.CoinMul *= LevelSystem.CoinMul(Save);   // 53차: 레벨 코인 보너스
@@ -420,20 +450,22 @@ namespace CoastRun
         public void ResolveEnding()
         {
             if (Save == null) return;
-            var kind = ChapterGrading.AllS(Save) ? EndingKind.Happy : EndingKind.Tragic;
+            // 85차(대본 v4): 엔딩은 **단서 여섯 개(clueMask)** 로 갈린다 — END_A 「엇갈린 정류장」 / END_B 「우유 두 병」 / END_TRUE 「맞닿은 주파수 91.9」.
+            //   TRUE 만 Happy(타이틀로), A·B 는 Tragic(타임라인으로 돌아가 다음 회차). 옛 조건(전부 S / 양쪽 엔딩을 본 뒤)은 쓰지 않는다.
+            string endId = ClueSystem.EndingId(Save.clueMask);
+            var kind = endId == "END_TRUE" ? EndingKind.Happy : EndingKind.Tragic;
             Save.reachedEnding = kind;
+            Save.pendingEndingId = endId;
             PendingEnding = kind;
             Collection.OnEnding(kind);
 
             var p = Profile;
-            // 6차: 엔딩 변형(스탯) + 진엔딩(양쪽 엔딩을 이미 본 회차의 만남)
             var st = Save.stats;
-            bool sawA = (p.endingMask & 0b111) != 0, sawB = (p.endingMask & 0b111000) != 0;
-            if (kind == EndingKind.Happy) Save.endingVariant = st.sense >= 60 ? 1 : st.trust >= 50 ? 2 : 0;
-            else Save.endingVariant = st.trust >= 50 ? 1 : st.stamina < 30 ? 2 : 0;
-            Save.trueEndingPending = kind == EndingKind.Happy && sawA && sawB && !p.trueEndingSeen;
-            p.endingMask |= 1 << ((kind == EndingKind.Happy ? 0 : 3) + Save.endingVariant);
-            if (Save.trueEndingPending) { p.endingMask |= 1 << 6; p.trueEndingSeen = true; }
+            // 엔딩 갤러리 비트: bit0 = A(엇갈린 정류장) · bit3 = B(우유 두 병) · bit6 = 진엔딩. (옛 변형 비트 1·2·4·5 는 더 쓰지 않음)
+            Save.endingVariant = 0;
+            Save.trueEndingPending = endId == "END_TRUE";
+            p.endingMask |= endId == "END_A" ? 1 : endId == "END_B" ? 1 << 3 : 1 << 6;
+            if (Save.trueEndingPending) p.trueEndingSeen = true;
             p.lastFinalStats = st.Clone(); p.hasLastFinal = true;
             p.endingsSeen++;
             if (kind == EndingKind.Happy) p.happyEndings++;
@@ -444,14 +476,11 @@ namespace CoastRun
 
             SetPhase(GamePhase.Ending);
             var flow = Flow;
-            // v5: 엔딩 VN(만난다/못 만난다) 컷씬을 먼저 보여 주고 기존 엔딩 시퀀스(편지·크레딧)로.
-            string vn = kind == EndingKind.Happy ? "END_A" : "END_B";
-            string epi = EndingEpilogueId(kind, Save.endingVariant);
-            bool trueEnd = Save.trueEndingPending;
+            // 85차: 엔딩 시네마틱(CinematicTable END_*) → 기존 엔딩 시퀀스(편지·크레딧). 시네마 정의가 없으면 옛 VN 대본으로.
             System.Action toEnding = () => { if (flow != null) _ = flow.GoTo(FlowState.Ending, TransitionType.Fade); };
-            System.Action afterEpi = trueEnd && ChapterScript.Has("END_TRUE") ? () => ChapterVN.Play("END_TRUE", toEnding) : toEnding;
-            System.Action afterMain = epi != null && ChapterScript.Has(epi) ? () => ChapterVN.Play(epi, afterEpi) : afterEpi;
-            ChapterVN.Play(vn, afterMain);
+            if (CinematicTable.Get(endId) != null) CinematicPlayer.Play(endId, toEnding);
+            else if (ChapterScript.Has(endId)) ChapterVN.Play(endId, toEnding);
+            else toEnding();
         }
 
         public static string EndingEpilogueId(EndingKind kind, int variant)
@@ -471,6 +500,7 @@ namespace CoastRun
                 return;
             }
             SetPhase(GamePhase.Title);
+            ArcadeRun.ClearSession();
             var flow = Flow;
             if (flow != null) _ = flow.GoTo(FlowState.Title, TransitionType.Fade);
         }
@@ -540,6 +570,7 @@ namespace CoastRun
 
         public void ToTitle()
         {
+            ArcadeRun.ClearSession();
             WriteMain();
             _mainSave = null;
             SetPhase(GamePhase.Title);

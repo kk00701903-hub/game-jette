@@ -255,6 +255,13 @@ namespace CoastRun
         /// 23차: 원격(MCP) 디버그 — 즉시 클리어.
         public void DebugClear() { if (_stageActive && !ArcadeRun.Active) ClearCurrent(); }
 
+        /// 사망·결과창 — 스테이지 틱·K-POP 갱신을 멈춘다(스포너·조명은 씬에 남김).
+        public void HaltForResult()
+        {
+            _stageActive = false;
+            _awaitingContinue = true;
+        }
+
         /// Editor aid: warp the player to 30 m before the finish so a clear can be tested.
         public void DebugWarpToFinish()
         {

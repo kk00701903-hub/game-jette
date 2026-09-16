@@ -40,10 +40,16 @@ namespace CoastRun
         public static void Open(GameManager gm, Action<int> onPick, Action<int> onPlay)
         {
             Close();
-            if (TitleUi != null) TitleUi.alpha = 0f;
+            // Hide title for the overlay — also drop raycasts so CoastRaycastWatchdog
+            // does not permanently clear blocksRaycasts on an alpha≈0 TitleUI (clicks die after return).
+            if (TitleUi != null)
+            {
+                TitleUi.alpha = 0f;
+                TitleUi.blocksRaycasts = false;
+                TitleUi.interactable = false;
+            }
             _onPick = onPick; _onPlay = onPlay;
-            _picked = ArcadeRun.KpopChapter(gm);
-            if (!IsUnlocked(_picked, gm != null ? gm.Profile : null)) _picked = Mathf.Clamp(ArcadeRun.KpopLastClear + 1, 1, Timeline.Chapters);
+            _picked = Mathf.Clamp(ArcadeRun.KpopChapter(gm), 1, Timeline.Chapters);
 
             _canvas = CoastUiCanvas.Create("KpopChapterSelect", 320);
             var root = CoastUiCanvas.Root(_canvas);
@@ -104,13 +110,15 @@ namespace CoastRun
             {
                 int n = i + 1;
                 int col = i % 4, row = i / 4;
-                bool open = IsUnlocked(n, prof);
+                bool open = true;   // 파밍용 — 전 챕터 해금
                 _unlocked[i] = open;
                 int g = prof != null && prof.trackGrade != null && i < prof.trackGrade.Length ? prof.trackGrade[i] : 0;
                 if (DebugLastClear >= 0) g = n <= DebugLastClear ? 4 : 0;
-                _gradeOf[i] = g;
-                bool completed = open && g > 0;
-                bool current = open && !completed;
+                // 완료 표시: 스토리 trackGrade 또는 K-POP 완주 기록(잠금에는 안 씀)
+                int lastClear = DebugLastClear >= 0 ? DebugLastClear : ArcadeRun.KpopLastClear;
+                _gradeOf[i] = g > 0 ? g : (n <= lastClear ? 1 : 0);
+                bool completed = g > 0 || n <= lastClear;
+                bool current = !completed;
                 var fill = completed ? Pastel[i % 5] : current ? Ready : Locked;
 
                 // 카드 = 진한 테두리 판 + 안쪽 채움
@@ -204,22 +212,12 @@ namespace CoastRun
             return Color.HSVToRGB(h, Mathf.Clamp01(Mathf.Max(s * 1.6f, 0.62f)), Mathf.Clamp01(v * 0.92f));
         }
 
-        /// 해금: K-POP 마지막 클리어 + 1 까지, 또는 스토리에서 이미 달린 트랙(trackGrade > 0).
-        public static bool IsUnlocked(int n, MetaProfile prof)
-        {
-            if (DebugLastClear >= 0) return n <= DebugLastClear + 1;
-            if (n <= ArcadeRun.KpopLastClear + 1) return true;
-            return prof != null && prof.trackGrade != null && n - 1 < prof.trackGrade.Length && prof.trackGrade[n - 1] > 0;
-        }
+        /// K-POP 목적 = 스토리용 돈·아이템 파밍. 챕터는 전부 열려 있다(순차/스토리 연동 잠금 없음).
+        public static bool IsUnlocked(int n, MetaProfile prof) => n >= 1 && n <= Timeline.Chapters;
 
         private static void Select(int n)
         {
-            if (n >= 1 && n <= _unlocked.Length && !_unlocked[n - 1])
-            {
-                CoastAudioManager.PlayAnywhere(CoastSfx.NearMiss);
-                CoastToast.Show(Loc.T($"챕터 {n}은 아직 잠겨 있어요 — 앞 챕터를 먼저 달려요", $"Chapter {n} is locked — clear the one before it"));
-                return;
-            }
+            if (n < 1 || n > Timeline.Chapters) return;
             _picked = n;
             ArcadeRun.SetKpopPick(n);
             CoastAudioManager.PlayAnywhere(CoastSfx.Coin);
@@ -238,13 +236,18 @@ namespace CoastRun
                 if (on) c.transform.SetAsLastSibling();   // 커진 카드가 옆 카드 위로
             }
             if (_bigLabel != null) { _bigLabel.text = Loc.T($"챕터 {_picked} 도전하기!", $"Challenge Chapter {_picked}!"); _bigLabel.transform.parent.SetAsLastSibling(); }
-            if (_hint != null) _hint.text = Loc.T($"달릴 준비됐어요? 스케이트보드 타고 주파수 맞춰서 즐기는 K-POP 런, 챕터 {_picked}부터 시작해볼까요!",
-                $"Ready to run? Hop on the board and ride the frequency — start from chapter {_picked}!");
+            if (_hint != null) _hint.text = Loc.T($"챕터 {_picked} — 돈·아이템을 모아 스토리에서 쓰세요!",
+                $"Chapter {_picked} — farm money & items for story mode!");
         }
 
         public static void Close()
         {
-            if (TitleUi != null && _canvas != null) TitleUi.alpha = 1f;
+            if (TitleUi != null && _canvas != null)
+            {
+                TitleUi.alpha = 1f;
+                TitleUi.blocksRaycasts = true;
+                TitleUi.interactable = true;
+            }
             if (_canvas != null) UnityEngine.Object.Destroy(_canvas.gameObject);
             _canvas = null;
             for (int i = 0; i < _cards.Length; i++) { _cards[i] = null; _cardFills[i] = null; }

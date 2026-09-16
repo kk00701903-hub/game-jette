@@ -1,22 +1,4 @@
-﻿# 37차: 컷씬 대본 — 그림은 아직 빈 화면(BG | Blank). 음악 큐와 자막만 먼저. 고친 뒤  python Tools/Story/cutscene_txt.py import Tools/Story/script  로 반영.
-# 형식: [번호] 종류 | 화자/그림 | 한국어   ← 바로 아래 'EN:' 줄이 영어. 줄 삭제·추가 가능, 번호는 저장 때 자동 정리.
-# BG = 배경ID | 왼쪽 스탠딩 | 오른쪽 스탠딩 | 변형(세피아/비/밤/흰 + 아래) / CG = 일러스트ID | 설명 / SAY = 화자 | 대사 / NARR = 지문 / LETTER = 편지
-# BGM = 곡키 | 볼륨(0~1) | 피치   — 곡키 M1~M7 (Resources/CoastRun/BGM/BGM_M?.ogg). M4s=느리게(0.72) M4r=라디오(작게) M6w=수중. '정지' 면 페이드아웃.
-# 조건 태그: 화자나 지문 앞에 [게이트>=0] / [게이트<0] 를 붙이면 체력 게이트 통과·불통과일 때만 나온다.
-제목: 지나간다 | EN: Passing By
-
-[0] BG | Blank | | | 현재 아래
-[1] NARR | 정류장에 창백한 청년. 얼굴이 아니라 서 있는 모양으로 안다.
-    EN: A pale young man at the bus stop. She knows him not by his face but by the way he stands.
-[2] NARR | 어깨가 어깨를 스치며 지나간다. 마을 사람이 그에게만 인사한다.
-    EN: Shoulder brushes shoulder as he passes. The villagers greet only him.
-[3] SAY | 바다 | 저 사람 안다.
-    EN: I know him.
-[4] SAY | 하늘 | 어떻게?
-    EN: How?
-[5] SAY | 바다 | 몰라.
-    EN: Dunno.
-[6] NARR | [게이트>=0]…달릴 수 있을 것 같다.
-    EN: [게이트>=0]…I think I can run today.
-[7] NARR | [게이트<0]…아직은 다리가 못 버틴다. 이번 주는 더 키우자.
-    EN: [게이트<0]…My legs aren't ready. One more week.
+﻿# 85차: 컷씬 대본 v4 — Docs/CUTSCENE_SCRIPTS_v4.md 의 자막을 지문(NARR)으로 옮긴 리더용. 시네마틱(CinematicTable)이 본편이고 이 파일은 「읽기」용.
+# 고친 뒤  python Tools/Story/cutscene_txt.py import Tools/Story/script  로 반영. 형식은 파일 아래 다른 파일과 같다(BG/CG/SAY/NARR/BGM).
+# 이 챕터는 컷씬 없음(육성·러닝만) — 비워 둔다(ChapterVN.Play 가 건너뜀).
+제목: 지나간다 | EN: Passing by

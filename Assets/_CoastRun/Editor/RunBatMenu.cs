@@ -16,6 +16,13 @@ namespace CoastRun.EditorTools
             string dir = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Tools", "_clip"));
             string bat = Path.Combine(dir, "run.bat");
             string log = Path.Combine(dir, "run.log");
+            // 95차: 옛 파이썬(kg_server)이 run.log 를 잡고 있으면 리다이렉트가 실패해 bat 가 아예 안 돌았음 → 열리는 로그 파일을 고른다
+            foreach (var cand in new[] { "run.log", "run2.log", "run3.log" })
+            {
+                string c = Path.Combine(dir, cand);
+                try { using (var fs = new FileStream(c, FileMode.Create, FileAccess.Write, FileShare.Read)) { } log = c; break; }
+                catch { }
+            }
             if (!File.Exists(bat)) { UnityEngine.Debug.LogError("[RunBat] 없음: " + bat); return; }
             var psi = new ProcessStartInfo("cmd.exe", "/c \"\"" + bat + "\" > \"" + log + "\" 2>&1\"")
             {

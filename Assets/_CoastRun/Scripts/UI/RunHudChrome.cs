@@ -90,7 +90,8 @@ namespace CoastRun
             _canvas = canvas;
             _player = player;
             _wallet = wallet;
-            var root = CoastUiCanvas.Root(canvas);
+            // 좁은 세로폰(인셋 < 664): 상단 알약 겹침 → HudFit 으로 좌우 폭에 맞춰 통째 축소(에디터 720×1280 은 scale 1)
+            var root = CoastUiCanvas.HudFitRoot(canvas);
 
             Instance = this;
             BuildPause(root);
@@ -120,6 +121,8 @@ namespace CoastRun
                 health.OnChanged += HandleHealth;
                 health.OnDamaged -= HandleDamaged;
                 health.OnDamaged += HandleDamaged;
+                health.OnHealed -= HandleHealed;
+                health.OnHealed += HandleHealed;
                 HandleHealth(health.Current, health.Max);
             }
 
@@ -148,6 +151,7 @@ namespace CoastRun
             {
                 health.OnChanged -= HandleHealth;
                 health.OnDamaged -= HandleDamaged;
+                health.OnHealed -= HandleHealed;
             }
             // The pause and run-over overlays freeze time; if the HUD goes away while
             // one is up (scene change, editor stop), unfreeze — a frozen timeScale
@@ -172,6 +176,8 @@ namespace CoastRun
             health.OnChanged += HandleHealth;
             health.OnDamaged -= HandleDamaged;
             health.OnDamaged += HandleDamaged;
+            health.OnHealed -= HandleHealed;
+            health.OnHealed += HandleHealed;
             HandleHealth(health.Current, health.Max);
         }
 
@@ -431,21 +437,31 @@ namespace CoastRun
         {
             _hpShake = 0.35f;
             Flash(new Color(1f, 0.2f, 0.2f, 0.3f));
-            // 76차(사용자 「최소 데미지 HP 30」 검증용): 게이지 옆에 빨간 「−30」이 떠오른다(게이지 숫자 기준 = 최대 체력 비율).
             var health = HealthSystem.Instance;
             if (health != null && _hpBar != null && amount > 0f)
-                StartCoroutine(DamagePopCo(Mathf.RoundToInt(amount / Mathf.Max(1f, health.Max) * 100f)));
+            {
+                int shown = Mathf.RoundToInt(amount / Mathf.Max(1f, health.Max) * 100f);
+                StartCoroutine(HpPopCo("−" + shown, new Color(1f, 0.28f, 0.32f, 1f)));
+            }
         }
 
-        private IEnumerator DamagePopCo(int shown)
+        private void HandleHealed(float amount)
         {
-            // 게이지 오른쪽 위 — HUD 루트 맨 위에 올려 곡 칩 등에 가려지지 않게
-            var t = CoastHudLayout.MakeText(_hpBar.parent, "DmgPop", "−" + shown, 30, TextAnchor.MiddleLeft,
+            var health = HealthSystem.Instance;
+            if (health == null || _hpBar == null || amount <= 0f) return;
+            int shown = Mathf.RoundToInt(amount / Mathf.Max(1f, health.Max) * 100f);
+            if (shown < 1) return;   // 말랑이 소수 회복은 팝 생략
+            StartCoroutine(HpPopCo("+" + shown, new Color(0.35f, 0.95f, 0.45f, 1f)));
+        }
+
+        private IEnumerator HpPopCo(string label, Color color)
+        {
+            var t = CoastHudLayout.MakeText(_hpBar.parent, "HpPop", label, 30, TextAnchor.MiddleLeft,
                 new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(150f, -118f), new Vector2(300f, -66f));
             t.transform.SetAsLastSibling();
             t.fontStyle = FontStyle.Bold; t.raycastTarget = false;
-            t.color = new Color(1f, 0.28f, 0.32f, 1f);
-            CoastUiArt.OutlineText(t, new Color(0.2f, 0f, 0.05f, 0.9f), 2f);
+            t.color = color;
+            CoastUiArt.OutlineText(t, new Color(0.05f, 0.05f, 0.1f, 0.9f), 2f);
             var rt = t.rectTransform; var start = rt.anchoredPosition;
             float e = 0f;
             while (e < 0.9f && t != null)
@@ -696,6 +712,9 @@ namespace CoastRun
             var sbW = new System.Text.StringBuilder();
             for (int i = 0; i < 3 && i < ArcadeRun.Conditions.Length; i++) { if (i > 0) sbW.Append("   "); sbW.Append(ArcadeRun.ConditionDone[i] ? "☑ " : "☐ ").Append(ArcadeRun.Conditions[i].Text); }
             if (ArcadeRun.LastAllClearCoins > 0) sbW.Append(Loc.T($"   미션 올클리어! +{ArcadeRun.LastAllClearCoins}G", $"   All clear! +{ArcadeRun.LastAllClearCoins}G"));
+            // 86차(사용자): 미션 3개 달성 = 이번 판 돈·젤리 ×2
+            if (ArcadeRun.LastDoubled) sbW.Append(Loc.T($"   ★ 미션 3개 달성 — 돈·젤리 ×2!  돈 +{ArcadeRun.LastMoney}G · 젤리 +{ArcadeRun.LastJelly}", $"   ★ 3 missions — money & jelly ×2!  +{ArcadeRun.LastMoney}G · jelly +{ArcadeRun.LastJelly}"));
+            else if (ArcadeRun.LastMoney > 0 || ArcadeRun.LastJelly > 0) sbW.Append(Loc.T($"   돈 +{ArcadeRun.LastMoney}G · 젤리 +{ArcadeRun.LastJelly} (미션 3개면 ×2)", $"   +{ArcadeRun.LastMoney}G · jelly +{ArcadeRun.LastJelly} (×2 with all 3 missions)"));
             var warn = CoastUiArt.GlossyPill(prt, "Warn", new Color(1f, 0.70f, 0.20f), 20, 8); warn.raycastTarget = false;
             warn.rectTransform.anchorMin = new Vector2(0f, 1f); warn.rectTransform.anchorMax = new Vector2(1f, 1f); warn.rectTransform.offsetMin = new Vector2(30f, -502f); warn.rectTransform.offsetMax = new Vector2(-30f, -408f);
             var w1 = CoastHudLayout.MakeText(warn.transform, "W1", reason, 26, TextAnchor.MiddleCenter, new Vector2(0f, 0.48f), new Vector2(1f, 1f), new Vector2(12f, 0f), new Vector2(-12f, -8f));
@@ -901,6 +920,9 @@ namespace CoastRun
                 var sbW = new System.Text.StringBuilder();
                 for (int i = 0; i < 3 && i < ArcadeRun.Conditions.Length; i++) { if (i > 0) sbW.Append("   "); sbW.Append(ArcadeRun.ConditionDone[i] ? "☑ " : "☐ ").Append(ArcadeRun.Conditions[i].Text); }
                 if (ArcadeRun.LastAllClearCoins > 0) sbW.Append(Loc.T($"   미션 올클리어! +{ArcadeRun.LastAllClearCoins}G", $"   All clear! +{ArcadeRun.LastAllClearCoins}G"));
+            // 86차(사용자): 미션 3개 달성 = 이번 판 돈·젤리 ×2
+            if (ArcadeRun.LastDoubled) sbW.Append(Loc.T($"   ★ 미션 3개 달성 — 돈·젤리 ×2!  돈 +{ArcadeRun.LastMoney}G · 젤리 +{ArcadeRun.LastJelly}", $"   ★ 3 missions — money & jelly ×2!  +{ArcadeRun.LastMoney}G · jelly +{ArcadeRun.LastJelly}"));
+            else if (ArcadeRun.LastMoney > 0 || ArcadeRun.LastJelly > 0) sbW.Append(Loc.T($"   돈 +{ArcadeRun.LastMoney}G · 젤리 +{ArcadeRun.LastJelly} (미션 3개면 ×2)", $"   +{ArcadeRun.LastMoney}G · jelly +{ArcadeRun.LastJelly} (×2 with all 3 missions)"));
                 kpopW2 = sbW.ToString();
             }
             var w1 = CoastHudLayout.MakeText(warn.transform, "W1", reason, 19, TextAnchor.MiddleCenter, new Vector2(0f, 0.5f), new Vector2(1f, 1f), new Vector2(10f, -4f), new Vector2(-10f, -8f));
@@ -1188,8 +1210,12 @@ namespace CoastRun
                 && (Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.P)))
                 TogglePause();
 
-            // Hit-stop is ≤0.15s. If time stays near-zero while not paused, force resume.
-            if (!_paused && _player != null && _player.Speed > 0.5f && Time.timeScale < 0.05f)
+            // Hit-stop ≤0.15s. 예전엔 <0.05 만 고쳐서 0.6·0.85에 묶인 채 좌우가 느려졌다.
+            // 일시정지가 아닌데 배속이 1이 아닌 상태가 0.35s 이상이면 강제 복구.
+            float ts = Time.timeScale;
+            bool scaleStuck = !_paused && _runOverOverlay == null && _player != null && _player.Speed > 0.5f
+                && ts > 0.001f && (ts < 0.05f || (ts > 0.05f && ts < 0.98f));
+            if (scaleStuck)
             {
                 if (_stuckScaleSince < 0f) _stuckScaleSince = Time.unscaledTime;
                 else if (Time.unscaledTime - _stuckScaleSince > 0.35f)
@@ -1365,9 +1391,8 @@ namespace CoastRun
             {
                 Resume();
                 if (story) { StoryContest.End(); GameManager.I.ContestFail(); return; }
-                var flow = GameDirector.Instance != null ? GameDirector.Instance.Flow : null;
-                if (flow != null)
-                    _ = flow.GoTo(FlowState.Title, TransitionType.Fade);
+                // Exit 없이 GoTo(Title) 하면 KpopMode 가 남아 다음 스토리 대회가 K-POP 으로 오염됨
+                ArcadeRun.Exit();
             };
             if (story)
             {

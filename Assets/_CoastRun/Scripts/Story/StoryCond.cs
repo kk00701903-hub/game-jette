@@ -87,11 +87,56 @@ namespace CoastRun
 
         public static string Name(int npc)
         {
-            switch (npc) { case Rua: return Loc.T("루아", "Rua"); case Mansu: return Loc.T("만수", "Mansu"); case Grandma: return Loc.T("할머니", "Grandma"); default: return "DJ"; }
+            switch (npc)
+            {
+                case Rua: return Loc.T("이웃 루아", "Neighbor Rua");
+                case Mansu: return Loc.T("마을 만수", "Village Mansu");
+                case Grandma: return Loc.T("할머니", "Grandma");
+                default: return Loc.T("주파수(라디오)", "Frequency (radio)");
+            }
+        }
+        /// 짧은 호감 줄용 별칭.
+        public static string ShortName(int npc)
+        {
+            switch (npc)
+            {
+                case Rua: return Loc.T("루아", "Rua");
+                case Mansu: return Loc.T("만수", "Mansu");
+                case Grandma: return Loc.T("할머니", "Grandma");
+                default: return Loc.T("주파수", "Freq");
+            }
         }
 
         public static int Get(SaveData s, int npc) => s != null && s.affinity != null && npc < s.affinity.Length ? s.affinity[npc] : 0;
         public static int Level(SaveData s, int npc) { int v = Get(s, npc); int l = 0; foreach (var t in Thresholds) if (v >= t) l++; return l; }
+
+        /// 가장 가까운 미해금 SIDE 문턱 + 필요 호감 수.
+        public static string NextSideHint(SaveData s)
+        {
+            if (s == null) return "";
+            int bestNpc = -1, bestNeed = int.MaxValue, bestSide = 0;
+            for (int npc = 0; npc < Ids.Length; npc++)
+            {
+                int v = Get(s, npc);
+                for (int ti = 0; ti < Thresholds.Length; ti++)
+                {
+                    int bit = 1 << (npc * 3 + ti);
+                    if ((s.affinityShown & bit) != 0) continue;
+                    int need = Mathf.Max(0, Thresholds[ti] - v);
+                    if (need < bestNeed) { bestNeed = need; bestNpc = npc; bestSide = ti + 1; }
+                    break;
+                }
+            }
+            if (bestNpc < 0) return Loc.T("다음: SIDE 전부 열림", "Next: all SIDE open");
+            return Loc.T($"다음: {ShortName(bestNpc)} SIDE {bestSide}까지 {bestNeed}",
+                $"Next: {ShortName(bestNpc)} SIDE {bestSide} needs {bestNeed}");
+        }
+
+        public static string MetersLine(SaveData s)
+        {
+            if (s == null) return "";
+            return $"{ShortName(Rua)}♥{Get(s, Rua)} {ShortName(Mansu)}♥{Get(s, Mansu)} {ShortName(Grandma)}♥{Get(s, Grandma)} {ShortName(DJ)}♥{Get(s, DJ)}";
+        }
 
         /// 스케줄 id → (npc, 기본 가중치). 없으면 -1.
         public static int NpcOf(string id)

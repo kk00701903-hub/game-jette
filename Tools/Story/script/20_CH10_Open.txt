@@ -1,85 +1,34 @@
-﻿# 37차: 컷씬 대본 — 그림은 아직 빈 화면(BG | Blank). 음악 큐와 자막만 먼저. 고친 뒤  python Tools/Story/cutscene_txt.py import Tools/Story/script  로 반영.
-# 형식: [번호] 종류 | 화자/그림 | 한국어   ← 바로 아래 'EN:' 줄이 영어. 줄 삭제·추가 가능, 번호는 저장 때 자동 정리.
-# BG = 배경ID | 왼쪽 스탠딩 | 오른쪽 스탠딩 | 변형(세피아/비/밤/흰 + 아래) / CG = 일러스트ID | 설명 / SAY = 화자 | 대사 / NARR = 지문 / LETTER = 편지
-# BGM = 곡키 | 볼륨(0~1) | 피치   — 곡키 M1~M7 (Resources/CoastRun/BGM/BGM_M?.ogg). M4s=느리게(0.72) M4r=라디오(작게) M6w=수중. '정지' 면 페이드아웃.
-# 조건 태그: 화자나 지문 앞에 [게이트>=0] / [게이트<0] 를 붙이면 체력 게이트 통과·불통과일 때만 나온다.
-제목: 열두 개의 초 | EN: Twelve Candles
+﻿# 85차: 컷씬 대본 v4 — Docs/CUTSCENE_SCRIPTS_v4.md 의 자막을 지문(NARR)으로 옮긴 리더용. 시네마틱(CinematicTable)이 본편이고 이 파일은 「읽기」용.
+# 고친 뒤  python Tools/Story/cutscene_txt.py import Tools/Story/script  로 반영. 형식은 파일 아래 다른 파일과 같다(BG/CG/SAY/NARR/BGM).
+
+제목: 그 밤 | EN: 그 밤
+
 
 [0] BG | Blank | | | 현재 아래
-[1] NARR | 탑 아래. 돌 위에 8년 된 초 토막. 손.
-    EN: Under the tower. An eight-year-old candle stub on the stone. A hand.
-[2] BG | Blank | | | 세피아 아래
-[3] BGM | M6 | 0.6
-[4] NARR | 송전탑 아래 초 열두 개. 고깔모자를 쓴 양복 둘이 케이크를 들고 어정쩡하게. 소년이 손뼉을 친다.
-    EN: Twelve candles under the tower. Two suits in party hats hold a cake awkwardly. The boy claps.
-[5] SAY | 도윤 | 생일 축하해.
-    EN: Happy birthday.
-[6] SAY | 도윤 | 아저씨가 네 생일 알아냈어.
-    EN: The guys found out your birthday.
-[7] SAY | 도윤 | 여기가 네가 제일 좋아하는 데잖아. 매일 오니까.
-    EN: This is your favorite place, right? You come every day.
-[8] NARR | 소녀가 안 움직인다. 초 불빛에 얼굴이 흔들린다.
-    EN: She doesn't move. Her face wavers in the candlelight.
-[9] SAY | 도윤 | 무사. 왜 그래.
-    EN: What. What's wrong.
-[10] SAY | 하늘 | 꺼.
-    EN: Put them out.
-[11] SAY | 도윤 | 어?
-    EN: Huh?
-[12] SAY | 하늘 | 끄라고.
-    EN: I said put them out.
-[13] BGM | 정지
-[14] NARR | 초를 걷어찬다. 케이크가 풀에 떨어진다. 큰 아저씨가 주우려다 만다.
-    EN: She kicks the candles. The cake lands in the grass. The big man reaches to pick it up, then doesn't.
-[15] SAY | 하늘 | 여기가 어딘 줄 알아?
-    EN: Do you know what this place is?
-[16] SAY | 하늘 | 너 같은 게 뭘 알아.
-    EN: What would someone like you know.
-[17] NARR | 소녀가 4.2킬로를 거꾸로 뛰어 내려간다. 소년이 따라 뛴다. 세 걸음. 큰 아저씨가 팔을 잡는다.
-    EN: She runs the 4.2 km back down. The boy runs after her. Three steps. The big man catches his arm.
-[18] SAY | 큰 아저씨 | 도련님. 안 됩니다.
-    EN: Young master. You can't.
-[19] SAY | 도윤 | 놔.
-    EN: Let go.
-[20] SAY | 큰 아저씨 | 도련님.
-    EN: Young master.
-[21] NARR | (팔에 힘이 빠진다)
-    EN: (His arm goes slack.)
-[22] BG | Blank | | | 밤 아래
-[23] NARR | 밤. 고깔모자를 안 벗은 채 꺼진 초 앞에 앉아 있다. 마른 아저씨가 우산을 씌운다.
-    EN: Night. Still in his party hat, he sits before the dead candles. The thin man holds an umbrella over him.
-[24] SAY | 도윤 | 나 뭐 잘못했어?
-    EN: What did I do wrong?
-[25] SAY | 마른 아저씨 | 모르겠습니다.
-    EN: I don't know.
-[26] SAY | 도윤 | 아저씨도 모르면 누가 알아.
-    EN: If you don't know, who does.
-[27] BG | Blank | | | 세피아 아래
-[28] BGM | M4 | 0.7 | 0.72
-[29] NARR | 열흘. 1일 — 책상 위 도시락 하나, 그대로. 3일 — 옆자리 빈 채 창백한 옆얼굴. 5일 — 소녀의 도시락통이 책상 밑으로.
-    EN: Ten days. Day 1: one lunchbox on the desk, untouched. Day 3: the seat beside him empty, his profile pale. Day 5: her lunchbox goes under the desk.
-[30] NARR | 8일 — 소년이 도시락을 두고 나간다. 뒷모습. 9일 — 하늘네 마당 담장 위에 보드가 놓여 있다. 소녀가 본다. 안 가져간다.
-    EN: Day 8: he leaves the lunchbox and walks out. His back. Day 9: the board sits on the wall of Haneul's yard. She sees it. Doesn't take it.
-[31] BGM | M4 | 0.3 | 0.72
-[32] NARR | 10일. 가게 앞. 만수가 소년을 본다.
-    EN: Day 10. In front of the store. Mansu looks at the boy.
-[33] SAY | 만수 | 거기 저 집 아방 죽은 자리여.
-    EN: That's where that girl's father died.
-[34] SAY | 도윤 | 네?
-    EN: What?
-[35] SAY | 만수 | 탑 밑. 태풍 때. 딸 생일 전날.
-    EN: Under the tower. In the typhoon. The day before her birthday.
-[36] BGM | 정지
-[37] SAY | 도윤 | 몰랐어요.
-    EN: I didn't know.
-[38] NARR | 소년 뺨에 빗방울 하나. 하늘을 본다. 뛰기 시작한다.
-    EN: A raindrop on the boy's cheek. He looks up. He starts to run.
-[39] BG | Blank | | | 비 아래
-[40] NARR | 비. 탑 아래 빈자리. 꼬마가 옆에 선다.
-    EN: Rain. The empty spot under the tower. The kid stands beside her.
-[41] SAY | 바다 | 오늘도 없네.
-    EN: Not here today either.
-[42] NARR | [게이트>=0]…달릴 수 있을 것 같다.
-    EN: [게이트>=0]…I think I can run today.
-[43] NARR | [게이트<0]…아직은 다리가 못 버틴다. 이번 주는 더 키우자.
-    EN: [게이트<0]…My legs aren't ready. One more week.
+[1] BGM | M6 | 0.55
+[2] CG | T_N5_01 | Cut_T_N5_01
+[3] NARR | 길가에 낡은 리어카가 있었다. 바퀴 하나가 새것이었다. 손잡이엔 작은 손톱이 파고든 오래된 흠집.
+[4] CG | T_N5_02 | Cut_T_N5_02
+[5] NARR | 그 자국 위에 손가락을 올렸다. 잡혔다. 여덟 해 전 폭우의 밤이 냄새부터 통째로 돌아왔다. 비 냄새, 진흙 냄새.
+[6] CG | T_N5_03 | Cut_T_N5_03
+[7] NARR | — 회상 · 여덟 해 전 — 마당에 엎어진 엄마를 먼저 본 건 그 애였다. 심장병. 전화선도 휴대전화도 끊겼다. 열두 살 둘이 할 수 있는 건 거의 없었다. 그래도 뭔가는 해야 했다.
+[8] CG | T_N5_04 | Cut_T_N5_04
+[9] NARR | — 회상 — 내가 굳어 있자 그 애가 말했다. 「살 수 있어.」 그렇게 말해야 내가 움직이니까. 그 애도 몰랐으면서.
+[10] CG | T_N5_05 | Cut_T_N5_05
+[11] NARR | — 회상 — 길가 리어카의 바퀴를 진흙에서 다시 끼웠다. 손톱이 갈라졌다. 엄마를 눕히고 그 애 코트를 덮었다. 병원까지 2킬로.
+[12] CG | T_N5_06 | Cut_T_N5_06
+[13] NARR | — 회상 — 빗길 중간에서 그 애 무릎이 꺾였다. 엄마부터 데려가라고 했다. 싫다고 했다. 셋이 같이 간다. 규칙은 거기서 정했다. 울면서 정했다.
+[14] CG | T_N5_07 | Cut_T_N5_07
+[15] NARR | — 회상 — 그 애는 몇 번이나 손을 놓칠 뻔했다. 내가 겹쳐 잡은 손 때문에 다시 일어났다. 병원 불빛이 보일 때 그 애가 물었다. 무서워? 처음으로 무섭다고 했다.
+[16] CG | T_N5_08 | Cut_T_N5_08
+[17] NARR | — 회상 — 「나도.」 그 애도 무섭다고 했다. 엄마가 죽을까 봐가 아니라, 내가 다시 혼자 될까 봐. 그 말에 손에 힘이 다시 들어갔다.
+[18] CG | T_N5_09 | Cut_T_N5_09
+[19] NARR | — 회상 — 엄마는 살았다. 그 애는 응급실 문이 닫히는 걸 보고 복도에서 쓰러졌다. 그 밤에 나눈 제일 진짜 말은 길지 않았다. 무서웠어. 응. 나도.
+[20] CG | T_N5_10 | Cut_T_N5_10
+[21] NARR | 리어카 손잡이를 잡고 한참 울었다. 왜 우는지 이번엔 알았다. 아는 채로 우는 건 처음이었다.
+[22] CG | T_N5_11 | Cut_T_N5_11
+[23] NARR | 꼬마가 리어카 위에 올라앉았다. 「밀어 줘.」 웃으면서 밀었다. 새 바퀴가 부드럽게 굴렀다. 그 밤의 바퀴는 이렇게 안 굴렀다.
+[24] CG | T_N5_12 | Cut_T_N5_12
+[25] NARR | 밤사이 키 큰 남자가 바퀴를 갈아 줬다고 꼬마가 말했다. 이 리어카가 누구 건지 그 사람은 알고 있었다. 그 사람도 그 밤을 잊지 않았다.
+[26] CG | T_N5_13 | Cut_T_N5_13
+[27] NARR | 멀리서 도윤이 같은 길을 걸어갔다. 반대편에서 엄마가 왔다. 손에 종이 한 장. 엄마가 도윤 소매를 잡고 종이를 보였다. 도윤이 고개를 저었다. 엄마 입이 움직였다. 소리는 없었다. 둘은 서로를 지나쳤다. 나는 그 종이를 못 봤다. 봤으면 그 자리에서 무너졌을 것이다.

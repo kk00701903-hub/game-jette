@@ -19,17 +19,17 @@ namespace CoastRun
         // so jellies are worth ~3 HP/s at full pickup; a potion (~every 190 m) ~2.5 HP/s.
         // A middling run (30% jellies, one hit per 10 s, 60% potions) nets about −0.6 HP/s
         // and finishes a long stage in the red; a sloppy one dies near the minute mark.
-        [SerializeField] private float drainPerSecond = 1.6f;
+        [SerializeField] private float drainPerSecond = 1.6f;   // (호환) ApplyTuning 이 게이지 비율로 덮어씀
         [SerializeField] private float hitDamage = 30f;
-        /// 71차(사용자): 피해는 「최대 체력의 비율」로 — ObstacleHazard.DamageMul 이 곧 비율(버스 0.60 · 허들/바리케이드 0.30 · 콘 0.18 …, 표는 ObstacleCatalog.DamageFrac).
-        /// 1 이상이면 즉사. 65~66차의 hitDamage×배율×DamageScale 방식은 폐기(육성 스탯의 피격 감소는 DamageReduce 로 남긴다).
+        /// 피해·회복·드레인 모두 HUD 게이지(0~100 = 최대 체력 %) 기준. K-POP·스토리 동일.
         public const float DamageScale = 1f;
-        /// 74차: 장애물 한 방 피해 범위. 76차(사용자 「최소 데미지 HP 30」): HUD 숫자(0~100 = 최대 체력 비율)로 30~60 이 되게 **최대 체력의 비율**로 깎는다
-        /// — 체력 스탯으로 최대 HP 가 200 이어도 게이지에선 30~60 이 사라진다(전엔 절대값 30 이라 게이지 15 만 빠져 보였다).
         public const float MinHitFrac = 0.30f, MaxHitFrac = 0.60f;
-        public const float MinHitHp = 30f, MaxHitHp = 60f;   // (호환용 — HUD 100 기준 값)
+        public const float MinHitHp = 30f, MaxHitHp = 60f;
+        public const float PotionHealFrac = 0.30f;     // 물약 +30 게이지
+        public const float JellyHealFrac = 0.004f;     // 말랑이 +0.4 게이지(기존 절대 0.4 @ max100)
+        public const float DrainFracPerSec = 0.016f;   // 초당 −1.6 게이지(기존 절대 1.6 @ max100)
         [SerializeField] private float jellyHeal = 0.4f;
-        [SerializeField] private float potionHeal = 30f;   // 17차: 물약 회복 25→40 · 71차(사용자 「너무 쉽다」): 30
+        [SerializeField] private float potionHeal = 30f;
 
         private PlayerController _player;
         private float _current;
@@ -74,11 +74,14 @@ namespace CoastRun
                 _player.OnHitDamage += HandleHit;   // 76차: OnSoftHit(경직) 대신 OnHitDamage — 무적프레임 안 충돌도 피해를 낸다
         }
 
-        /// v2: 육성 스탯 → 최대 HP / 피격 감소량. 스테이지 시작마다 호출.
+        /// 육성 스탯 → 최대 HP. 회복·드레인·피격은 전부 게이지 % 로 맞춰 max 에 비례한다.
         public void ApplyTuning()
         {
-            max = RunTuning.MaxHp;
+            max = Mathf.Max(1f, RunTuning.MaxHp);
             hitDamage = RunTuning.HitDamage;
+            potionHeal = max * PotionHealFrac;
+            jellyHeal = max * JellyHealFrac;
+            drainPerSecond = max * DrainFracPerSec;
         }
 
         public void ResetFull()
@@ -105,13 +108,19 @@ namespace CoastRun
         {
             if (!_active || Frozen)
                 return;
-            float frac = _player != null ? Mathf.Max(0.05f, _player.PendingHitDamageMul) : 0.25f;
+            float frac = _player != null ? _player.PendingHitDamageMul : ObstacleHazard.DefaultFrac;
             if (_player != null) _player.PendingHitDamageMul = ObstacleHazard.DefaultFrac;
-            // 71차(사용자): 피해 = 최대 체력 × 장애물 비율(버스 60 %·허들 30 %·크기별). 육성 스탯 감소분(hitDamage/30 기준)만큼 조금 덜 받는다. 1 이상 = 즉사.
-            float reduce = max > 0f ? Mathf.Clamp(hitDamage / (max * 0.45f), 0.7f, 1f) : 1f;   // RunTuning.HitDamage = MaxHp×0.45×(1−0.15×체력) → 기본 1.0, 체력 만렙 0.85
-            // 74차(사용자 「어떤 장애물은 1 정도밖에 안 단다 — 장애물별 최소 30, 30~60」): 비율로 계산한 값을 **HP 30~60 으로 고정 클램프**(최대 체력과 무관). 1 이상 = 즉사 그대로.
-            float dmg = frac >= 1f ? max + 1f : max * Mathf.Clamp(frac * reduce, MinHitFrac, MaxHitFrac);
-            Debug.LogWarning($"[HP] hit frac={frac:0.00} reduce={reduce:0.00} → dmg={dmg:0} = 게이지 {dmg / Mathf.Max(1f, max) * 100f:0} (hp {_current:0}/{max:0})");
+            if (frac < 0.01f) frac = ObstacleHazard.DefaultFrac;
+            if (frac >= 1f)
+            {
+                float kill = max + 1f;
+                Apply(-kill, silent: false);
+                OnDamaged?.Invoke(kill);
+                return;
+            }
+            // 장애물 표 = 게이지 그대로(콘 −30 · … · 버스 −60). 체력 스탯은 MaxHp 만 키운다.
+            frac = Mathf.Clamp(frac, MinHitFrac, MaxHitFrac);
+            float dmg = max * frac;
             Apply(-dmg, silent: false);
             OnDamaged?.Invoke(dmg);
         }
@@ -122,7 +131,8 @@ namespace CoastRun
                 return;
             float before = _current;
             Apply(amount, silent: true);
-            OnHealed?.Invoke(_current - before);
+            float gained = _current - before;
+            if (gained > 0.01f) OnHealed?.Invoke(gained);
         }
 
         public void HealJelly() => Heal(jellyHeal);

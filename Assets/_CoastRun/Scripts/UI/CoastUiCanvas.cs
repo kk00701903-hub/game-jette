@@ -93,6 +93,52 @@ namespace CoastRun
 
             return canvas.GetComponent<RectTransform>();
         }
+
+        /// 러닝 HUD 배치 기준 폭(인셋 664 = 720−2×HudPad). 갤럭시 S25U 등 좁은 세로폰에선
+        /// 인셋이 ~596으로 줄어 상단 알약이 겹친다 → HudFit 으로 664 기준 배치를 통째로 축소.
+        public const float HudDesignWidth = 664f;
+
+        /// 러닝 크롬·여정 바가 같은 Fit 자식을 쓰도록. 폭이 충분하면 scale=1(에디터 720×1280 동일).
+        public static RectTransform HudFitRoot(Canvas canvas)
+        {
+            var inset = Root(canvas);
+            if (inset == null) return null;
+            var existing = inset.Find("HudFit") as RectTransform;
+            if (existing != null) return existing;
+            var go = new GameObject("HudFit", typeof(RectTransform), typeof(CoastHudNarrowFit));
+            go.transform.SetParent(inset, false);
+            var frt = go.GetComponent<RectTransform>();
+            // 위쪽 고정 — 축소해도 노치 아래 상단 바가 아래로 밀리지 않음
+            frt.anchorMin = frt.anchorMax = new Vector2(0.5f, 1f);
+            frt.pivot = new Vector2(0.5f, 1f);
+            frt.anchoredPosition = Vector2.zero;
+            go.GetComponent<CoastHudNarrowFit>().ApplyNow();
+            return frt;
+        }
+    }
+
+    /// 인셋 폭이 HudDesignWidth 보다 좁을 때 Fit 자식을 비율 유지로 축소(매 프레임 안전영역 갱신 반영).
+    public class CoastHudNarrowFit : MonoBehaviour
+    {
+        private RectTransform _self, _parent;
+        private float _lastW = -1f, _lastH = -1f;
+
+        private void LateUpdate() => ApplyNow();
+
+        public void ApplyNow()
+        {
+            if (_self == null) _self = transform as RectTransform;
+            if (_parent == null) _parent = _self != null ? _self.parent as RectTransform : null;
+            if (_self == null || _parent == null) return;
+            float rw = _parent.rect.width, rh = _parent.rect.height;
+            if (rw < 8f || rh < 8f) return;
+            if (Mathf.Abs(rw - _lastW) < 0.25f && Mathf.Abs(rh - _lastH) < 0.25f) return;
+            _lastW = rw; _lastH = rh;
+            float fit = Mathf.Clamp(rw / CoastUiCanvas.HudDesignWidth, 0.55f, 1f);
+            _self.localScale = new Vector3(fit, fit, 1f);
+            // 스케일 후 부모와 같은 높이를 덮도록 내부 높이 = rh/fit
+            _self.sizeDelta = new Vector2(CoastUiCanvas.HudDesignWidth, rh / fit);
+        }
     }
 
     public class CoastPortraitSafeArea : MonoBehaviour
@@ -123,6 +169,20 @@ namespace CoastRun
             if (x1 - x0 > 8f && y1 - y0 > 8f) r = Rect.MinMaxRect(x0, y0, x1, y1);
             float w = Mathf.Max(1f, Screen.width);
             float h = Mathf.Max(1f, Screen.height);
+
+            // Android: translucent status bar can overlay HUD while Screen.safeArea
+            // still reports full height. Keep a minimum top clear when the bar is up,
+            // or when top inset is suspiciously zero on a tall phone.
+            float topClear = h - (r.y + r.height);
+            float minTop = 0f;
+#if UNITY_ANDROID && !UNITY_EDITOR
+            float dp = Screen.dpi > 40f ? Screen.dpi : 160f;
+            if (CoastSystemBars.StatusBarVisible || topClear < 2f)
+                minTop = Mathf.Clamp(dp * 0.28f, 40f, h * 0.055f);   // ~28dp status / cutout
+#endif
+            if (topClear < minTop)
+                r = Rect.MinMaxRect(r.xMin, r.yMin, r.xMax, h - minTop);
+
             _safe.anchorMin = new Vector2(r.x / w, r.y / h);
             _safe.anchorMax = new Vector2((r.x + r.width) / w, (r.y + r.height) / h);
             _safe.offsetMin = Vector2.zero;
@@ -155,6 +215,9 @@ namespace CoastRun
             foreach (var cg in FindObjectsByType<CanvasGroup>(FindObjectsSortMode.None))
             {
                 if (!cg.blocksRaycasts || cg.alpha > 0.02f || !cg.gameObject.activeInHierarchy) continue;
+                // TitleUI is intentionally faded (splash / K-POP chapter select). Clearing
+                // blocksRaycasts here used to leave the title permanently dead after restore.
+                if (cg.gameObject.name == "TitleUI") continue;
                 if (cg.GetComponentInParent<Selectable>() != null) continue;
                 if (cg.GetComponentInParent<ScrollRect>() != null) continue;   // 24차-10(점검 2-5): 스크롤 수신 영역은 투명이 정상
                 if (!CoversScreen(cg.transform as RectTransform)) continue;

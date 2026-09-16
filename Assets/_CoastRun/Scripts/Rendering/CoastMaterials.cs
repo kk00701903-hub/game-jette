@@ -26,15 +26,55 @@ namespace CoastRun
         private static readonly List<Tracked> TrackedMats = new List<Tracked>(128);
 #endif
 
+        /// 82차(모바일 APK): Shader.Find 가 스트리핑으로 null 이면 `new Material(null)` → ArgumentNullException(parameter: shader).
+        /// Always Included(GraphicsSettings) + Resources/CoastRun/Shaders 로 포함을 보장하고,
+        /// 그래도 없으면 Sprites/Default 까지 내려가 Material 생성에 null 을 넘기지 않는다.
+        ///
+        /// Player Settings 점검 메모 (재현 테스트용):
+        /// - Managed Stripping Level 을 Minimal 로 낮춰도 동일하면 → 관리코드 스트리핑이 아니라
+        ///   셰이더 미포함(Always Included / Resources) 문제.
+        /// - Minimal 에서만 사라지고 Low/Medium 에서 나면 → stripping 영향 가능(link.xml / stripEngineCode).
+        /// BuildMenu 는 Android 를 Low + stripEngineCode=false 로 고정한다.
+        public static Shader Require(params string[] names)
+        {
+            if (names != null)
+                for (int i = 0; i < names.Length; i++)
+                {
+                    if (string.IsNullOrEmpty(names[i])) continue;
+                    var s = Shader.Find(names[i]);
+                    if (s != null) return s;
+                }
+            var last = Shader.Find("Sprites/Default") ?? Shader.Find("UI/Default") ?? Shader.Find("Hidden/InternalErrorShader");
+            if (last == null)
+                Debug.LogError("[CoastMaterials] Shader not found (incl. Sprites/Default). Check Always Included Shaders.");
+            return last;
+        }
+
+        public static Material NewMat(Shader shader)
+        {
+            if (shader == null)
+            {
+                shader = Require();
+                if (shader == null)
+                {
+                    Debug.LogError("[CoastMaterials] Shader not found — cannot create Material");
+                    return null;
+                }
+            }
+            return new Material(shader);
+        }
+
         public static Shader LitShader
         {
             get
             {
                 if (_lit == null)
                 {
-                    _lit = Shader.Find("Universal Render Pipeline/Lit")
-                           ?? Shader.Find("Universal Render Pipeline/Simple Lit")
-                           ?? Shader.Find("Standard");
+                    _lit = Require(
+                        "Universal Render Pipeline/Lit",
+                        "Universal Render Pipeline/Simple Lit",
+                        "Standard",
+                        "Sprites/Default");
                 }
 
                 return _lit;
@@ -49,10 +89,11 @@ namespace CoastRun
                 {
                     // The curved variant first, so sea, coins, wires and outlines bend with
                     // the road. Sky and clouds opt out via SetFlat.
-                    _unlit = Shader.Find("CoastRun/UnlitCurved")
-                             ?? Shader.Find("Universal Render Pipeline/Unlit")
-                             ?? Shader.Find("Unlit/Color")
-                             ?? Shader.Find("Sprites/Default");
+                    _unlit = Require(
+                        "CoastRun/UnlitCurved",
+                        "Universal Render Pipeline/Unlit",
+                        "Unlit/Color",
+                        "Sprites/Default");
                 }
 
                 return _unlit;
@@ -64,7 +105,7 @@ namespace CoastRun
             get
             {
                 if (_toon == null)
-                    _toon = Shader.Find("CoastRun/ToonLit");
+                    _toon = Shader.Find("CoastRun/ToonLit");   // optional — CreateToon falls back to Lit
                 return _toon;
             }
         }
@@ -80,7 +121,8 @@ namespace CoastRun
             Material mat;
             if (ToonShader != null)
             {
-                mat = new Material(ToonShader);
+                mat = NewMat(ToonShader);
+                if (mat == null) return null;
                 ApplyColor(mat, color, false);
                 if (mat.HasProperty("_ShadowColor"))
                     mat.SetColor("_ShadowColor", CoastPalette.ShadowCool);
@@ -96,10 +138,18 @@ namespace CoastRun
             }
             else
             {
-                mat = new Material(LitShader);
+                mat = NewMat(LitShader);
+                if (mat == null) return null;
                 ApplyColor(mat, color, false);
                 if (mat.HasProperty("_Smoothness"))
                     mat.SetFloat("_Smoothness", smoothness);
+                if (tex != null)
+                {
+                    if (mat.HasProperty("_BaseMap"))
+                        mat.SetTexture("_BaseMap", tex);
+                    else if (mat.HasProperty("_MainTex"))
+                        mat.SetTexture("_MainTex", tex);
+                }
             }
 
             Track(mat, liveColor ?? (() => color), false);
@@ -116,7 +166,8 @@ namespace CoastRun
 
         public static Material CreateUnlit(Color color, Func<Color> liveColor)
         {
-            var mat = new Material(UnlitShader);
+            var mat = NewMat(UnlitShader);
+            if (mat == null) return null;
             ApplyColor(mat, color, true);
             Track(mat, liveColor ?? (() => color), true);
             return mat;
@@ -130,60 +181,79 @@ namespace CoastRun
 
         public static Material CreateTransparent(Color color, Func<Color> liveColor)
         {
-            var mat = CreateUnlit(color, liveColor);
-            if (mat.HasProperty("_Surface"))
+            // Prefer UnlitCurved so mobile builds keep real alpha (no URP strip of transparent variants).
+            var mat = MakeUnlitCurvedTransparent(null, color, curveWeight: 0f, fogWeight: 0f);
+            if (mat == null)
             {
-                mat.SetFloat("_Surface", 1f);
-                mat.SetFloat("_Blend", 0f);
+                mat = CreateUnlit(color, liveColor);
+                if (mat == null) return null;
                 mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
                 mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
                 mat.SetInt("_ZWrite", 0);
                 mat.renderQueue = 3000;
-                mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
             }
-            else
-            {
-                // Sprites/Default / legacy unlit
-                mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                mat.SetInt("_ZWrite", 0);
-                mat.renderQueue = 3000;
-                mat.EnableKeyword("_ALPHABLEND_ON");
-            }
-
+            Track(mat, liveColor ?? (() => color), true);
             return mat;
         }
 
-        private static Shader _particle;
+        /// Shared alpha-blended UnlitCurved setup. Avoids stock URP Unlit/Lit Transparent
+        /// variants — on Android with Strip Unused Variants those force OutputAlpha→1
+        /// (black boxes around clouds/coins, square SoftDisc blobs).
+        static Material MakeUnlitCurvedTransparent(Texture2D tex, Color tint, float curveWeight, float fogWeight, bool additive = false)
+        {
+            var shader = Require("CoastRun/UnlitCurved", "Sprites/Default", "UI/Default");
+            var mat = NewMat(shader);
+            if (mat == null) return null;
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", tint);
+            else mat.color = tint;
+            if (tex != null)
+            {
+                if (mat.HasProperty("_BaseMap")) mat.SetTexture("_BaseMap", tex);
+                else if (mat.HasProperty("_MainTex")) mat.SetTexture("_MainTex", tex);
+            }
+            float src = (float)UnityEngine.Rendering.BlendMode.SrcAlpha;
+            float dst = additive
+                ? (float)UnityEngine.Rendering.BlendMode.One
+                : (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha;
+            if (mat.HasProperty("_SrcBlend")) mat.SetFloat("_SrcBlend", src);
+            if (mat.HasProperty("_DstBlend")) mat.SetFloat("_DstBlend", dst);
+            // Keep RT / framebuffer alpha opaque by default (MiniStage RawImage).
+            if (mat.HasProperty("_SrcBlendAlpha")) mat.SetFloat("_SrcBlendAlpha", (float)UnityEngine.Rendering.BlendMode.One);
+            if (mat.HasProperty("_DstBlendAlpha")) mat.SetFloat("_DstBlendAlpha", (float)UnityEngine.Rendering.BlendMode.One);
+            if (mat.HasProperty("_ZWrite")) mat.SetFloat("_ZWrite", 0f);
+            if (mat.HasProperty("_Cull")) mat.SetFloat("_Cull", 0f);
+            if (mat.HasProperty("_Surface")) mat.SetFloat("_Surface", 1f);
+            if (mat.HasProperty("_Blend")) mat.SetFloat("_Blend", 0f);
+            if (mat.HasProperty("_CurveWeight")) mat.SetFloat("_CurveWeight", curveWeight);
+            if (mat.HasProperty("_FogWeight")) mat.SetFloat("_FogWeight", fogWeight);
+            mat.renderQueue = 3000;
+            return mat;
+        }
 
-        /// Particle systems must not use the curved-world shaders: ParticleSystemRenderer
-        /// streams billboard vertices the bend maths misreads, and bursts turned into
-        /// screen-sized blobs. Stock URP particle unlit, alpha-blended.
+        /// Alpha-blended, fog-free painted backdrop (Hallasan far layer, mission yards).
+        public static Material CreateTexturedTransparentNoFog(Texture2D tex, Color tint) =>
+            MakeUnlitCurvedTransparent(tex, tint, curveWeight: 0f, fogWeight: 0f);
+
+        /// 12차: 도로와 같이 휘는 투명 텍스처 언릿 — 블롭 그림자·아이템 광원·장애물 경고 링.
+        public static Material CreateTexturedTransparentCurved(Texture2D tex, Color tint, bool additive = false) =>
+            MakeUnlitCurvedTransparent(tex, tint, curveWeight: 1f, fogWeight: additive ? 0f : 1f, additive: additive);
+
+        /// Alpha-blended textured unlit for painted billboards (clouds, far town, coin faces).
+        /// Flat + no fog — UnlitCurved property Blend keeps real alpha on mobile builds.
+        public static Material CreateTexturedTransparent(Texture2D tex, Color tint) =>
+            MakeUnlitCurvedTransparent(tex, tint, curveWeight: 0f, fogWeight: 0f);
+
+        /// Particle soft discs via UnlitCurved (CurveWeight=0). Stock URP Particles/Unlit
+        /// loses transparent variants on Android → opaque squares.
         public static Material CreateParticle(Color color)
         {
-            if (_particle == null)
-                _particle = Shader.Find("Universal Render Pipeline/Particles/Unlit")
-                            ?? Shader.Find("Universal Render Pipeline/Unlit");
-            var mat = new Material(_particle);
+            var mat = MakeUnlitCurvedTransparent(BlobShadow.SoftDisc(), color, curveWeight: 0f, fogWeight: 0f);
+            if (mat == null) return null;
             ApplyColor(mat, color, true);
-            // 14차: 텍스처 없는 파티클은 네모로 찍힌다(코인 터짐이 주황 사각형이던 원인) → 부드러운 원판.
-            if (mat.HasProperty("_BaseMap")) mat.SetTexture("_BaseMap", BlobShadow.SoftDisc());
-            else if (mat.HasProperty("_MainTex")) mat.SetTexture("_MainTex", BlobShadow.SoftDisc());
-            if (mat.HasProperty("_Surface"))
-            {
-                mat.SetFloat("_Surface", 1f);
-                mat.SetFloat("_Blend", 0f);
-                mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-                mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-                mat.SetInt("_ZWrite", 0);
-                mat.renderQueue = 3000;
-                mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-            }
             return mat;
         }
 
-        /// Pins a material in place while the rest of the world bends (sky, clouds, UI-ish
-        /// billboards that must not sweep off screen on a hard curve).
+        /// Pins a material in place while the rest of the world bends (sky, clouds).
         public static Material SetFlat(Material mat)
         {
             if (mat != null && mat.HasProperty("_CurveWeight"))
@@ -196,90 +266,6 @@ namespace CoastRun
         {
             if (mat != null && mat.HasProperty("_FogWeight"))
                 mat.SetFloat("_FogWeight", weight);
-            return mat;
-        }
-
-        private static Shader _urpUnlit;
-
-        /// Alpha-blended, fog-free painted backdrop (the Hallasan far layer). Stock URP
-        /// Unlit always applies distance fog, and at 150 m — right at fog end — that
-        /// bleached the whole layer into one pale band on the horizon. The curved
-        /// shader exposes _FogWeight, so it can draw the painting exactly as painted.
-        public static Material CreateTexturedTransparentNoFog(Texture2D tex, Color tint)
-        {
-            var shader = Shader.Find("CoastRun/UnlitCurved");
-            if (shader == null)
-                return CreateTexturedTransparent(tex, tint);
-            var mat = new Material(shader);
-            mat.SetColor("_BaseColor", tint);
-            if (tex != null)
-                mat.SetTexture("_BaseMap", tex);
-            mat.SetFloat("_Surface", 1f);
-            mat.SetFloat("_Blend", 0f);
-            mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
-            mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-            mat.SetFloat("_ZWrite", 0f);
-            mat.SetFloat("_CurveWeight", 0f);
-            mat.SetFloat("_FogWeight", 0f);
-            mat.renderQueue = 3000;
-            return mat;
-        }
-
-        /// 12차: 도로와 같이 휘는 투명 텍스처 언릿 — 블롭 그림자·아이템 광원·장애물 경고 링처럼
-        /// 바닥/소품에 붙어 다니는 것들. (구름·원경은 그대로 CreateTexturedTransparent: 곧게.)
-        public static Material CreateTexturedTransparentCurved(Texture2D tex, Color tint, bool additive = false)
-        {
-            var shader = Shader.Find("CoastRun/UnlitCurved");
-            if (shader == null)
-                return CreateTexturedTransparent(tex, tint);
-            var mat = new Material(shader);
-            mat.SetColor("_BaseColor", tint);
-            if (tex != null)
-                mat.SetTexture("_BaseMap", tex);
-            mat.SetFloat("_Surface", 1f);
-            mat.SetFloat("_Blend", 0f);
-            mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
-            mat.SetFloat("_DstBlend", additive
-                ? (float)UnityEngine.Rendering.BlendMode.One
-                : (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-            mat.SetFloat("_ZWrite", 0f);
-            mat.SetFloat("_Cull", 0f);
-            mat.SetFloat("_CurveWeight", 1f);
-            mat.SetFloat("_FogWeight", additive ? 0f : 1f);
-            mat.renderQueue = 3000;
-            return mat;
-        }
-
-        /// Alpha-blended textured unlit for painted billboards (clouds, far town).
-        /// Deliberately the stock URP Unlit, not the curved shader: through the curved
-        /// shader's transparent path the quad's fully transparent texels still rendered
-        /// as a pale slab (fog interaction), while URP Unlit draws the same texture
-        /// cleanly. These billboards are pinned flat anyway, so nothing is lost.
-        public static Material CreateTexturedTransparent(Texture2D tex, Color tint)
-        {
-            if (_urpUnlit == null)
-                _urpUnlit = Shader.Find("Universal Render Pipeline/Unlit");
-            if (_urpUnlit == null)
-            {
-                var fallback = CreateTransparent(tint);
-                if (tex != null && fallback.HasProperty("_BaseMap")) fallback.SetTexture("_BaseMap", tex);
-                return fallback;
-            }
-
-            var mat = new Material(_urpUnlit);
-            mat.SetColor("_BaseColor", tint);
-            if (tex != null)
-                mat.SetTexture("_BaseMap", tex);
-            mat.SetFloat("_Surface", 1f);
-            mat.SetFloat("_Blend", 0f);
-            mat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
-            mat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-            mat.SetFloat("_SrcBlendAlpha", (float)UnityEngine.Rendering.BlendMode.One);
-            mat.SetFloat("_DstBlendAlpha", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-            mat.SetFloat("_ZWrite", 0f);
-            mat.SetFloat("_Cull", (float)UnityEngine.Rendering.CullMode.Off);
-            mat.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
-            mat.renderQueue = 3000;
             return mat;
         }
 

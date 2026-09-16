@@ -35,6 +35,29 @@ namespace CoastRun
         private CanvasGroup _cheerCg;
         private Coroutine _cheerRoutine;
         private float _baseTimeScale = 1f;
+        /// 런 중 정상 배속. HitStop 중단 시 여기로 되돌린다(중첩 HitStop이 0.6·0.85에 묶이던 버그 방지).
+        private const float RunTimeScale = 1f;
+
+        /// 진행 중 HitStop을 끊고 timeScale을 런 배속으로 복구. 새 HitStop 시작 전에 반드시 호출.
+        private void AbortHitStop()
+        {
+            if (_hitStopRoutine != null)
+            {
+                StopCoroutine(_hitStopRoutine);
+                _hitStopRoutine = null;
+            }
+            RestoreRunTimeScale();
+        }
+
+        private void RestoreRunTimeScale()
+        {
+            var chrome = RunHudChrome.Instance;
+            if (chrome != null && chrome.IsPaused)
+                Time.timeScale = 0f;
+            else
+                Time.timeScale = RunTimeScale;
+            _baseTimeScale = RunTimeScale;
+        }
 
         public void Bind(
             PlayerController p,
@@ -409,12 +432,25 @@ namespace CoastRun
             CoastPrefs.Vibrate();
         }
 
+        /// 86차(사용자): 마을 대회 NPC 러너가 장애물에 부딪힐 때 — 주인공 꽈당과 같은 재료(별·하트·퍼프 파편 + 흰 링 + 「꽈당!」 + 꽈당 효과음)를 그 자리에.
+        ///   카메라 흔들림·순간 정지는 주인공보다 약하게(가까울수록 크게) — 남의 사고로 플레이가 끊기지 않게.
+        public void PlayRivalHit(Vector3 worldPos, float nearness01)
+        {
+            EnsurePopBursts();
+            SpawnPop(_popStar, worldPos, new Color(1f, 0.93f, 0.45f), 7);
+            SpawnPop(_popPuff, worldPos, new Color(1f, 1f, 1f, 0.95f), 6);
+            StartCoroutine(FlashRing(worldPos, new Color(1f, 0.75f, 0.7f, 0.9f), 1.3f));
+            PickupFloat.Text(worldPos + Vector3.up * 1.4f, Loc.T("꽈당!", "OUCH!"), new Color(1f, 0.45f, 0.4f), 1.1f);
+            if (nearness01 > 0.2f) cameraRig?.Shake(0.18f * nearness01, 0.14f);
+            audio?.PlaySfx(CoastSfx.SoftHit);
+        }
+
         /// 14차-14: 장애물 팡 — 파스텔 별·하트 흩뿌리기 + 흰 링 + 작은 흔들림. 가볍고 귀엽게(실패 연출이 아니라 장난감처럼).
         public void PlayObstaclePop(Vector3 worldPos)
         {
-            // 17차: 타격감 — 순간 정지(0.07 s) + 큰 흔들림 + 진동. 파편은 주인공 좌표계에서 흩어져 뒤에 남지 않는다.
-            if (_hitStopRoutine != null) StopCoroutine(_hitStopRoutine);
-            _hitStopRoutine = StartCoroutine(PlayerController.NoHitSlow ? HitStop(0.6f, 0.04f) : HitStop(0.04f, 0.07f));   // 63차: 보스 중 슬로모 최소
+            // 17차: 타격감 — 순간 정지 + 큰 흔들림 + 진동. SoftHit HitStop과 겹치면 Abort 후 새로 시작(배속 누수 방지).
+            AbortHitStop();
+            _hitStopRoutine = StartCoroutine(PlayerController.NoHitSlow ? HitStop(0.6f, 0.04f) : HitStop(0.04f, 0.07f));
             cameraRig?.Shake(0.32f, 0.16f);
             cameraRig?.FovKick(-5f, 0.15f);
             CoastPrefs.Vibrate();
@@ -471,10 +507,14 @@ namespace CoastRun
                       new[] { new GradientAlphaKey(1f, 0f), new GradientAlphaKey(1f, 0.55f), new GradientAlphaKey(0f, 1f) });
             col.color = g;
             var r = go.GetComponent<ParticleSystemRenderer>();
-            r.material = CoastMaterials.CreateParticle(Color.white);
-            if (r.material.HasProperty("_BaseMap")) r.material.SetTexture("_BaseMap", tex);
-            if (r.material.HasProperty("_ZTest")) r.material.SetFloat("_ZTest", (float)UnityEngine.Rendering.CompareFunction.Always);
-            r.material.renderQueue = 3500;
+            var mat = CoastMaterials.CreateParticle(Color.white);
+            if (mat != null)
+            {
+                r.material = mat;
+                if (mat.HasProperty("_BaseMap")) mat.SetTexture("_BaseMap", tex);
+                if (mat.HasProperty("_ZTest")) mat.SetFloat("_ZTest", (float)UnityEngine.Rendering.CompareFunction.Always);
+                mat.renderQueue = 3500;
+            }
             return ps;
         }
 
@@ -809,7 +849,7 @@ namespace CoastRun
             }
 
             if (_hitStopRoutine != null)
-                StopCoroutine(_hitStopRoutine);
+                AbortHitStop();
             _hitStopRoutine = StartCoroutine(HitStop(0.85f, 0.15f));
 
             PunchSaturation(+30f, 0.25f);
@@ -821,10 +861,8 @@ namespace CoastRun
 
         private IEnumerator HitStop(float scale, float duration)
         {
-            _baseTimeScale = Time.timeScale > 0.01f ? Time.timeScale : 1f;
-            if (_baseTimeScale < 0.01f)
-                _baseTimeScale = 1f;
-
+            // 항상 런 배속(1)에서 내려갔다가 다시 1로 — 이전 HitStop의 0.6·0.85를 base로 삼지 않는다.
+            _baseTimeScale = RunTimeScale;
             Time.timeScale = scale;
             float t = 0f;
             while (t < duration)
@@ -833,11 +871,7 @@ namespace CoastRun
                 yield return null;
             }
 
-            // Restore to pre-hit-stop scale (never leave the run at 0 after a soft hit).
-            var chrome = RunHudChrome.Instance;
-            Time.timeScale = (chrome != null && chrome.IsPaused) ? 0f : Mathf.Max(0.01f, _baseTimeScale);
-            if (Time.timeScale < 0.05f && (chrome == null || !chrome.IsPaused))
-                Time.timeScale = 1f;
+            RestoreRunTimeScale();
             _hitStopRoutine = null;
         }
 
@@ -868,7 +902,7 @@ namespace CoastRun
             // 순간 정지(0.10 s) → 큰 흔들림 → 화면이 기울며 붉게 번쩍 + "꽈당!" + 채도 뚝.
             // (예전 0.05s 대기는 짧은 피격에서 연출이 씹히는 경우가 있어 바로 켠다)
             // 63차(사용자): 보스 중엔 피격 순간 정지(슬로모)를 거의 없앤다 — 연타 피격이 「느려지는 보스」로 느껴졌다
-            if (_hitStopRoutine != null) StopCoroutine(_hitStopRoutine);
+            if (_hitStopRoutine != null) AbortHitStop();
             _hitStopRoutine = StartCoroutine(PlayerController.NoHitSlow ? HitStop(0.6f, 0.04f) : HitStop(0.03f, 0.10f));
             cameraRig?.Shake(0.55f, 0.38f);
             PunchSaturation(-70f, 0.55f);
@@ -1098,7 +1132,8 @@ namespace CoastRun
             sz.enabled = true;
             sz.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 0.6f, 1f, 1.6f));
             var renderer = go.GetComponent<ParticleSystemRenderer>();
-            renderer.material = CoastMaterials.CreateParticle(new Color(0.9f, 0.86f, 0.78f, 0.6f));
+            var dustMat = CoastMaterials.CreateParticle(new Color(0.9f, 0.86f, 0.78f, 0.6f));
+            if (dustMat != null) renderer.material = dustMat;
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             _runDust.Play();
         }
@@ -1118,7 +1153,8 @@ namespace CoastRun
             _boardTrail.alignment = LineAlignment.View;
             _boardTrail.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             _boardTrail.receiveShadows = false;
-            _boardTrail.material = CoastMaterials.CreateParticle(new Color(1f, 1f, 1f, 0.35f));
+            var trailMat = CoastMaterials.CreateParticle(new Color(1f, 1f, 1f, 0.35f));
+            if (trailMat != null) _boardTrail.material = trailMat;
             var g = new Gradient();
             g.SetKeys(new[] { new GradientColorKey(new Color(0.95f, 0.98f, 1f), 0f), new GradientColorKey(new Color(0.8f, 0.95f, 1f), 1f) },
                       new[] { new GradientAlphaKey(0.55f, 0f), new GradientAlphaKey(0f, 1f) });
@@ -1176,7 +1212,8 @@ namespace CoastRun
             shape.radius = 0.35f;
 
             var renderer = go.GetComponent<ParticleSystemRenderer>();
-            renderer.material = CoastMaterials.CreateParticle(new Color(0.9f, 0.85f, 0.75f, 0.7f));
+            var landMat = CoastMaterials.CreateParticle(new Color(0.9f, 0.85f, 0.75f, 0.7f));
+            if (landMat != null) renderer.material = landMat;
             renderer.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             _landDust.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
         }
@@ -1216,10 +1253,14 @@ namespace CoastRun
             // Particles get the stock URP particle shader, not the curved-world unlit:
             // ParticleSystemRenderer hands the curved shader vertices it does not expect
             // and the burst smeared as screen-sized yellow blobs (even into the letterbox).
-            renderer.material = CoastMaterials.CreateParticle(CoastPalette.CoinYellow);
-            if (renderer.material.HasProperty("_BaseMap")) renderer.material.SetTexture("_BaseMap", SparkleTexture());
-            if (renderer.material.HasProperty("_ZTest")) renderer.material.SetFloat("_ZTest", (float)UnityEngine.Rendering.CompareFunction.Always);
-            renderer.material.renderQueue = 3500;
+            var coinMat = CoastMaterials.CreateParticle(CoastPalette.CoinYellow);
+            if (coinMat != null)
+            {
+                renderer.material = coinMat;
+                if (coinMat.HasProperty("_BaseMap")) coinMat.SetTexture("_BaseMap", SparkleTexture());
+                if (coinMat.HasProperty("_ZTest")) coinMat.SetFloat("_ZTest", (float)UnityEngine.Rendering.CompareFunction.Always);
+                coinMat.renderQueue = 3500;
+            }
             var sol = _coinBurstPrefab.sizeOverLifetime;
             sol.enabled = true;
             sol.size = new ParticleSystem.MinMaxCurve(1f, new AnimationCurve(new Keyframe(0f, 0.4f), new Keyframe(0.15f, 1f), new Keyframe(1f, 0f)));

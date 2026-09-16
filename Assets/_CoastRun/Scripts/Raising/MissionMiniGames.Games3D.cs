@@ -158,9 +158,9 @@ namespace CoastRun
                 q.transform.SetParent(S.Root, false);
                 float w = tex != null ? height * tex.width / (float)tex.height : height * 0.6f;
                 q.transform.localScale = new Vector3(w, height, 1f);
-                var m = MiniStage3D.Lit(tint ?? Color.white, 0f, 0f, true);
-                if (tex != null && m.HasProperty("_BaseMap")) m.SetTexture("_BaseMap", tex);
-                if (m.HasProperty("_SpecularHighlights")) { m.SetFloat("_SpecularHighlights", 0f); m.EnableKeyword("_SPECULARHIGHLIGHTS_OFF"); }
+                var m = CoastMaterials.CreateTexturedTransparentNoFog(tex, tint ?? Color.white);
+                MiniStage3D.OpaqueAlpha(m);
+                CoastMaterials.SetFlat(m);
                 var r = q.GetComponent<Renderer>(); r.sharedMaterial = m; r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; r.receiveShadows = false;
                 return q.transform;
             }
@@ -208,20 +208,21 @@ namespace CoastRun
 
         // ══════════════════════════════════════════════════════════════════
         // 윷놀이 — 멍석 위 3D
-        // 64차(사용자 시안): 크림 발판(분홍 「내 차례 — [던지기!]」 제목 · 노란 젤리 「윷 결과」 카드 · 흰 「3바퀴 경주」 카드(바퀴 점 + 칸 막대) ·
-        //   불꽃 「던지기!!」 큰 버튼) · 유리구슬 말 · 큰 윷가락 4개 · 시작 전 「하는 법」 튜토리얼 카드 ·
-        //   승리 = 20칸 말판을 먼저 3바퀴 · 사람 승률 ≈ 60 %(배 확률 나 0.55 / 도담 0.45, 시뮬레이션 2만 판) ·
-        //   턴 교대를 한 곳(NextTurn)에서만 정하고 도담 차례엔 버튼을 흐리게 + 제목이 파랗게 바뀐다.
+        // 말판 130% · 가운데 X 지름길 · 갈림길(모서리 5·10)에 걸리면 무조건 최단 지름길로.
         // ══════════════════════════════════════════════════════════════════
         private class YutMission3D : Stage3DMission
         {
             protected override string Title => Loc.T("미션 · 윷놀이", "Mission · Yut Nori");
-            protected override string Backdrop => ArtAssets.LoadTexture("UI_MG_Yard_Yut2") != null ? "UI_MG_Yard_Yut2" : "UI_MG_Yard_Yut";   // 65차: 한옥 마당 + 보석 금테 멍석(Kling)
-            private const int Cells = 20, Laps = 3, Total = Cells * Laps;
-            private const float PMe = 0.55f, PAi = 0.45f;   // 배(평평한 면)가 위로 올 확률 — 사람 승률 60 %
-            private int _me, _ai;                          // 0..Total(누적 칸)
+            protected override string Backdrop => ArtAssets.LoadTexture("UI_MG_Yard_Yut2") != null ? "UI_MG_Yard_Yut2" : "UI_MG_Yard_Yut";
+            private const int Cells = 20, Laps = 3;
+            private const int NCenter = 20, N5c = 21, Nc15 = 22, N10c = 23, Nc0 = 24, NodeCount = 25;
+            private const float PMe = 0.55f, PAi = 0.45f;
+            private enum Route { Outer, Cut5, Cut10 }
+            private int _meNode, _aiNode, _meLap, _aiLap;
+            private Route _meRoute = Route.Outer, _aiRoute = Route.Outer;
+            private int _hopFrom; // Hop 애니메이션용 이전 칸
             private bool _myTurn = true, _busy, _ended, _tutorial;
-            private readonly List<Vector2> _cellPos = new List<Vector2>();
+            private readonly Vector2[] _nodePos = new Vector2[NodeCount];
             private readonly Transform[] _sticks = new Transform[4];
             private readonly Material[] _stickMat = new Material[4];
             private Transform _meTok, _aiTok, _meBlob, _aiBlob;
@@ -234,26 +235,34 @@ namespace CoastRun
             private float _stickLen, _tokH;
             private static readonly Color Pink = new Color(0.95f, 0.36f, 0.56f), Blue = new Color(0.30f, 0.55f, 0.95f), Red = new Color(0.95f, 0.30f, 0.32f);
             private static readonly Color Ink = new Color(0.30f, 0.20f, 0.14f), CreamFoot = new Color(0.99f, 0.96f, 0.90f);
-            private static string AiName => Loc.T("꼬마", "Kid");   // 65차(사용자): 나와 꼬마의 대결
+            private static string AiName => Loc.T("꼬마", "Kid");
 
             protected override void Build(Transform foot)
             {
                 SetupStage(foot);
-                var footImg = foot.GetComponent<Image>(); if (footImg != null) footImg.color = CreamFoot;   // 시안: 크림 발판
-                Status.gameObject.SetActive(false);   // 상태문 자리는 분홍 차례 제목(_turnTitle)이 쓴다
-                // 말판: 정사각 둘레 20칸(왼아래 출발, 시계 반대) — 분필 원, 모서리는 크고 진하게
-                for (int i = 0; i <= Cells; i++) _cellPos.Add(CellAnchor(i));
-                float wpn = S.WorldPerNorm(new Vector2(0.5f, 0.5f));
-                var lineMat = MiniStage3D.Lit(new Color(1f, 1f, 1f, 0.85f), 0f);
+                var footImg = foot.GetComponent<Image>(); if (footImg != null) footImg.color = CreamFoot;
+                Status.gameObject.SetActive(false);
+                BuildBoardGraph();
+                float wpn = S.WorldPerNorm(new Vector2(BoardCx, BoardCy));
+                float cellNorm = (BoardR - BoardL) / 5f;
+                float padR = wpn * cellNorm * 0.36f;
+                _faceH = padR * 1.85f; _tokH = padR * 1.15f;
+                var lineMat = MiniStage3D.Lit(new Color(0.55f, 0.35f, 0.18f, 1f), 0.15f, 0f);
                 for (int i = 0; i < Cells; i++)
                 {
                     bool corner = i % 5 == 0;
-                    S.Bar(S.GroundPoint(_cellPos[i]), S.GroundPoint(_cellPos[i + 1]), wpn * 0.008f, 0.003f, lineMat);
-                    Chalk(_cellPos[i], wpn * (corner ? 0.055f : 0.036f), corner ? new Color(1f, 0.85f, 0.35f, 1f) : new Color(1f, 1f, 1f, 1f));
-                    if (corner) Chalk(_cellPos[i], wpn * 0.026f, new Color(0.40f, 0.22f, 0.10f, 1f));
+                    S.Bar(S.GroundPoint(_nodePos[i]), S.GroundPoint(_nodePos[(i + 1) % Cells]), padR * 0.18f, 0.004f, lineMat);
+                    CellPad(_nodePos[i], padR, corner, i == 0);
                 }
-                // 윷가락 4개 — 멍석 가운데 나란히(시안처럼 큼직하게)
-                _stickLen = wpn * 0.30f;
+                // X 지름길 (모서리 5↔15, 10↔0) + 가운데·중간 칸
+                S.Bar(S.GroundPoint(_nodePos[5]), S.GroundPoint(_nodePos[15]), padR * 0.16f, 0.004f, lineMat);
+                S.Bar(S.GroundPoint(_nodePos[10]), S.GroundPoint(_nodePos[0]), padR * 0.16f, 0.004f, lineMat);
+                CellPad(_nodePos[N5c], padR * 0.9f, false, false);
+                CellPad(_nodePos[N10c], padR * 0.9f, false, false);
+                CellPad(_nodePos[Nc15], padR * 0.9f, false, false);
+                CellPad(_nodePos[Nc0], padR * 0.9f, false, false);
+                CellPad(_nodePos[NCenter], padR * 1.05f, true, false);
+                _stickLen = wpn * 0.20f;
                 for (int i = 0; i < 4; i++)
                 {
                     var st = S.Spawn("MG_YutStick");
@@ -263,8 +272,6 @@ namespace CoastRun
                     _sticks[i] = st.transform;
                     RestStick(i, i % 2 == 0, (i - 1.5f) * 6f);
                 }
-                // 65차(사용자): 말 = 내 얼굴(분홍 테) / 꼬마 얼굴(파란 테) — 둥근 얼굴 그림 빌보드(MG_Token_Girl / MG_Token_Kid)
-                _tokH = wpn * 0.075f; _faceH = wpn * 0.115f;
                 _meTok = MakeFace("MG_Token_Girl", Red, out _meBlob);
                 _aiTok = MakeFace("MG_Token_Kid", Blue, out _aiBlob);
                 PlaceToken(_meTok, _meBlob, 0, false); PlaceToken(_aiTok, _aiBlob, 0, true);
@@ -319,8 +326,8 @@ namespace CoastRun
                 _btnLabel.resizeTextForBestFit = true; _btnLabel.resizeTextMinSize = 16; _btnLabel.resizeTextMaxSize = CoastHudLayout.Scaled(30);
                 _btnArrow.gameObject.SetActive(false);
 
-                Kit?.TwoPillStyle(new Color(0.62f, 0.84f, 1f), new Color(1f, 0.62f, 0.80f), new Color(0.22f, 0.16f, 0.40f));   // 65차 시안: 파란 목표 알약 / 분홍 점수 알약
-                Kit?.Goal(Loc.T($"★ {AiName}보다 먼저 3바퀴! ★", $"★ 3 laps before {AiName}! ★"));
+                Kit?.TwoPillStyle(new Color(0.25f, 0.55f, 0.95f), new Color(0.95f, 0.35f, 0.55f), Color.white);
+                Kit?.Goal(Loc.T($"★ {AiName}보다 먼저 3바퀴!", $"★ 3 laps before {AiName}!"));
                 UpdateBars();
                 SetTurnUi();
                 ShowTutorial();
@@ -358,7 +365,7 @@ namespace CoastRun
                     Loc.T("「던지기!!」를 누르면 윷가락 4개가 튀어 오른다.", "Tap THROW to toss the four sticks."),
                     Loc.T("배가 위로 온 개수만큼 간다 — 도1 · 개2 · 걸3 · 윷4 · 모5(모두 등). 윷·모는 한 번 더!", "Move as many cells as flat sides up — 1·2·3·4, none = 5. 4 or 5: throw again!"),
                     Loc.T($"{AiName}와 같은 칸에 서면 잡는다 → 잡힌 말은 그 바퀴 출발점으로. 잡으면 한 번 더!", $"Land on {AiName} to catch them back to the lap start — and throw again!"),
-                    Loc.T($"나 ↔ {AiName} 번갈아 던져서, 20칸 말판을 먼저 3바퀴 도는 쪽이 이긴다!", "Take turns; first to finish 3 laps of the 20-cell board wins!"),
+                    Loc.T($"나 ↔ {AiName} 번갈아. 갈림길(모서리)에 멈추면 가운데 X 지름길로 최단 코스! 3바퀴 먼저면 승리.", $"Take turns. Land on a corner fork → X shortcut (shortest). First to 3 laps wins!"),
                 };
                 Color[] badge = { Pink, new Color(1f, 0.62f, 0.18f), new Color(0.20f, 0.65f, 0.40f), Blue };
                 for (int i = 0; i < rows.Length; i++)
@@ -396,7 +403,7 @@ namespace CoastRun
             private void OnThrowTap()
             {
 #if UNITY_EDITOR
-                Debug.LogWarning($"[Yut] tap tutorial={_tutorial} busy={_busy} myTurn={_myTurn} me={_me} ai={_ai}");
+                Debug.LogWarning($"[Yut] tap tutorial={_tutorial} busy={_busy} myTurn={_myTurn} meN={_meNode}/{_meLap} aiN={_aiNode}/{_aiLap}");
 #endif
                 if (_tutorial || _ended || _busy) return;
                 if (!_myTurn) { Kit?.Pop(Loc.T($"{AiName} 차례!", $"{AiName}'s turn!"), false); return; }
@@ -472,31 +479,122 @@ namespace CoastRun
                 else tok.position = g + Vector3.up * _tokH * 0.55f;
             }
 
-            private static int Cell(int steps) => steps >= Total ? 0 : steps % Cells;
-            private static int Lap(int steps) => Mathf.Min(Laps, steps / Cells);
-
-            private void PlaceToken(Transform tok, Transform blob, int steps, bool ai)
+            private void PlaceToken(Transform tok, Transform blob, int node, bool ai)
             {
-                var n = _cellPos[Cell(steps)];
-                if (ai) n += new Vector2(0.03f, -0.02f); else n += new Vector2(-0.02f, 0.015f);
+                node = Mathf.Clamp(node, 0, NodeCount - 1);
+                var n = _nodePos[node];
+                if (ai) n += new Vector2(0.012f, -0.008f); else n += new Vector2(-0.012f, 0.008f);
                 var g = S.GroundPoint(n);
                 Lay(tok, g); blob.position = g + Vector3.up * 0.004f;
             }
 
+            // 금테 멍석 기준 영역 × 130% (중심 유지)
+            private const float BoardScale = 1.30f;
+            private const float BoardCx0 = 0.520f, BoardCy0 = 0.350f;
+            private const float BoardHalfW0 = 0.135f, BoardHalfH0 = 0.110f;
+            private static float BoardHalfW => BoardHalfW0 * BoardScale;
+            private static float BoardHalfH => BoardHalfH0 * BoardScale;
+            private static float BoardL => BoardCx0 - BoardHalfW;
+            private static float BoardR => BoardCx0 + BoardHalfW;
+            private static float BoardB => BoardCy0 - BoardHalfH;
+            private static float BoardT => BoardCy0 + BoardHalfH;
+            private static float BoardCx => BoardCx0;
+            private static float BoardCy => BoardCy0;
+
+            private void BuildBoardGraph()
+            {
+                for (int i = 0; i < Cells; i++) _nodePos[i] = CellAnchor(i);
+                var c = new Vector2(BoardCx, BoardCy);
+                _nodePos[NCenter] = c;
+                _nodePos[N5c] = Vector2.Lerp(_nodePos[5], c, 0.5f);
+                _nodePos[Nc15] = Vector2.Lerp(c, _nodePos[15], 0.5f);
+                _nodePos[N10c] = Vector2.Lerp(_nodePos[10], c, 0.5f);
+                _nodePos[Nc0] = Vector2.Lerp(c, _nodePos[0], 0.5f);
+            }
+
             private static Vector2 CellAnchor(int i)
             {
-                float l = 0.16f, r = 0.84f, b = 0.14f, t = 0.88f;
-                i = Mathf.Clamp(i, 0, Cells);
+                float l = BoardL, r = BoardR, b = BoardB, t = BoardT;
+                i = ((i % Cells) + Cells) % Cells;
                 if (i <= 5) return new Vector2(Mathf.Lerp(l, r, i / 5f), b);
                 if (i <= 10) return new Vector2(r, Mathf.Lerp(b, t, (i - 5) / 5f));
                 if (i <= 15) return new Vector2(Mathf.Lerp(r, l, (i - 10) / 5f), t);
                 return new Vector2(l, Mathf.Lerp(t, b, (i - 15) / 5f));
             }
 
-            /// 가운데 나란히 눕힘. flat = 평평한 면(배)이 위.
+            /// 한 칸 전진. 지름길(Cut)은 이미 모서리에 착지해 둔 뒤에만 탄다.
+            /// 바깥 길로 모서리를 **지나가는** 중에는 Outer 유지(먼 길로).
+            private static int StepOnce(ref int node, ref Route route, out bool finishedLap)
+            {
+                finishedLap = false;
+                if (route == Route.Cut5)
+                {
+                    if (node == 5) node = N5c;
+                    else if (node == N5c) node = NCenter;
+                    else if (node == NCenter) node = Nc15;
+                    else if (node == Nc15) { node = 15; route = Route.Outer; }
+                    else { route = Route.Outer; node = (node + 1) % Cells; }
+                }
+                else if (route == Route.Cut10)
+                {
+                    if (node == 10) node = N10c;
+                    else if (node == N10c) node = NCenter;
+                    else if (node == NCenter) node = Nc0;
+                    else if (node == Nc0) { node = 0; route = Route.Outer; finishedLap = true; }
+                    else { route = Route.Outer; node = (node + 1) % Cells; }
+                }
+                else
+                {
+                    node = (node + 1) % Cells;
+                    if (node == 0) finishedLap = true;
+                }
+                return node;
+            }
+
+            /// 이번 던지기가 **모서리 5·10에 멈췄을 때만** 다음 턴부터 가까운 X 지름길.
+            private static void CommitCornerShortcut(ref int node, ref Route route)
+            {
+                if (route != Route.Outer) return;
+                if (node == 5) route = Route.Cut5;
+                else if (node == 10) route = Route.Cut10;
+            }
+
+            private static float TrackFrac(int node)
+            {
+                if (node < Cells) return node / (float)Cells;
+                switch (node)
+                {
+                    case N5c: return 5.5f / Cells;
+                    case NCenter: return 0.5f;
+                    case Nc15: return 15.5f / Cells;
+                    case N10c: return 10.5f / Cells;
+                    case Nc0: return 19.5f / Cells;
+                    default: return 0f;
+                }
+            }
+
+            /// 말 자리 — 불투명 원판(말 동그라미와 비슷한 크기). SoftDisc는 크림 멍석 위에서 거의 안 보였음.
+            private void CellPad(Vector2 n, float radius, bool corner, bool start)
+            {
+                var g = S.GroundPoint(n);
+                HardDisc(g + Vector3.up * 0.005f, radius, new Color(0.42f, 0.26f, 0.12f, 1f));
+                HardDisc(g + Vector3.up * 0.007f, radius * 0.82f, corner ? new Color(1f, 0.86f, 0.42f, 1f) : new Color(1f, 0.97f, 0.88f, 1f));
+                HardDisc(g + Vector3.up * 0.009f, radius * 0.28f, start ? Pink : new Color(0.50f, 0.32f, 0.16f, 1f));
+            }
+
+            private void HardDisc(Vector3 pos, float radius, Color c)
+            {
+                var cyl = GameObject.CreatePrimitive(PrimitiveType.Cylinder); cyl.name = "CellPad"; Destroy(cyl.GetComponent<Collider>());
+                cyl.transform.SetParent(S.Root, false);
+                cyl.transform.position = pos;
+                cyl.transform.localScale = new Vector3(radius * 2f, 0.0025f, radius * 2f);
+                var r = cyl.GetComponent<Renderer>(); r.sharedMaterial = MiniStage3D.Lit(c, 0.25f, 0f); r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; r.receiveShadows = false;
+            }
+
             private void RestStick(int i, bool flat, float yawJitter = 0f)
             {
-                var g = S.GroundPoint(new Vector2(0.36f + i * 0.093f, 0.50f));
+                float cx = BoardCx - 0.082f + i * 0.055f;
+                var g = S.GroundPoint(new Vector2(cx, BoardCy));
                 _sticks[i].position = g + Vector3.up * _stickLen * 0.11f;
                 _sticks[i].rotation = Quaternion.Euler(0f, yawJitter, flat ? 180f : 0f);
                 _stickMat[i].SetColor("_BaseColor", flat ? new Color(0.96f, 0.88f, 0.70f) : Bark);
@@ -506,7 +604,7 @@ namespace CoastRun
             {
                 _busy = true;
                 if (me) { _btnLabel.text = Loc.T("던지는\n중…", "Throwing…"); MiniKit.Pulse(BigRect, false); }
-                else yield return new WaitForSecondsRealtime(0.55f);   // 도담이 윷을 집는 사이
+                else yield return new WaitForSecondsRealtime(0.55f);
                 CoastAudioManager.PlayAnywhere(CoastSfx.Jump, 0.6f);
                 float p = me ? PMe : PAi;
                 bool[] flat = new bool[4]; int flats = 0;
@@ -520,7 +618,8 @@ namespace CoastRun
                     float h = Mathf.Sin(u * Mathf.PI) * _stickLen * 1.6f;
                     for (int i = 0; i < 4; i++)
                     {
-                        var g = S.GroundPoint(new Vector2(0.36f + i * 0.093f, 0.50f + Mathf.Sin(u * Mathf.PI) * 0.04f));
+                        float cx = BoardCx - 0.082f + i * 0.055f;
+                        var g = S.GroundPoint(new Vector2(cx, BoardCy + Mathf.Sin(u * Mathf.PI) * 0.03f));
                         _sticks[i].position = g + Vector3.up * (h + _stickLen * 0.11f);
                         float roll = spin[i] * u + (flat[i] ? 180f : 0f);
                         _sticks[i].rotation = Quaternion.Euler(Mathf.Sin(u * 9f + i) * 25f * (1f - u), jit[i] * u, roll);
@@ -536,40 +635,51 @@ namespace CoastRun
                 _resultWho.text = (me ? Loc.T("✦ 나", "✦ Me") : Loc.T($"✦ {AiName}", $"✦ {AiName}")) + (again ? Loc.T(" · 한 번 더!", " · again!") : "");
                 Kit?.Pop((me ? "" : (AiName + ": ")) + Loc.T(name, en) + $"  +{move}" + (again ? Loc.T("  한 번 더!", "  again!") : ""), me);
                 yield return new WaitForSecondsRealtime(0.45f);
-                int before = me ? _me : _ai;
+                int lapBefore = me ? _meLap : _aiLap;
                 for (int k = 0; k < move; k++)
                 {
-                    if (me) _me = Mathf.Min(Total, _me + 1); else _ai = Mathf.Min(Total, _ai + 1);
+                    if (me)
+                    {
+                        _hopFrom = _meNode;
+                        StepOnce(ref _meNode, ref _meRoute, out bool fin);
+                        if (fin) { _meLap++; if (_meLap > lapBefore && _meLap < Laps) { Kit?.Pop(Loc.T($"{_meLap}바퀴!", $"Lap {_meLap}!"), true); CoastAudioManager.PlayAnywhere(CoastSfx.Coin, 0.5f); lapBefore = _meLap; } }
+                    }
+                    else
+                    {
+                        _hopFrom = _aiNode;
+                        StepOnce(ref _aiNode, ref _aiRoute, out bool fin);
+                        if (fin) { _aiLap++; if (_aiLap > lapBefore && _aiLap < Laps) { Kit?.Pop(Loc.T($"{_aiLap}바퀴!", $"Lap {_aiLap}!"), false); CoastAudioManager.PlayAnywhere(CoastSfx.Coin, 0.5f); lapBefore = _aiLap; } }
+                    }
                     yield return Hop(me);
-                    int now = me ? _me : _ai;
-                    if (now < Total && now % Cells == 0 && now > before) { Kit?.Pop(Loc.T($"{now / Cells}바퀴!", $"Lap {now / Cells}!"), me); CoastAudioManager.PlayAnywhere(CoastSfx.Coin, 0.5f); }
+                    if ((me ? _meLap : _aiLap) >= Laps) break;
                 }
-                // 잡기: 같은 칸(바퀴와 무관) — 잡힌 말은 그 바퀴 출발점으로
-                int mc = Cell(_me), ac = Cell(_ai);
-                if (me && _ai % Cells != 0 && _ai < Total && _me < Total && mc == ac)
+                // 던지기가 모서리에서 끝났을 때만 지름길 예약(지나간 경우는 Outer 유지)
+                if (me) CommitCornerShortcut(ref _meNode, ref _meRoute);
+                else CommitCornerShortcut(ref _aiNode, ref _aiRoute);
+                // 잡기: 같은 칸 — 잡힌 말은 그 바퀴 출발점
+                if (me && _aiNode != 0 && _meLap < Laps && _aiLap < Laps && _meNode == _aiNode)
                 {
-                    _ai = (_ai / Cells) * Cells; PlaceToken(_aiTok, _aiBlob, _ai, true);
+                    _aiNode = 0; _aiRoute = Route.Outer; PlaceToken(_aiTok, _aiBlob, 0, true);
                     _resultWho.text = Loc.T($"✦ {AiName}를 잡았다! 한 번 더", $"✦ Caught {AiName}! Again"); again = true;
                     Kit?.Pop(Loc.T("잡았다!", "Caught!"), true); CoastAudioManager.PlayAnywhere(CoastSfx.Coin, 0.7f);
                 }
-                else if (!me && _me % Cells != 0 && _me < Total && _ai < Total && ac == mc)
+                else if (!me && _meNode != 0 && _meLap < Laps && _aiLap < Laps && _aiNode == _meNode)
                 {
-                    _me = (_me / Cells) * Cells; PlaceToken(_meTok, _meBlob, _me, false);
+                    _meNode = 0; _meRoute = Route.Outer; PlaceToken(_meTok, _meBlob, 0, false);
                     _resultWho.text = Loc.T("✦ 잡혔다… 바퀴 출발점으로", "✦ Caught… back to lap start"); again = true;
                     Kit?.Pop(Loc.T("잡혔다…", "Caught…"), false); CoastAudioManager.PlayAnywhere(CoastSfx.NearMiss, 0.6f);
                 }
                 UpdateBars();
                 yield return new WaitForSecondsRealtime(0.35f);
-                if (_me >= Total) { _ended = true; Kit?.Pop(Loc.T("승리!", "WIN!"), true); Status.text = Loc.T("3바퀴 먼저 돌았다! 승리!", "3 laps first! Victory!"); _turnTitle.text = Loc.T("★ 승리! ★", "★ WIN! ★"); _resultBig.text = Loc.T("승리!", "WIN!"); CoastAudioManager.PlayAnywhere(CoastSfx.ChapterClear, 0.8f); yield return new WaitForSecondsRealtime(1.0f); Finish(1); yield break; }
-                if (_ai >= Total) { _ended = true; Kit?.Pop(Loc.T($"{AiName}가 먼저…", $"{AiName} first…"), false); Status.text = Loc.T($"{AiName}가 먼저 3바퀴…", $"{AiName} finished 3 laps first…"); _turnTitle.text = Loc.T($"{AiName} 승리…", $"{AiName} wins…"); _resultBig.text = Loc.T("패배…", "Lost…"); yield return new WaitForSecondsRealtime(1.0f); Finish(0); yield break; }
+                if (_meLap >= Laps) { _ended = true; Kit?.Pop(Loc.T("승리!", "WIN!"), true); Status.text = Loc.T("3바퀴 먼저 돌았다! 승리!", "3 laps first! Victory!"); _turnTitle.text = Loc.T("★ 승리! ★", "★ WIN! ★"); _resultBig.text = Loc.T("승리!", "WIN!"); CoastAudioManager.PlayAnywhere(CoastSfx.ChapterClear, 0.8f); yield return new WaitForSecondsRealtime(1.0f); Finish(1); yield break; }
+                if (_aiLap >= Laps) { _ended = true; Kit?.Pop(Loc.T($"{AiName}가 먼저…", $"{AiName} first…"), false); Status.text = Loc.T($"{AiName}가 먼저 3바퀴…", $"{AiName} finished 3 laps first…"); _turnTitle.text = Loc.T($"{AiName} 승리…", $"{AiName} wins…"); _resultBig.text = Loc.T("패배…", "Lost…"); yield return new WaitForSecondsRealtime(1.0f); Finish(0); yield break; }
                 _busy = false;
 #if UNITY_EDITOR
-                Debug.LogWarning($"[Yut] turn me={me} {name}+{move} again={again} → me={_me} ai={_ai}");
+                Debug.LogWarning($"[Yut] turn me={me} {name}+{move} again={again} → meN={_meNode}/{_meLap} aiN={_aiNode}/{_aiLap}");
 #endif
                 NextTurn(again ? me : !me);
             }
 
-            /// 턴 교대는 여기서만: 다음에 던질 쪽을 정하고 UI 를 맞춘 뒤, 도담이면 스스로 던진다.
             private void NextTurn(bool myTurn)
             {
                 _myTurn = myTurn;
@@ -580,12 +690,11 @@ namespace CoastRun
 
             private IEnumerator Hop(bool me)
             {
-                var tok = me ? _meTok : _aiTok; var blob = me ? _meBlob : _aiBlob; int pos = me ? _me : _ai;
-                var off = me ? new Vector2(-0.02f, 0.015f) : new Vector2(0.03f, -0.02f);
-                int c1 = Cell(pos), c0 = (pos - 1) % Cells;
-                var n0 = _cellPos[c0] + off;
-                var n1 = _cellPos[c1 == 0 && pos < Total ? Cells : c1] + off;   // 20칸째는 출발점과 같은 자리(말판 끝)
-                if (pos >= Total) n1 = _cellPos[Cells] + off;
+                var tok = me ? _meTok : _aiTok; var blob = me ? _meBlob : _aiBlob;
+                int to = me ? _meNode : _aiNode;
+                var off = me ? new Vector2(-0.012f, 0.008f) : new Vector2(0.012f, -0.008f);
+                var n0 = _nodePos[Mathf.Clamp(_hopFrom, 0, NodeCount - 1)] + off;
+                var n1 = _nodePos[Mathf.Clamp(to, 0, NodeCount - 1)] + off;
                 float t = 0f, dur = 0.16f;
                 while (t < dur)
                 {
@@ -595,23 +704,25 @@ namespace CoastRun
                     blob.position = g + Vector3.up * 0.004f;
                     yield return null;
                 }
-                PlaceToken(tok, blob, pos, !me);
+                PlaceToken(tok, blob, to, !me);
                 UpdateBars();
             }
 
             private void UpdateBars()
             {
-                int mc = _me >= Total ? Cells : _me % Cells, ac = _ai >= Total ? Cells : _ai % Cells;
-                _meBar.anchorMax = new Vector2(Mathf.Max(0.02f, mc / (float)Cells), 1f);
-                _aiBar.anchorMax = new Vector2(Mathf.Max(0.02f, ac / (float)Cells), 1f);
-                _meLbl.text = Loc.T("나", "Me") + $"  {mc}/{Cells}";
-                _aiLbl.text = AiName + $"  {ac}/{Cells}";
+                float mf = Mathf.Clamp01((_meLap + TrackFrac(_meNode)) / Laps);
+                float af = Mathf.Clamp01((_aiLap + TrackFrac(_aiNode)) / Laps);
+                if (_meLap >= Laps) mf = 1f; if (_aiLap >= Laps) af = 1f;
+                _meBar.anchorMax = new Vector2(Mathf.Max(0.02f, mf), 1f);
+                _aiBar.anchorMax = new Vector2(Mathf.Max(0.02f, af), 1f);
+                _meLbl.text = Loc.T("나", "Me") + $"  {_meLap}/{Laps}";
+                _aiLbl.text = AiName + $"  {_aiLap}/{Laps}";
                 for (int i = 0; i < Laps; i++)
                 {
-                    if (_meLapPips[i] != null) _meLapPips[i].color = i < Lap(_me) ? new Color(1f, 0.45f, 0.66f) : new Color(1f, 0.45f, 0.66f, 0.30f);
-                    if (_aiLapPips[i] != null) _aiLapPips[i].color = i < Lap(_ai) ? Blue : new Color(Blue.r, Blue.g, Blue.b, 0.30f);
+                    if (_meLapPips[i] != null) _meLapPips[i].color = i < _meLap ? new Color(1f, 0.45f, 0.66f) : new Color(1f, 0.45f, 0.66f, 0.30f);
+                    if (_aiLapPips[i] != null) _aiLapPips[i].color = i < _aiLap ? Blue : new Color(Blue.r, Blue.g, Blue.b, 0.30f);
                 }
-                Kit?.Score(Loc.T($"♥ 나 {Lap(_me)}/{Laps}바퀴 · {AiName} {Lap(_ai)}/{Laps}바퀴", $"♥ Me {Lap(_me)}/{Laps} · {AiName} {Lap(_ai)}/{Laps}"));
+                Kit?.Score(Loc.T($"나 {_meLap}/{Laps}  ·  {AiName} {_aiLap}/{Laps}", $"Me {_meLap}/{Laps}  ·  {AiName} {_aiLap}/{Laps}"));
             }
         }
 
@@ -631,8 +742,8 @@ namespace CoastRun
             private const int Need = 3;
             // 배경 그림(한옥 마당)은 원근 그림이라 바닥이 아래 절반 — 소품은 n.y 0.45 아래에만.
             private static readonly Vector2 StartN = new Vector2(0.5f, 0.09f), JarN = new Vector2(0.5f, 0.29f);   // 60차(시안): 항아리를 더 크게·가운데
-            // 56차(사용자): 힘 게이지 10 % 느리게(2.2 → 1.98 Hz), 들어갈 확률 ↑(방향 ±6° → ±8°, 힘 띠 ±0.09 → ±0.12)
-            private const float AimTol = 8f, PowerTol = 0.12f, NeedPower = 0.62f, PowerHz = 1.98f;
+            // 힘 게이지 더 느리게(1.98 → 1.55 Hz), 들어갈 확률 ↑(방향 ±8° → ±11°, 힘 띠 ±0.12 → ±0.17)
+            private const float AimTol = 11f, PowerTol = 0.17f, NeedPower = 0.62f, PowerHz = 1.55f;
             private Transform _arrow, _jar, _arrowBlob;
             private float _arrowLen, _jarH;
             private RectTransform _needle, _powerFill;
@@ -850,9 +961,9 @@ namespace CoastRun
             protected override float Pitch => 42f;
             private Transform _mine, _theirs, _theirsBlob, _mineBlob, _target;
             private Material _theirsM, _mineM, _targetM;
-            private float _t; private const float Speed = 2.1f;
+            private float _t; private const float Speed = 1.55f;   // 게이지 왕복 느리게 (기존 2.1)
             private int _left = 3; private bool _busy, _ended;
-            private const float ZoneL = 0.66f, ZoneR = 0.86f;
+            private const float ZoneL = 0.55f, ZoneR = 0.90f;     // 노란 띠 넓혀 넘어갈 확률↑ (기존 0.66~0.86)
             private RectTransform _powerFill;
             private Text _powerTxt, _btnLabel, _btnArrow, _triesTxt, _triesTitle;
             private readonly List<Image> _hearts = new List<Image>();

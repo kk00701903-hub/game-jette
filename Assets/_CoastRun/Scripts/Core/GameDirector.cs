@@ -89,12 +89,37 @@ namespace CoastRun
             DontDestroyOnLoad(gameObject);
             if (flow == null)
                 BuildChildren();
+            CoastSystemBars.ApplyImmersive();
         }
 
         private void OnDestroy()
         {
             if (Instance == this)
                 Instance = null;
+        }
+
+        /// Mobile: OS background suspends audio; on resume title DDOL bed can come back
+        /// under the run/K-POP stem. Re-assert menu BGM off while in a run.
+        /// Also re-hide Android status bar (OEM re-shows it over the run HUD).
+        private void OnApplicationPause(bool pause)
+        {
+            if (pause) return;
+            CoastSystemBars.ApplyImmersive();
+            EnsureRunOwnsBgm();
+        }
+
+        private void OnApplicationFocus(bool focus)
+        {
+            if (!focus) return;
+            CoastSystemBars.ApplyImmersive();
+            EnsureRunOwnsBgm();
+        }
+
+        private static void EnsureRunOwnsBgm()
+        {
+            bool inRun = ArcadeRun.Active
+                || (Instance != null && Instance.flow != null && Instance.flow.State == FlowState.Run);
+            if (inRun) TitleAudio.StopMenuGlobal();
         }
 
         private void BuildChildren()

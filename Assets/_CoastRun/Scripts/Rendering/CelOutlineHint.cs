@@ -19,7 +19,8 @@ namespace CoastRun
                 var inkShader = Shader.Find("CoastRun/InkOutline");
                 if (inkShader == null) return;
                 if (skinned.sharedMesh == null) return;
-                var inkMat = new Material(inkShader);
+                var inkMat = CoastMaterials.NewMat(inkShader);
+                if (inkMat == null) return;
                 inkMat.SetColor("_OutlineColor", Color.Lerp(CoastPalette.ShadowCool, Color.black, 0.6f));
                 inkMat.SetFloat("_Width", 0.010f);   // 25차-1: 0.017→0.010, 셰이더에서 거리 비례
                 var shell = new GameObject("Outline");
@@ -56,6 +57,7 @@ namespace CoastRun
             var mr = outline.AddComponent<MeshRenderer>();
             var ink = CoastMaterials.CreateUnlit(
                 () => Color.Lerp(CoastPalette.ShadowCool, Color.black, 0.55f));
+            if (ink == null) { Destroy(outline); return; }
             // Inverted-hull outline: only the shell's back faces may show, otherwise the
             // enlarged copy simply paints over the part (that was the "black backpack").
             if (ink.HasProperty("_Cull"))

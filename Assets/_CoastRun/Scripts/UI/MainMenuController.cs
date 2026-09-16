@@ -84,7 +84,7 @@ namespace CoastRun
             else
             {
                 _audio.PlayMenu(_cleared);
-                // 로딩 화면 + 하단 바 — 게이트 키아트 있을 때도 제대로 보이게 1.4초
+                // 첫 화면 = Title_Bus 영상만(로딩중 UI_Loading_Mock 없음).
                 StartCoroutine(SplashThenUi(1.4f));
             }
         }
@@ -100,6 +100,11 @@ namespace CoastRun
 
         private IEnumerator SplashThenUi(float splashSeconds)
         {
+            // Boot veil may still be up for a frame — clear so only the bus splash is visible.
+            var dir = FindAnyObjectByType<GameDirector>();
+            dir?.UI?.Snap(0f, Color.black);
+            Debug.Log("[Title] boot splash start video=" + _splashIsVideo + " (no loading mock)");
+
             float t = 0f;
             if (_splashIsVideo)
             {
@@ -157,6 +162,10 @@ namespace CoastRun
             if (_uiCg != null)
             {
                 _uiCg.gameObject.SetActive(true);
+                // Fade with raycasts off — otherwise CoastRaycastWatchdog treats alpha≈0 TitleUI
+                // as a ghost blocker and clears blocksRaycasts permanently (K-POP return click death).
+                _uiCg.blocksRaycasts = false;
+                _uiCg.interactable = false;
                 float f = 0f;
                 while (f < 0.55f)
                 {
@@ -166,6 +175,8 @@ namespace CoastRun
                 }
 
                 _uiCg.alpha = 1f;
+                _uiCg.blocksRaycasts = true;
+                _uiCg.interactable = true;
             }
 
             _ready = true;
@@ -623,43 +634,55 @@ namespace CoastRun
             // 42차(사용자): 「챕터 선택」 항목 삭제(챕터는 타이틀 CHAPTER 칩), 컬렉션은 모은 사진(포토카드 탭)으로 바로,
             //             레코드 옆 새 항목 점(•) 제거, 「오프닝」 → 「시네마」(컷씬 골라 보기, CinemaSelect).
             var more = new System.Collections.Generic.List<(string, System.Action)>();
-            more.Add((Loc.T("새로하기", "New Game"), () => { if (_ready) { if (_moreOpen) ToggleMore(); StartNewFlow(); } }));
+            more.Add((Loc.T("새로하기", "New Game"), () => { if (_ready) { CloseMore(restoreMenuBgm: false); StartNewFlow(); } }));
             // 38차: 「노을 달리기」 항목 제거(K-POP 러닝모드 바로 통합)
-            more.Add((Loc.T("컬렉션", "Collection"), () => { if (_moreOpen) ToggleMore(); CollectionUI.Open(null, 1); }));   // 51차: 다른 메뉴로 갈 땐 더보기 닫기   // 49차(사용자): 진입 클릭음 제거   // 42차: 1 = 포토카드(모은 사진)
+            // 컬렉션·레코드·시네마·미니게임 = 스토리 모드 BGM(M13)
+            more.Add((Loc.T("컬렉션", "Collection"), () =>
+            {
+                if (!_ready) return;
+                CloseMore(restoreMenuBgm: false);
+                TitleAudio.PlayRaising();
+                _ready = false;
+                CollectionUI.Open(() => { if (this == null) return; TitleAudio.FadeMenuIn(_cleared); _ready = true; }, 1);
+            }));
             // 37차: 레코드 — 컷씬 음악 7곡. 타이틀 곡을 멈추고 들어가서, 닫으면 다시 튼다.
             more.Add((Loc.T("레코드", "Records"), () =>
             {
-                _audio?.StopMenu();   // 49차: 클릭음 제거
-                if (_moreOpen) ToggleMore();
+                if (!_ready) return;
+                CloseMore(restoreMenuBgm: false);
+                TitleAudio.PlayRaising();
                 _ready = false;
-                CollectionUI.Open(() => { if (this == null) return; _audio?.PlayMenu(_cleared); _ready = true; }, 0);   // 38차: 시안대로 컬렉션 › 레코드 탭
+                CollectionUI.Open(() => { if (this == null) return; TitleAudio.FadeMenuIn(_cleared); _ready = true; }, 0);
             }));
             // 70차(사용자): 더보기 순서 = 새로하기 / 컬렉션 / 레코드 / 시네마 / 미니게임 / 보스전 / 설정 / 이용약관
             more.Add((Loc.T("시네마", "Cinema"), () =>
             {
+                if (!_ready) return;
                 _audio?.PlayClick();
-                if (_moreOpen) ToggleMore();
+                CloseMore(restoreMenuBgm: false);
                 if (_openingHint != null) _openingHint.gameObject.SetActive(false);
+                TitleAudio.PlayRaising();
                 _ready = false;
-                bool played = false;
                 CinemaSelect.Open(_gm,
-                    onPlayStart: () => { played = true; _audio?.StopMenu(); },
-                    onClose: () => { if (this == null) return; if (played) _audio?.PlayMenu(_cleared); _ready = true; });
+                    onPlayStart: () => { TitleAudio.StopMenuGlobal(); },   // 컷씬 자체 BGM — CinematicPlayer 도 정지
+                    onClose: () => { if (this == null) return; TitleAudio.FadeMenuIn(_cleared); _ready = true; });
             }));
             // 44차: 미니게임 — 챕터 미션에서 이긴 놀이만 다시하기(ChapterMissionUI.OpenMenu)
             more.Add((Loc.T("미니게임", "Mini-games"), () =>
             {
+                if (!_ready) return;
                 _audio?.PlayClick();
-                if (_moreOpen) ToggleMore();
+                CloseMore(restoreMenuBgm: false);
+                TitleAudio.PlayRaising();
                 _ready = false;
-                ChapterMissionUI.OpenMenu(_gm, () => { if (this == null) return; _ready = true; });
+                ChapterMissionUI.OpenMenu(_gm, () => { if (this == null) return; TitleAudio.FadeMenuIn(_cleared); _ready = true; });
             }));
             // 51차(사용자): 보스전 — K-POP 한 곡 창에 보스(갈매기 해적·돌하르방 골렘·태풍 도깨비)만 연달아. 난이도는 해금 챕터 기준 랜덤.
             more.Add((Loc.T("보스전", "Boss Rush"), () =>
             {
                 if (!_ready) return;
                 _audio?.PlayStart();
-                if (_moreOpen) ToggleMore();
+                CloseMore(restoreMenuBgm: false);
                 _ready = false;
                 ArcadeRun.StartBossRush(_gm);
             }));
@@ -669,14 +692,15 @@ namespace CoastRun
             {
                 if (!_ready) return;
                 _audio?.PlayClick();
-                if (_moreOpen) ToggleMore();
+                CloseMore(restoreMenuBgm: true);   // 설정은 메인 위에 — 메뉴 BGM 복구
                 ShowPanel(_settingsPanel, true);
             }));
             // 50차(사용자): 이용약관(AI 기반 K-POP 음악·사이버 가수 우히&히시 조항) · 개인정보 처리지침 · 운영정책 · 청소년 보호 — 한 항목 안에 탭 4개(PolicyUI)
             more.Add((Loc.T("이용약관·정책", "Terms & Policies"), () =>
             {
+                if (!_ready) return;
                 _audio?.PlayClick();
-                if (_moreOpen) ToggleMore();
+                CloseMore(restoreMenuBgm: true);
                 _ready = false;
                 PolicyUI.Open(PolicyUI.Doc.Terms, () => { if (this == null) return; _ready = true; });
             }));
@@ -873,10 +897,22 @@ namespace CoastRun
             else if (Time.unscaledTime - _readyOffSince > 8f) { _ready = true; _readyOffSince = -1f; Debug.LogWarning("[Title] _ready 가 팝업 없이 8초 꺼져 있어 다시 켰다(입력 막힘 방지)"); }
         }
 
+        /// TitleUI visible + no overlay but raycasts off (watchdog cleared during fade/chapter hide).
+        private void RestoreTitleRaycastsIfNeeded()
+        {
+            if (_uiCg == null || !_ready || !_uiCg.gameObject.activeInHierarchy) return;
+            if (_uiCg.alpha < 0.99f || AnyOverlayOpen()) return;
+            if (_uiCg.blocksRaycasts && _uiCg.interactable) return;
+            _uiCg.blocksRaycasts = true;
+            _uiCg.interactable = true;
+            Debug.LogWarning("[Title] TitleUI blocksRaycasts 복구(알파 1인데 입력이 꺼져 있었음)");
+        }
+
         private void Update()
         {
             AnimateMore();
             ReadyWatch();
+            RestoreTitleRaycastsIfNeeded();
             if (_chapterChipCg != null && _uiCg != null)
             {
                 bool vis = _uiCg.gameObject.activeInHierarchy;
@@ -1137,7 +1173,7 @@ namespace CoastRun
             _settingsPanel = CreateOverlayPanel(root, "Settings");
             CreateLabel(_settingsPanel.transform, "T", Loc.T("설정", "Settings"), 32, FontStyle.Bold,
                 Color.white, new Vector2(0.5f, 0.80f), new Vector2(400f, 44f));
-            // 9차: 볼륨·진동을 추가하고 줄 간격을 좁혀 카드가 비어 보이지 않게. (위에서부터 소리 → 진동 → 펫 → 언어 → 크레딧)
+            // 9차: 소리 → 진동 → 언어 → 크레딧 (펫 선택은 상점·마이룸에서만 — 사면 자동 장착)
             Text volLabel = null;
             var volBtn = CreateMenuButton(_settingsPanel.transform, Loc.T("소리", "Sound"), 0.70f, () =>
             {
@@ -1155,43 +1191,33 @@ namespace CoastRun
             hapLabel = hapBtn.GetComponentInChildren<Text>();
             if (hapLabel != null) hapLabel.text = HapticText();
 
-            // Pet picker — cycles through the three companions; the run reads
-            // PetCompanion.Selected when it builds the pet.
-            Text petLabel = null;
-            var petBtn = CreateMenuButton(_settingsPanel.transform, "펫", 0.54f, () =>
-            {
-                PetCompanion.Selected = (PetKind)(((int)PetCompanion.Selected + 1) % 4);
-                if (petLabel != null)
-                    petLabel.text = PetLabel();
-            });
-            petLabel = petBtn.GetComponentInChildren<Text>();
-            if (petLabel != null)
-            {
-                petLabel.text = PetLabel();
-                petLabel.fontSize = CoastHudLayout.Scaled(17);
-            }
-            // 언어 토글: 바꾸면 타이틀을 다시 열어 모든 문구·대문 아트를 새 언어로 만든다.
-            CreateMenuButton(_settingsPanel.transform, Loc.T($"언어: 한국어  →  {Loc.Native(Loc.NextLang)}", Loc.Tr("Language") + $": {Loc.Native(Loc.Lang)}  →  {Loc.Native(Loc.NextLang)}"), 0.46f, () =>
+            Text langLabel = null;
+            var langBtn = CreateMenuButton(_settingsPanel.transform, Loc.LanguageButtonLabel(), 0.54f, () =>
             {
                 _audio?.PlayClick();
-                Loc.Toggle();
-                UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+                OpenLanguagePopup(() =>
+                {
+                    if (langLabel != null) langLabel.text = Loc.LanguageButtonLabel();
+                });
             });
-            CreateMenuButton(_settingsPanel.transform, Loc.T("크레딧", "Credits"), 0.38f, () =>
+            langLabel = langBtn.GetComponentInChildren<Text>();
+            if (langLabel != null) langLabel.text = Loc.LanguageButtonLabel();
+
+            CreateMenuButton(_settingsPanel.transform, Loc.T("크레딧", "Credits"), 0.46f, () =>
             {
                 ShowPanel(_settingsPanel, false);
                 ShowPanel(_creditsPanel, true);
             });
             // 37차: 비밀코드(테스트) — 1111 이면 전체 챕터·레코드 해금
             Text codeLabel = null;
-            var codeBtn = CreateMenuButton(_settingsPanel.transform, Loc.T("비밀코드", "Secret code"), 0.30f, () => OpenSecretCode(() =>
+            var codeBtn = CreateMenuButton(_settingsPanel.transform, Loc.T("비밀코드", "Secret code"), 0.38f, () => OpenSecretCode(() =>
             {
                 if (codeLabel != null) codeLabel.text = SecretText();
             }));
             codeLabel = codeBtn.GetComponentInChildren<Text>();
             if (codeLabel != null) codeLabel.text = SecretText();
             CreateLabel(_settingsPanel.transform, "Ver", "v0.9  ·  Coast Run · Jeju", 14, FontStyle.Normal,
-                new Color(1f, 0.95f, 0.85f, 0.55f), new Vector2(0.5f, 0.22f), new Vector2(400f, 24f));
+                new Color(1f, 0.95f, 0.85f, 0.55f), new Vector2(0.5f, 0.28f), new Vector2(400f, 24f));
             CreateMenuButton(_settingsPanel.transform, Loc.T("닫기", "Close"), 0.12f, () =>
             {
                 _audio?.PlayClick();
@@ -1209,9 +1235,48 @@ namespace CoastRun
 
         private string SecretText() => (Loc.IsKo ? "비밀코드" : "Secret code") + (_gm != null && _gm.DevUnlockAll ? Loc.T("  ·  전부 열림", "  ·  all open") : "");
 
-        // ── 37차: 비밀코드 키패드 — 4자리. 1111 = 전체 챕터·레코드 해금(테스트) ──
+        // ── 언어 팝업 + 비밀코드 ──
         public const string SecretCode = "1111";
         private GameObject _codeModal;
+        private GameObject _langModal;
+
+        private void OpenLanguagePopup(System.Action onChanged = null)
+        {
+            if (_langModal != null) Destroy(_langModal);
+            var root = _settingsPanel != null ? _settingsPanel.transform.parent : transform;
+            _langModal = new GameObject("LangPopup", typeof(RectTransform), typeof(Image));
+            _langModal.transform.SetParent(root, false);
+            var mrt = _langModal.GetComponent<RectTransform>(); mrt.anchorMin = Vector2.zero; mrt.anchorMax = Vector2.one; mrt.offsetMin = Vector2.zero; mrt.offsetMax = Vector2.zero;
+            _langModal.GetComponent<Image>().color = new Color(0f, 0f, 0f, 0.6f);
+            var dimBtn = _langModal.AddComponent<Button>(); dimBtn.transition = Selectable.Transition.None;
+            dimBtn.onClick.AddListener(() => { Destroy(_langModal); _langModal = null; });
+            var card = CoastUiArt.CutePill(_langModal.transform, "Card", new Color(0.98f, 0.94f, 0.86f), 26, 5);
+            var crt = card.rectTransform; crt.anchorMin = crt.anchorMax = new Vector2(0.5f, 0.5f); crt.sizeDelta = new Vector2(440f, 520f); crt.anchoredPosition = new Vector2(0f, 10f);
+            card.raycastTarget = true;
+            var navy = new Color(0.10f, 0.14f, 0.30f);
+            var title = CreateLabel(card.transform, "T", Loc.T("언어", "Language"), 26, FontStyle.Bold, navy, new Vector2(0.5f, 1f), new Vector2(400f, 40f));
+            title.rectTransform.anchoredPosition = new Vector2(0f, -36f);
+            var hint = CreateLabel(card.transform, "Hint", Loc.T("한 번 고르면 저장돼요", "Your choice is saved"), 14, FontStyle.Normal, new Color(0.35f, 0.32f, 0.40f), new Vector2(0.5f, 1f), new Vector2(400f, 28f));
+            hint.rectTransform.anchoredPosition = new Vector2(0f, -72f);
+            float y = -110f;
+            foreach (var code in Loc.Langs)
+            {
+                string c = code;
+                bool on = Loc.Lang == c;
+                CoastOrnate.GlassButton(card.transform, "L_" + c, (on ? "★ " : "") + Loc.Native(c), new Vector2(0.5f, 1f), new Vector2(0f, y), new Vector2(340f, 48f), () =>
+                {
+                    _audio?.PlayClick();
+                    if (Loc.Lang == c) { Destroy(_langModal); _langModal = null; return; }
+                    Loc.SetLang(c);
+                    Destroy(_langModal); _langModal = null;
+                    onChanged?.Invoke();
+                    UnityEngine.SceneManagement.SceneManager.LoadScene(UnityEngine.SceneManagement.SceneManager.GetActiveScene().name);
+                }, 0.5f, 18, on);
+                y -= 56f;
+            }
+            CoastOrnate.GlassButton(card.transform, "Close", Loc.T("닫기", "Close"), new Vector2(0.5f, 0f), new Vector2(0f, 28f), new Vector2(200f, 46f), () => { _audio?.PlayClick(); Destroy(_langModal); _langModal = null; }, 0.45f, 18, false);
+        }
+
         private void OpenSecretCode(System.Action onChanged)
         {
             if (_codeModal != null) Destroy(_codeModal);
@@ -1246,9 +1311,16 @@ namespace CoastRun
                     {
                         RecordTable.UnlockAll(_gm.Profile);
                         _gm.WriteProfileNow();
-                        hint.text = Loc.T("열렸다 — 전체 챕터 · 레코드", "Unlocked — all chapters & records");
+                        var save = _gm.PeekSave();
+                        if (save != null)
+                        {
+                            PetShop.UnlockAllPets(save);
+                            if (_gm.Save != null) _gm.Persist();
+                            else _gm.SaveSys.Write(save);
+                        }
+                        hint.text = Loc.T("열렸다 — 전체 챕터 · 레코드 · 펫", "Unlocked — chapters, records & pets");
                         hint.color = new Color(0.1f, 0.55f, 0.25f);
-                        CoastToast.Show(Loc.T("비밀코드 — 전체 챕터·레코드 해금", "Secret code — all chapters & records unlocked"));
+                        CoastToast.Show(Loc.T("비밀코드 — 전체 챕터·레코드·펫 해금", "Secret code — chapters, records & pets unlocked"));
                         onChanged?.Invoke();
                         StartCoroutine(CloseCodeLater(0.9f));
                     }
@@ -1290,14 +1362,6 @@ namespace CoastRun
 
         private static string HapticText() => (Loc.IsKo ? "진동  " : "Vibration  ") + (CoastPrefs.Haptic ? "ON" : "OFF");
 
-        private static string PetLabel()
-        {
-            int k = (int)PetCompanion.Selected;
-            string name = Loc.Data("pet." + PetCompanion.Names[k], PetCompanion.Names[k]);
-            string[] blurbsEn = { "no pet", "coins ×1.2 while running", "smashes blocking obstacles (12 s cooldown, ×3)", "pulls coins & hearts within 7 m", "saves you once per run (40% HP)" };
-            return (Loc.IsKo ? "펫: " : "Pet: ") + name + "  ▸  " + (Loc.IsKo ? PetCompanion.Blurbs[k] : blurbsEn[Mathf.Clamp(k, 0, blurbsEn.Length - 1)]);
-        }
-
         // 14차-8: 더보기 슬라이드
         private Button _moreBtn; private Text _moreLabel; private Text _openingHint;
         private RectTransform _moreRt; private CanvasGroup _moreCg;
@@ -1305,10 +1369,28 @@ namespace CoastRun
 
         private void ToggleMore()
         {
+            if (_moreOpen) CloseMore(restoreMenuBgm: true, playClick: true);
+            else OpenMore();
+        }
+
+        private void OpenMore()
+        {
             _audio?.PlayClick();
-            _moreOpen = !_moreOpen;
-            if (_moreLabel != null) _moreLabel.text = _moreOpen ? Loc.T("닫기", "Close") : Loc.T("더보기", "More");
-            if (_moreCg != null) { _moreCg.interactable = _moreOpen; _moreCg.blocksRaycasts = _moreOpen; }
+            _moreOpen = true;
+            if (_moreLabel != null) _moreLabel.text = Loc.T("닫기", "Close");
+            if (_moreCg != null) { _moreCg.interactable = true; _moreCg.blocksRaycasts = true; }
+            TitleAudio.FadeMenuOut(0.55f);   // 더보기 중엔 메인 BGM 안 들리게
+        }
+
+        /// restoreMenuBgm: 그냥 닫기면 true(메인 BGM 복구). 컬렉션 등으로 넘어가면 false.
+        private void CloseMore(bool restoreMenuBgm, bool playClick = false)
+        {
+            if (!_moreOpen) return;
+            if (playClick) _audio?.PlayClick();
+            _moreOpen = false;
+            if (_moreLabel != null) _moreLabel.text = Loc.T("더보기", "More");
+            if (_moreCg != null) { _moreCg.interactable = false; _moreCg.blocksRaycasts = false; }
+            if (restoreMenuBgm) TitleAudio.FadeMenuIn(_cleared, 0.55f);
         }
 
         private void AnimateMore()

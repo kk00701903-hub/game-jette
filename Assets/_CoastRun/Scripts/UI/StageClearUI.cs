@@ -547,6 +547,8 @@ namespace CoastRun
             _homeBtn = MakeButton(_card, "Home", new Vector2(0.5f, 0f), new Vector2(0f, 129f), new Vector2(590f, 141f),
                 Loc.T("메인으로", "Main menu"), new Color(0.12f, 0.50f, 0.92f), () =>
                 {
+                    if (ArcadeRun.Active) { ArcadeRun.Exit(); return; }
+                    ArcadeRun.ClearSession();
                     var flow = GameDirector.Instance != null ? GameDirector.Instance.Flow : null;
                     if (flow != null) _ = flow.GoTo(FlowState.Title, TransitionType.Fade);
                 }, "Icon_Home");

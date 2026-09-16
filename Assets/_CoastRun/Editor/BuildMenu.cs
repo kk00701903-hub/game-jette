@@ -1,4 +1,5 @@
 #if UNITY_EDITOR
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
@@ -12,11 +13,34 @@ namespace CoastRun.Editor
     {
         private const string Bundle = "com.jette.coastrun";
 
+        // 82차: GraphicsSettings Always Included — GUID 로 고정해 빌드마다 되돌아가는 회귀 방지.
+        private static readonly string[] AlwaysIncludedGuids =
+        {
+            "933532a4fcc9baf4fa0491de14d08ed7", // URP Lit
+            "8d2bb70cbf9db8d4da26e15b26e74248", // URP Simple Lit
+            "650dd9526735d5b46b79224bc6e94025", // URP Unlit
+            "0406db5a14f94604a8c57ccfbc9f3b46", // URP Particles/Unlit
+            "26082a001c76cd74e93465ea0efaf12b", // CoastRun/ChromaUnlit
+            "469ae6d6502344340817f98f2a758fc1", // CoastRun/UnlitCurved
+            "423505ce6d2d39540b356891aef87c7c", // CoastRun/ToonLit
+            "7fc3f2d63771496b81faa4d6fbc284ce", // CoastRun/InkOutline
+            "ce98457354cb3e543ba64bcbc39293e0", // CoastRun/UIDesaturate
+        };
+
         [MenuItem("Coast Run/Build/Android APK (IL2CPP, ARM64+ARMv7) %#&k")]
-        public static void BuildAndroidApk() => Build(false);
+        public static void BuildAndroidApk() => Build(BuildKind.Release);
+
+        [MenuItem("Coast Run/Build/Android APK — Development (IL2CPP, ARM64+ARMv7)")]
+        public static void BuildAndroidApkDevelopment() => Build(BuildKind.Development);
+
+        /// x86_64 for Android Emulator (ARM APKs SIGILL under native_bridge on API30 x86 images).
+        [MenuItem("Coast Run/Build/Android APK — Emulator (IL2CPP, x86_64)")]
+        public static void BuildAndroidApkEmulator() => Build(BuildKind.Emulator);
 
         [MenuItem("Coast Run/Build/Android APK — quick (Mono, ARMv7, dev)")]
-        public static void BuildAndroidApkQuick() => Build(true);
+        public static void BuildAndroidApkQuick() => Build(BuildKind.Quick);
+
+        private enum BuildKind { Release, Development, Emulator, Quick }
 
         /// 9차: 스토어 스크린샷 — 플레이 중 게임 뷰를 3배로 캡쳐해 Builds/shots/ 에 저장. (Ctrl+Shift+Alt+S)
         [MenuItem("Coast Run/Screenshot x3 (play mode) %#&s")]
@@ -78,7 +102,7 @@ namespace CoastRun.Editor
                     {
                         var texs = new Texture2D[ic.maxLayerCount];
                         for (int i = 0; i < texs.Length; i++)
-                            texs[i] = texs.Length >= 2 ? (i == 0 ? (iconBg ?? icon) : iconFg) : icon;   // adaptive: 0 = 배경, 1 = 전경
+                            texs[i] = texs.Length >= 2 ? (i == 0 ? (iconBg ?? icon) : iconFg) : icon;
                         ic.SetTextures(texs);
                     }
                     PlayerSettings.SetPlatformIcons(nbt, kind, icons);
@@ -89,7 +113,50 @@ namespace CoastRun.Editor
             AssetDatabase.SaveAssets();
         }
 
-        private static void Build(bool quick)
+        /// Forces URP + CoastRun shaders into GraphicsSettings Always Included (survives editor resets).
+        public static void ApplyAlwaysIncludedShaders()
+        {
+            var graphics = AssetDatabase.LoadAssetAtPath<Object>("ProjectSettings/GraphicsSettings.asset");
+            var so = new SerializedObject(graphics);
+            var arr = so.FindProperty("m_AlwaysIncludedShaders");
+            if (arr == null || !arr.isArray)
+            {
+                Debug.LogWarning("[Build] m_AlwaysIncludedShaders missing");
+                return;
+            }
+
+            var keep = new List<Shader>();
+            for (int i = 0; i < arr.arraySize; i++)
+            {
+                var sh = arr.GetArrayElementAtIndex(i).objectReferenceValue as Shader;
+                if (sh != null && !keep.Contains(sh)) keep.Add(sh);
+            }
+
+            int added = 0;
+            foreach (var guid in AlwaysIncludedGuids)
+            {
+                string path = AssetDatabase.GUIDToAssetPath(guid);
+                if (string.IsNullOrEmpty(path))
+                {
+                    Debug.LogWarning("[Build] Always Included GUID missing: " + guid);
+                    continue;
+                }
+                var sh = AssetDatabase.LoadAssetAtPath<Shader>(path);
+                if (sh == null) continue;
+                if (keep.Contains(sh)) continue;
+                keep.Add(sh);
+                added++;
+            }
+
+            arr.arraySize = keep.Count;
+            for (int i = 0; i < keep.Count; i++)
+                arr.GetArrayElementAtIndex(i).objectReferenceValue = keep[i];
+            so.ApplyModifiedPropertiesWithoutUndo();
+            AssetDatabase.SaveAssets();
+            Debug.Log($"[Build] Always Included shaders locked (total={keep.Count}, added={added})");
+        }
+
+        private static void Build(BuildKind kind)
         {
             var scenes = EditorBuildSettings.scenes.Where(s => s.enabled).Select(s => s.path).ToArray();
             if (scenes.Length == 0)
@@ -97,6 +164,8 @@ namespace CoastRun.Editor
                 Debug.LogError("Build: no scenes in Build Settings — run Coast Run/Scenes/Setup first.");
                 return;
             }
+
+            ApplyAlwaysIncludedShaders();
 
             PlayerSettings.productName = "너와 나의 주파수";
             PlayerSettings.companyName = "jette";
@@ -110,29 +179,58 @@ namespace CoastRun.Editor
             PlayerSettings.Android.targetSdkVersion = AndroidSdkVersions.AndroidApiLevelAuto;
             PlayerSettings.Android.bundleVersionCode = Mathf.Max(1, PlayerSettings.Android.bundleVersionCode + 1);
             PlayerSettings.Android.useCustomKeystore = false;
-            // 67차-1(사용자: 폰에서 러닝 화면이 안 보임): 엔진 코드 스트리핑이 MeshCollider 등을 빼 버려 CreatePrimitive 가 실패 → 월드/캐릭터 생성이 깨졌다.
-            //   스트리핑을 끄고(APK 몇 MB 증가), Assets/link.xml + DeviceBoot.KeepTypes 로 이중 보호.
             PlayerSettings.stripEngineCode = false;
+            // 82차 shader-null 재현 메모: Managed Stripping 을 Minimal 로 낮춰 빌드해도 ArgumentNullException(shader) 가
+            // 그대로면 → Always Included / Resources 미포함. Minimal 에서만 사라지고 Low+ 에서 나면 stripping 영향.
             PlayerSettings.SetManagedStrippingLevel(BuildTargetGroup.Android, ManagedStrippingLevel.Low);
-            ApplyBranding();   // 67차-2/3: 스플래시(Unity 로고 → 스튜디오 우히히시) + 앱 아이콘
+            ApplyBranding();
             EditorUserBuildSettings.buildAppBundle = false;
             EditorUserBuildSettings.exportAsGoogleAndroidProject = false;
 
-            if (quick)
+            string apkName;
+            BuildOptions optsFlags = BuildOptions.None;
+            string kindLabel;
+            switch (kind)
             {
-                PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.Mono2x);
-                PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARMv7;
-            }
-            else
-            {
-                PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
-                PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7;
-                PlayerSettings.SetIl2CppCompilerConfiguration(BuildTargetGroup.Android, Il2CppCompilerConfiguration.Release);
+                case BuildKind.Quick:
+                    PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.Mono2x);
+                    PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARMv7;
+                    apkName = "CoastRun_quick.apk";
+                    optsFlags = BuildOptions.Development;
+                    kindLabel = "Mono/ARMv7/dev";
+                    break;
+                case BuildKind.Emulator:
+                    // Unity 6000.5+: AndroidArchitecture.X86_64 is obsolete / stripped from builds
+                    // ("Target architecture x86_64 is no longer supported"). Emulator visual tests
+                    // must use an ARM64 AVD (CoastRun_ARM64) + this ARM APK (same as release).
+                    PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
+                    PlayerSettings.Android.targetArchitectures =
+                        AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7;
+                    Debug.Log("[Build] Emulator (=ARM for ARM AVD) targetArchitectures=" + PlayerSettings.Android.targetArchitectures);
+                    PlayerSettings.SetIl2CppCompilerConfiguration(BuildTargetGroup.Android, Il2CppCompilerConfiguration.Release);
+                    apkName = "CoastRun_emu.apk";
+                    kindLabel = "IL2CPP/Emulator-ARM/" + PlayerSettings.Android.targetArchitectures;
+                    break;
+                case BuildKind.Development:
+                    PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
+                    PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7;
+                    PlayerSettings.SetIl2CppCompilerConfiguration(BuildTargetGroup.Android, Il2CppCompilerConfiguration.Debug);
+                    apkName = "CoastRun_dev.apk";
+                    optsFlags = BuildOptions.Development | BuildOptions.AllowDebugging;
+                    kindLabel = "IL2CPP/ARM64+ARMv7/Development";
+                    break;
+                default:
+                    PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
+                    PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7;
+                    PlayerSettings.SetIl2CppCompilerConfiguration(BuildTargetGroup.Android, Il2CppCompilerConfiguration.Release);
+                    apkName = "CoastRun.apk";
+                    kindLabel = "IL2CPP/ARM64+ARMv7";
+                    break;
             }
 
             string dir = Path.GetFullPath(Path.Combine(Application.dataPath, "..", "Builds"));
             Directory.CreateDirectory(dir);
-            string apk = Path.Combine(dir, quick ? "CoastRun_quick.apk" : "CoastRun.apk");
+            string apk = Path.Combine(dir, apkName);
 
             var opts = new BuildPlayerOptions
             {
@@ -140,9 +238,9 @@ namespace CoastRun.Editor
                 locationPathName = apk,
                 target = BuildTarget.Android,
                 targetGroup = BuildTargetGroup.Android,
-                options = quick ? BuildOptions.Development : BuildOptions.None,
+                options = optsFlags,
             };
-            Debug.Log($"Build: Android APK → {apk}  scenes={scenes.Length}  {(quick ? "Mono/ARMv7/dev" : "IL2CPP/ARM64+ARMv7")}");
+            Debug.Log($"Build: Android APK → {apk}  scenes={scenes.Length}  {kindLabel}");
             var report = BuildPipeline.BuildPlayer(opts);
             var sum = report.summary;
             string msg = $"Build {sum.result}: {sum.totalSize / (1024 * 1024)} MB, {sum.totalTime.TotalMinutes:0.0} min, errors={sum.totalErrors}, warnings={sum.totalWarnings} → {apk}";

@@ -48,22 +48,58 @@ namespace CoastRun
                 _score.resizeTextForBestFit = true; _score.resizeTextMinSize = 10; _score.resizeTextMaxSize = CoastHudLayout.Scaled(22);
             }
 
-            /// 65차(윷놀이 시안): 목표 띠를 알약 둘로 — 왼쪽(목표) 색 / 오른쪽(점수) 색. 알약(남은 기회)은 숨김.
+            /// 윷놀이 등 — 목표/점수 두 알약. 밝은 파스텔+남색 글은 안 보여서 진한 알약 + 흰 글 + 큰 폰트로.
             public void TwoPillStyle(Color leftCol, Color rightCol, Color textCol)
             {
                 if (_strip == null) return;
                 _strip.GetComponent<Image>().color = Color.clear;
                 foreach (Transform ch in _strip) if (ch.name == "Lip" || ch.name == "Fill" || ch.name == "Gloss") ch.gameObject.SetActive(false);
-                _strip.sizeDelta = new Vector2(-16f, 66f);
+                _strip.sizeDelta = new Vector2(-12f, 84f);
+                _strip.anchoredPosition = new Vector2(0f, -8f);
                 if (_pipHost != null) _pipHost.gameObject.SetActive(false);
-                var l = CoastUiArt.GlossyPill(_strip, "LPill", leftCol, 24, 7); l.raycastTarget = false; l.transform.SetAsFirstSibling();
-                Rect(l.rectTransform, new Vector2(0f, 0f), new Vector2(0.485f, 1f), Vector2.zero, Vector2.zero);
-                var r = CoastUiArt.GlossyPill(_strip, "RPill", rightCol, 24, 7); r.raycastTarget = false; r.transform.SetAsFirstSibling();
-                Rect(r.rectTransform, new Vector2(0.515f, 0f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero);
-                Rect(_goal.rectTransform, new Vector2(0f, 0f), new Vector2(0.485f, 1f), new Vector2(10f, 4f), new Vector2(-10f, 0f));
-                _goal.alignment = TextAnchor.MiddleCenter; _goal.color = textCol; _goal.resizeTextMaxSize = CoastHudLayout.Scaled(19);
-                Rect(_score.rectTransform, new Vector2(0.515f, 0f), new Vector2(1f, 1f), new Vector2(10f, 4f), new Vector2(-10f, 0f));
-                _score.alignment = TextAnchor.MiddleCenter; _score.color = textCol; _score.resizeTextMaxSize = CoastHudLayout.Scaled(19);
+
+                // 입력 색을 진하게 깔아 대비 확보(파스텔이면 거의 검정 쪽으로)
+                Color L = DeepPill(leftCol), R = DeepPill(rightCol);
+                var lp = CoastUiArt.GlossyPill(_strip, "LPill", L, 22, 8); lp.raycastTarget = false; lp.transform.SetAsFirstSibling();
+                Rect(lp.rectTransform, new Vector2(0f, 0.06f), new Vector2(0.488f, 0.94f), Vector2.zero, Vector2.zero);
+                var rp = CoastUiArt.GlossyPill(_strip, "RPill", R, 22, 8); rp.raycastTarget = false; rp.transform.SetAsFirstSibling();
+                Rect(rp.rectTransform, new Vector2(0.512f, 0.06f), new Vector2(1f, 0.94f), Vector2.zero, Vector2.zero);
+
+                Color ink = textCol.a > 0.5f && textCol.maxColorComponent > 0.85f ? textCol : Color.white;
+                Color outline = new Color(0f, 0f, 0f, 0.72f);
+                Rect(_goal.rectTransform, new Vector2(0f, 0.06f), new Vector2(0.488f, 0.94f), new Vector2(12f, 6f), new Vector2(-12f, -4f));
+                _goal.alignment = TextAnchor.MiddleCenter;
+                _goal.color = ink;
+                _goal.fontStyle = FontStyle.Bold;
+                _goal.horizontalOverflow = HorizontalWrapMode.Wrap;
+                _goal.verticalOverflow = VerticalWrapMode.Truncate;
+                _goal.resizeTextForBestFit = true;
+                _goal.resizeTextMinSize = CoastHudLayout.MinFontSize;
+                _goal.resizeTextMaxSize = CoastHudLayout.Scaled(22);
+                _goal.fontSize = CoastHudLayout.Scaled(20);
+                CoastUiArt.OutlineText(_goal, outline, 2.2f);
+
+                Rect(_score.rectTransform, new Vector2(0.512f, 0.06f), new Vector2(1f, 0.94f), new Vector2(12f, 6f), new Vector2(-12f, -4f));
+                _score.alignment = TextAnchor.MiddleCenter;
+                _score.color = ink;
+                _score.fontStyle = FontStyle.Bold;
+                _score.horizontalOverflow = HorizontalWrapMode.Wrap;
+                _score.verticalOverflow = VerticalWrapMode.Truncate;
+                _score.resizeTextForBestFit = true;
+                _score.resizeTextMinSize = CoastHudLayout.MinFontSize;
+                _score.resizeTextMaxSize = CoastHudLayout.Scaled(22);
+                _score.fontSize = CoastHudLayout.Scaled(20);
+                CoastUiArt.OutlineText(_score, outline, 2.2f);
+
+                _goal.transform.SetAsLastSibling();
+                _score.transform.SetAsLastSibling();
+            }
+
+            private static Color DeepPill(Color c)
+            {
+                Color.RGBToHSV(c, out float h, out float s, out float v);
+                // 채도↑ 명도↓ — 흰 글씨가 또렷하게
+                return Color.HSVToRGB(h, Mathf.Clamp01(Mathf.Max(s, 0.55f) * 1.15f), Mathf.Clamp01(Mathf.Min(v, 0.55f) * 0.72f));
             }
             private static void Rect(RectTransform rt, Vector2 aMin, Vector2 aMax, Vector2 oMin, Vector2 oMax) { rt.anchorMin = aMin; rt.anchorMax = aMax; rt.offsetMin = oMin; rt.offsetMax = oMax; }
 

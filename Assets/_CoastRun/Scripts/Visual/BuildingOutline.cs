@@ -36,7 +36,8 @@ namespace CoastRun
         {
             var sh = Shader.Find("CoastRun/InkOutline");
             if (sh == null) return CoastMaterials.CreateUnlit(new Color(0.06f, 0.05f, 0.10f, 1f));
-            var m = new Material(sh);
+            var m = CoastMaterials.NewMat(sh);
+            if (m == null) return CoastMaterials.CreateUnlit(new Color(0.06f, 0.05f, 0.10f, 1f));
             m.SetColor("_OutlineColor", new Color(0.06f, 0.05f, 0.10f, 1f));
             m.SetFloat("_Width", width);
             return m;

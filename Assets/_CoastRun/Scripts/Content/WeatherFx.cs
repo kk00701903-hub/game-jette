@@ -130,6 +130,8 @@ namespace CoastRun
 
             var renderer = go.GetComponent<ParticleSystemRenderer>();
             renderer.material = CoastMaterials.CreateParticle(color);
+            if (renderer.material == null)
+                Debug.LogError("[WeatherFx] CreateParticle failed for " + name);
 
             ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
             return ps;
@@ -189,7 +191,12 @@ namespace CoastRun
                 : season == SeasonKind.Winter ? new Color(0.97f, 0.98f, 1f, 0.9f)
                 : new Color(0.55f, 0.80f, 0.45f, 0.85f);
             var wm = _wind.main; wm.startColor = leaf;
-            var wr = _wind.GetComponent<ParticleSystemRenderer>(); if (wr != null) wr.material = CoastMaterials.CreateParticle(leaf);
+            var wr = _wind.GetComponent<ParticleSystemRenderer>();
+            if (wr != null)
+            {
+                var wmMat = CoastMaterials.CreateParticle(leaf);
+                if (wmMat != null) wr.material = wmMat;
+            }
             SetActive(_wind, windy || (weather == WeatherKind.Rain && season == SeasonKind.Autumn));
             // 비·눈 기울기: 바람이면 옆으로, 아니면 수직
             _windTilt = windy ? 28f : (weather == WeatherKind.Rain ? 10f : 4f);

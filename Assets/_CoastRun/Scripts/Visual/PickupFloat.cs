@@ -160,7 +160,9 @@ namespace CoastRun
             var srt = strip.rectTransform; srt.anchorMin = srt.anchorMax = new Vector2(0.5f, 0.5f); srt.pivot = new Vector2(0.5f, 0.5f);
             srt.anchoredPosition = new Vector2(0f, -300f); srt.sizeDelta = new Vector2(600f, 132f); strip.raycastTarget = false;
             var cg = strip.gameObject.AddComponent<CanvasGroup>(); cg.alpha = 0f; cg.blocksRaycasts = false; cg.interactable = false;
-            string[] row = { Loc.T("피하기", "AVOID"), "Obs_Cone", Loc.T("콘 · 점프", "Cone · jump"), "Obs_Barrier", Loc.T("바리케이드", "Barrier"), "Obs_Clothesline", Loc.T("빨래줄 · 숙이기", "Line · duck"), "Obs_BusFront", Loc.T("버스 · 피하기", "Bus · dodge") };
+            // 빨래줄(Obs_Clothesline)은 DuckHazard 이지만, 점프대 활공용 ClothesLine 과 그림이 같아
+            // 「숙이기」로 쓰면 조작(슬라이드)과도 안 맞고 헷갈림 → 허들 + 슬라이드로 소개.
+            string[] row = { Loc.T("피하기", "AVOID"), "Obs_Cone", Loc.T("콘 · 점프", "Cone · jump"), "Obs_Barrier", Loc.T("바리케이드 · 점프", "Barrier · jump"), "Obs_OverheadBar", Loc.T("허들 · 슬라이드", "Bar · slide"), "Obs_BusFront", Loc.T("버스 · 피하기", "Bus · dodge") };
             float y = -14f;
             var lab = CoastUiArt.GlossyPill(srt, "Lab", new Color(0.85f, 0.25f, 0.30f), 14, 5); lab.raycastTarget = false;
             var lrt = lab.rectTransform; lrt.anchorMin = lrt.anchorMax = new Vector2(0f, 1f); lrt.pivot = new Vector2(0f, 1f); lrt.anchoredPosition = new Vector2(14f, y - 30f); lrt.sizeDelta = new Vector2(84f, 34f);

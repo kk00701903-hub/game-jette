@@ -81,6 +81,8 @@ namespace CoastRun
             _onDone = onDone;
             _titleCard = titleCard;
             IsPlaying = true;
+            // BGM 큐가 오기 전에도 육성/타이틀 BGM과 겹치지 않게
+            TitleAudio.StopMenuGlobal();
             PlayerPrefs.SetInt("CoastRun_VN_" + sceneId, 1);
             BuildUi();
             StartCoroutine(Run());
@@ -606,7 +608,8 @@ namespace CoastRun
             RecordTable.OnSceneWatched(_sceneId);   // 37차: 롱컷을 보면 레코드 해금
             var cb = _onDone;
             _onDone = null;
-            if (HoldBlackOnNext && _canvas != null)
+            bool heldBlack = HoldBlackOnNext && _canvas != null;
+            if (heldBlack)
             {
                 // 8차: 캔버스를 바로 지우지 않고 검정만 남겨 씬이 바뀔 때까지 붙잡는다(육성 화면 재노출 방지).
                 HoldBlackOnNext = false;
@@ -618,6 +621,10 @@ namespace CoastRun
             if (_active == this) _active = null;
             UnityEngine.Object.Destroy(gameObject);
             cb?.Invoke();
+            // 씬 전환 홀드(엔딩/러닝)면 육성 BGM 복구하지 않음
+            if (!heldBlack && !IsPlaying && !CinematicPlayer.IsPlaying && !OpeningCinematic.IsPlaying
+                && UnityEngine.SceneManagement.SceneManager.GetActiveScene().name == CoastScenes.Raising)
+                TitleAudio.PlayRaising();
         }
 
         /// 다른 컷씬으로 교체할 때 — 콜백 없이 UI/음악만 내린다(소프트락·이중 콜백 방지).
@@ -657,7 +664,7 @@ namespace CoastRun
             var clip = CoastBgmLibrary.Load("BGM_" + k);
             if (clip == null) { Debug.LogWarning("[VnMusic] 곡 없음: " + key); Stop(0.5f); return; }
             // 타이틀 메뉴 BGM과 겹치지 않게
-            UnityEngine.Object.FindAnyObjectByType<TitleAudio>()?.StopMenu();
+            TitleAudio.StopMenuGlobal();
             Ensure().Play(clip, vol, pitch, k);   // 전체 볼륨은 AudioListener(CoastPrefs.VolumeStep)가 맡는다
         }
 

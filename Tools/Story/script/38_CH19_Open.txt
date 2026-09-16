@@ -1,28 +1,15 @@
-﻿# 37차: 컷씬 대본 — 그림은 아직 빈 화면(BG | Blank). 음악 큐와 자막만 먼저. 고친 뒤  python Tools/Story/cutscene_txt.py import Tools/Story/script  로 반영.
-# 형식: [번호] 종류 | 화자/그림 | 한국어   ← 바로 아래 'EN:' 줄이 영어. 줄 삭제·추가 가능, 번호는 저장 때 자동 정리.
-# BG = 배경ID | 왼쪽 스탠딩 | 오른쪽 스탠딩 | 변형(세피아/비/밤/흰 + 아래) / CG = 일러스트ID | 설명 / SAY = 화자 | 대사 / NARR = 지문 / LETTER = 편지
-# BGM = 곡키 | 볼륨(0~1) | 피치   — 곡키 M1~M7 (Resources/CoastRun/BGM/BGM_M?.ogg). M4s=느리게(0.72) M4r=라디오(작게) M6w=수중. '정지' 면 페이드아웃.
-# 조건 태그: 화자나 지문 앞에 [게이트>=0] / [게이트<0] 를 붙이면 체력 게이트 통과·불통과일 때만 나온다.
-제목: 국화 | EN: Chrysanthemum
+﻿# 85차: 컷씬 대본 v4 — Docs/CUTSCENE_SCRIPTS_v4.md 의 자막을 지문(NARR)으로 옮긴 리더용. 시네마틱(CinematicTable)이 본편이고 이 파일은 「읽기」용.
+# 고친 뒤  python Tools/Story/cutscene_txt.py import Tools/Story/script  로 반영. 형식은 파일 아래 다른 파일과 같다(BG/CG/SAY/NARR/BGM).
 
-[0] BG | Blank | | | 비 아래
-[1] NARR | 생일 전날. 아빠 기일. 1년 만에 엄마 편지.
-    EN: The day before her birthday. Dad's anniversary. A letter from Mom, the first in a year.
-[2] LETTER | 내일 갈게.
-    EN: I'll come tomorrow.
-[3] NARR | 빗속을 나란히 4.2킬로 걷는다. 그는 모른다. 탑 아래 국화 두 다발. 아빠는 한 명인데. 카드는 번져 「하…」까지만.
-    EN: They walk the 4.2 km side by side in the rain. He doesn't know. Under the tower, two bunches of chrysanthemums. There's only one father. The card has run: only 'Ha…' remains.
-[4] NARR | 일어설 때 병원 팔찌가 떨어지고 하늘이 줍는다 — 잡힌다.
-    EN: As he stands, the hospital bracelet falls. Haneul picks it up — it's solid in her hand.
-[5] SAY | 바다 | 내일이지.
-    EN: It's tomorrow, right.
-[6] SAY | 하늘 | 어떻게 알아?
-    EN: How do you know?
-[7] SAY | 바다 | 그냥.
-    EN: Just do.
-[8] NARR | 그날 밤. 팔찌를 달력 못에 건다. 8년 옮겨 적은 「도윤」 옆에 연필로 쓴다 — 「하늘」.
-    EN: That night. She hangs the bracelet on the calendar nail. Beside the 'Doyun' copied over for eight years, she writes in pencil: 'Haneul.'
-[9] NARR | [게이트>=0]…달릴 수 있을 것 같다.
-    EN: [게이트>=0]…I think I can run today.
-[10] NARR | [게이트<0]…아직은 다리가 못 버틴다. 이번 주는 더 키우자.
-    EN: [게이트<0]…My legs aren't ready. One more week.
+제목: 전날 밤 | EN: 전날 밤
+
+
+[0] BG | Blank | | | 현재 아래
+[2] CG | T_E10_01 | Cut_T_E10_01
+[3] NARR | 생일 전날은 아빠 기일이다. 도윤과 나란히 4.2킬로를 걸었다. 국화 두 다발. 그 애는 몰랐다. 나도 절반만 알았다. 절반만 아는 채로 걷는 길이 제일 길었다.
+[4] CG | T_E10_02 | Cut_T_E10_02
+[5] NARR | 남자의 창가 시간표에 날짜가 적혀 있었다. 모레 새벽 첫차. 병원이 있는 도시로. 이틀. 손가락으로 세어 봤다. 어느 쪽이든 짧았다.
+[6] CG | T_E10_03 | Cut_T_E10_03
+[7] NARR | 꼬마가 라디오를 내 무릎에 올려놨다. 「내일은 들어도 돼.」 「뭘.」 「내일.」 라디오가 무릎 위에서 따뜻했다.
+[8] CG | T_E10_04 | Cut_T_E10_04
+[9] NARR | 잠이 안 왔다. 우비를 벽에서 내려 한 번 안았다. 이번엔 걸지 않았다. 옆에 두고 잤다. 아홉 해 전 그 밤에도 이렇게 잡고 있었으면. 그런 생각을 아직도 한다.

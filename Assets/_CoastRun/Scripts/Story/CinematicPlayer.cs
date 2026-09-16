@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using UnityEngine.Video;
 
@@ -31,7 +32,9 @@ namespace CoastRun
         private Image _a, _b, _fader;
         private Material _matA, _matB;
         private Text _caption, _tag;
+        private Image _band;   // 85차: 자막 띠 — 긴 자막(>90자)이면 더 높게
         private CanvasGroup _titleCg;
+        private Transform _nowPlaying;
         private AudioSource _music;
         private RawImage _video;
         private VideoPlayer _player;
@@ -48,6 +51,9 @@ namespace CoastRun
         {
             _def = def; _onDone = onDone;
             IsPlaying = true; CurrentId = def.id;
+            // 스토리 모드(육성) BGM과 컷씬 BGM이 겹치지 않게 — VnMusic.Cue 와 동일
+            TitleAudio.StopMenuGlobal();
+            VnMusic.Stop(0f);
             BuildUi();
             StartCoroutine(Run());
         }
@@ -94,7 +100,7 @@ namespace CoastRun
             // 자막 띠(아래) + 회상 태그(위)
             var band = CoastHudLayout.MakeImage(root, "CaptionBand", new Vector2(0f, 0.06f), new Vector2(1f, 0.21f),
                 new Vector2(-CoastUiCanvas.HudPad, 0f), new Vector2(CoastUiCanvas.HudPad, 0f), new Color(0f, 0f, 0f, 0.46f));
-            band.raycastTarget = false;
+            band.raycastTarget = false; _band = band;
             _caption = CoastOrnate.Label(band.transform, "Caption", "", 27, new Color(1f, 0.97f, 0.9f));
             _caption.lineSpacing = 1.3f; _caption.horizontalOverflow = HorizontalWrapMode.Wrap;
             // 75차: 두 문장 자막(≤64자)이 세 줄로 갈려 마지막 줄에 한두 단어만 남던 것 — 여백 40→26, 최대 27→25 로 두 줄에 맞춘다
@@ -131,6 +137,33 @@ namespace CoastRun
             _music = music.AddComponent<AudioSource>();
             _music.playOnAwake = false; _music.spatialBlend = 0f; _music.volume = 0.85f; _music.loop = true;   // 77차: 컷씬이 곡보다 길어져(1:42~1:57) 루프
             _music.clip = CoastBgmLibrary.Load(_def.bgm);
+            _nowPlaying = BuildNowPlaying(root, _def.bgm);
+        }
+
+        /// 좌상단 — 지금 흐르는 컷씬 BGM 제목.
+        private static Transform BuildNowPlaying(RectTransform root, string bgmKey)
+        {
+            string title = RecordTable.TitleFromBgm(bgmKey);
+            if (string.IsNullOrEmpty(title)) return null;
+            var pill = CoastUiArt.CutePill(root, "NowPlaying", new Color(0.08f, 0.10f, 0.22f, 0.78f), 14, 3);
+            pill.raycastTarget = false;
+            var prt = pill.rectTransform;
+            prt.anchorMin = prt.anchorMax = new Vector2(0f, 1f);
+            prt.pivot = new Vector2(0f, 1f);
+            prt.anchoredPosition = new Vector2(10f, -36f);
+            prt.sizeDelta = new Vector2(320f, 52f);
+            var head = CoastOrnate.Label(pill.transform, "Head", Loc.T("NOW PLAYING ♪", "NOW PLAYING ♪"), 11, new Color(1f, 0.82f, 0.45f));
+            var hrt = head.rectTransform; hrt.anchorMin = new Vector2(0f, 0.52f); hrt.anchorMax = new Vector2(1f, 1f);
+            hrt.offsetMin = new Vector2(12f, 0f); hrt.offsetMax = new Vector2(-10f, -4f);
+            head.alignment = TextAnchor.MiddleLeft; head.fontStyle = FontStyle.Bold;
+            CoastUiArt.OutlineText(head, new Color(0f, 0f, 0f, 0.55f), 1.2f);
+            var name = CoastOrnate.Label(pill.transform, "Title", title, 16, new Color(1f, 0.97f, 0.92f));
+            var nrt = name.rectTransform; nrt.anchorMin = new Vector2(0f, 0f); nrt.anchorMax = new Vector2(1f, 0.58f);
+            nrt.offsetMin = new Vector2(12f, 4f); nrt.offsetMax = new Vector2(-10f, 0f);
+            name.alignment = TextAnchor.MiddleLeft; name.fontStyle = FontStyle.Bold;
+            name.resizeTextForBestFit = true; name.resizeTextMinSize = 11; name.resizeTextMaxSize = CoastHudLayout.Scaled(16);
+            CoastUiArt.OutlineText(name, new Color(0f, 0f, 0f, 0.65f), 1.4f);
+            return pill.transform;
         }
 
         private static Image MakeShot(RectTransform root, string name)
@@ -168,8 +201,13 @@ namespace CoastRun
                 cur.sprite = tex != null ? CoastUiArt.AsSprite(tex, 100f) : null;
                 // 72차: 진짜 크로스페이드 — 새 컷은 위에서 알파 0 으로 시작해 0.8초에 걸쳐 나타난다(전엔 위에 바로 불투명으로 올라와 「탁」 바뀌는 게 깜빡임처럼 보였다)
                 cur.color = tex != null ? new Color(1f, 1f, 1f, i == 0 ? 1f : 0f) : new Color(0.2f, 0.18f, 0.22f, 1f);
-                SetLook(curM, _def.sat, s.sepia);
+                SetLook(curM, s.sat >= 0f ? s.sat : _def.sat, s.sepia);   // 85차: 컷별 채도 키프레임(END_TRUE 2컷부터 1.0)
                 cur.transform.SetAsLastSibling();
+                if (_band != null)
+                {   // 85차(v4): 자막이 세 문장 넘는 컷은 띠를 높여 세 줄까지
+                    bool longCap = s.caption != null && s.caption.Length > 90;
+                    _band.rectTransform.anchorMin = new Vector2(0f, longCap ? 0.05f : 0.06f); _band.rectTransform.anchorMax = new Vector2(1f, longCap ? 0.25f : 0.21f);
+                }
                 cur.rectTransform.localScale = Vector3.one * s.from.x; cur.rectTransform.anchoredPosition = new Vector2(s.from.y * 720f, 0f);
                 bool useVideo = false;
                 yield return TryPrepareVideo(s.clip, v => useVideo = v);
@@ -186,6 +224,7 @@ namespace CoastRun
                 _fader.transform.SetAsLastSibling();
                 _caption.transform.parent.SetAsLastSibling();
                 _tag.transform.SetAsLastSibling();
+                if (_nowPlaying != null) _nowPlaying.SetAsLastSibling();
                 _titleCg.transform.SetAsLastSibling();
                 if (_skipBtn != null) _skipBtn.transform.SetAsLastSibling();
                 _caption.text = ""; _tag.text = s.tag ?? "";
@@ -391,6 +430,10 @@ namespace CoastRun
             if (_canvas != null) Destroy(_canvas.gameObject);
             Destroy(gameObject);
             cb?.Invoke();
+            // 다음 컷씬/러닝으로 이어지지 않고 육성 허브에 남으면 스토리 BGM 복구
+            if (!IsPlaying && !ChapterVN.IsPlaying && !OpeningCinematic.IsPlaying
+                && SceneManager.GetActiveScene().name == CoastScenes.Raising)
+                TitleAudio.PlayRaising();
         }
     }
 }

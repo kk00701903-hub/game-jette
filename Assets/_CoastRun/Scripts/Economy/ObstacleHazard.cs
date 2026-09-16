@@ -52,22 +52,23 @@ namespace CoastRun
             nearMiss?.NotifyHardHit();
             if (softHit)
             {
-                player.PendingHitDamageMul = DamageMul;   // 22차-7: 장애물별 피해 배율(버스 즉사, 차 큰 피해, 일반 3방)
-                // SoftHit가 무적·무적프레임으로 막혀도 꽈당은 동일하게 — Pop만 되고 피드백이 빠지던 것.
-                if (!player.SoftHitApplied(ClassifyHit(player), BounceSide(player)))
+                player.PendingHitDamageMul = DamageMul;
+                bool stunned = player.SoftHitApplied(ClassifyHit(player), BounceSide(player));
+                // 무적(피버·거인·God)으로 피해가 스킵된 경우에만 Pending 정리. 경직만 스킵된 연속 피격은 SoftHitApplied/HealthSystem이 처리.
+                if (!stunned && (player.Invincible || FeverMode.Active))
                 {
                     player.PendingHitDamageMul = DefaultFrac;
-                    // 거인·피버 무적 중엔 꽈당 대신 그냥 팡 — HP·경직 없음
                     if (!GiantMode.Active && !FeverMode.Active)
                         JuiceDirector.Instance?.PlayHitImpact();
                 }
-                // 14차-14: 부딪힌 장애물은 '팡' 하고 귀엽게 터진다 — 납작해졌다 별·하트로 흩어지고 사라진다.
+                else if (!stunned && !GiantMode.Active && !FeverMode.Active)
+                    JuiceDirector.Instance?.PlayHitImpact();
                 Pop();
             }
         }
 
-        /// 71차(사용자): 피해 = 최대 체력의 비율(0.60 = 버스, 0.30 = 허들, 0.18 = 콘 …, ≥1 = 즉사). 22차의 배율(1/2/99)은 폐기.
-        public const float DefaultFrac = 0.30f;   // 74차: 최소 30
+        /// 피해 = 최대 체력 비율(ObstacleCatalog.Frac). ≥1 = 즉사.
+        public const float DefaultFrac = ObstacleCatalog.Frac.Light;
         public float DamageMul = DefaultFrac;
 
         private bool _popped;

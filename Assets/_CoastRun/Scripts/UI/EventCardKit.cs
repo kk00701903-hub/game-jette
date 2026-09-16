@@ -124,5 +124,124 @@ namespace CoastRun
             bt.onClick.AddListener(() => { CoastPrefs.Vibrate(); onClick?.Invoke(); });
             return bt;
         }
+
+        // ── 스토리 모드 선택 팝업 (시안: 헬섬 이벤트 / 어디 알바?) ──
+
+        public static readonly Color SoftPink = new Color(0.99f, 0.90f, 0.93f);
+        public static readonly Color SoftBlue = new Color(0.89f, 0.95f, 0.99f);
+        public static readonly Color TagPink = new Color(0.95f, 0.45f, 0.62f);
+        public static readonly Color BrownInk = new Color(0.30f, 0.20f, 0.18f);
+        public static readonly Color GoldJob = new Color(1f, 0.82f, 0.38f);
+        public static readonly Color LavenderJob = new Color(0.72f, 0.62f, 0.95f);
+
+        /// 상단 분홍 알약 태그 (예: 「✨ 헬섬 이벤트」).
+        public static Text HellsumTag(RectTransform card, string label, float yTop = 18f)
+        {
+            var pill = CoastUiArt.CutePill(card, "Tag", TagPink, 16, 0);
+            var pr = pill.rectTransform; pr.anchorMin = pr.anchorMax = new Vector2(0.5f, 1f); pr.pivot = new Vector2(0.5f, 1f);
+            pr.anchoredPosition = new Vector2(0f, -yTop); pr.sizeDelta = new Vector2(220f, 36f); pill.raycastTarget = false;
+            var t = CoastHudLayout.MakeText(pr, "T", label, 15, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(4f, 1f), new Vector2(-4f, -1f));
+            t.color = Color.white; t.fontStyle = FontStyle.Bold; t.raycastTarget = false;
+            return t;
+        }
+
+        /// A/B 본문 블록 (연분홍·연파랑 + 아이콘 + 「A:」 헤더).
+        public static RectTransform ChoiceBlock(RectTransform card, string name, bool isA, string icon, string body, float yTop, float height)
+        {
+            Color bg = isA ? SoftPink : SoftBlue;
+            Color head = isA ? new Color(0.85f, 0.28f, 0.48f) : new Color(0.28f, 0.48f, 0.82f);
+            var box = CoastUiArt.CutePill(card, name, bg, 18, 0);
+            var r = box.rectTransform; r.anchorMin = new Vector2(0f, 1f); r.anchorMax = new Vector2(1f, 1f); r.pivot = new Vector2(0.5f, 1f);
+            r.offsetMin = new Vector2(28f, -yTop - height); r.offsetMax = new Vector2(-28f, -yTop); box.raycastTarget = false;
+
+            var circle = CoastUiArt.Panel(r, "IcBg", head, 14); circle.raycastTarget = false;
+            var cr = circle.rectTransform; cr.anchorMin = cr.anchorMax = new Vector2(0f, 1f); cr.pivot = new Vector2(0f, 1f);
+            cr.anchoredPosition = new Vector2(14f, -12f); cr.sizeDelta = new Vector2(28f, 28f);
+            var sp = CoastUiArt.Art(icon);
+            if (sp != null)
+            {
+                var im = new GameObject("Ic", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
+                im.transform.SetParent(cr, false); im.sprite = sp; im.preserveAspect = true; im.color = Color.white; im.raycastTarget = false;
+                im.rectTransform.anchorMin = im.rectTransform.anchorMax = new Vector2(0.5f, 0.5f); im.rectTransform.sizeDelta = new Vector2(18f, 18f);
+            }
+            var letter = CoastHudLayout.MakeText(r, "Letter", isA ? "A:" : "B:", 18, TextAnchor.MiddleLeft,
+                new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(50f, -40f), new Vector2(-14f, -10f));
+            letter.color = head; letter.fontStyle = FontStyle.Bold; letter.raycastTarget = false;
+
+            var bodyT = CoastHudLayout.MakeText(r, "Body", body, 15, TextAnchor.UpperLeft,
+                Vector2.zero, Vector2.one, new Vector2(16f, 12f), new Vector2(-16f, -44f));
+            bodyT.color = BrownInk; bodyT.horizontalOverflow = HorizontalWrapMode.Wrap;
+            bodyT.verticalOverflow = VerticalWrapMode.Truncate;
+            bodyT.resizeTextForBestFit = true; bodyT.resizeTextMinSize = CoastHudLayout.MinFontSize;
+            bodyT.resizeTextMaxSize = CoastHudLayout.Scaled(15); bodyT.raycastTarget = false;
+            return r;
+        }
+
+        /// 하단 나란히 A/B 버튼 — 연한 배경 + 갈색 글씨(시안).
+        public static Button SoftChoiceButton(RectTransform parent, string name, string icon, string label, bool isA, Vector2 pos, Vector2 size, Action onClick)
+        {
+            Color fill = isA ? SoftPink : SoftBlue;
+            Color edge = isA ? new Color(0.92f, 0.55f, 0.68f) : new Color(0.55f, 0.72f, 0.92f);
+            var glow = CoastUiArt.Panel(parent, name + "Edge", edge, 22); glow.raycastTarget = false;
+            var ge = glow.rectTransform; ge.anchorMin = ge.anchorMax = new Vector2(0.5f, 0f); ge.pivot = new Vector2(0.5f, 0f);
+            ge.anchoredPosition = pos; ge.sizeDelta = size + new Vector2(6f, 6f);
+
+            var b = CoastUiArt.CutePill(parent, name, fill, 20, 3);
+            var rt = b.rectTransform; rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0f); rt.pivot = new Vector2(0.5f, 0f);
+            rt.anchoredPosition = pos; rt.sizeDelta = size; b.raycastTarget = true;
+
+            float textLeft = 8f;
+            var sp = CoastUiArt.Art(icon);
+            if (sp != null)
+            {
+                var im = new GameObject("Ic", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
+                im.transform.SetParent(rt, false); im.sprite = sp; im.preserveAspect = true; im.color = BrownInk; im.raycastTarget = false;
+                im.rectTransform.anchorMin = im.rectTransform.anchorMax = new Vector2(0f, 0.5f); im.rectTransform.pivot = new Vector2(0f, 0.5f);
+                im.rectTransform.anchoredPosition = new Vector2(14f, 1f); im.rectTransform.sizeDelta = new Vector2(size.y * 0.42f, size.y * 0.42f);
+                textLeft = 14f + size.y * 0.42f + 4f;
+            }
+            var t = CoastHudLayout.MakeText(rt, "T", label, 18, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(textLeft, 2f), new Vector2(-10f, 0f));
+            t.color = BrownInk; t.fontStyle = FontStyle.Bold; t.horizontalOverflow = HorizontalWrapMode.Wrap;
+            t.resizeTextForBestFit = true; t.resizeTextMinSize = 11; t.resizeTextMaxSize = CoastHudLayout.Scaled(18);
+            var bt = b.gameObject.AddComponent<Button>(); bt.transition = Selectable.Transition.None;
+            bt.onClick.AddListener(() => { CoastPrefs.Vibrate(); onClick?.Invoke(); });
+            return bt;
+        }
+
+        /// 「어디 알바?」식 젤리 배너 제목.
+        public static Text PickBanner(RectTransform parent, string text, Color fill, Color edge, float yTop = 70f)
+        {
+            var bar = CoastUiArt.GlossyPill(parent, "Banner", fill, 28, 10);
+            var br = bar.rectTransform; br.anchorMin = br.anchorMax = new Vector2(0.5f, 1f); br.pivot = new Vector2(0.5f, 1f);
+            br.anchoredPosition = new Vector2(0f, -yTop); br.sizeDelta = new Vector2(420f, 64f); bar.raycastTarget = false;
+            return JellyTitle(br, text, Color.white, edge, 4f, 56f, 34);
+        }
+
+        /// 알바/쉼/놀기 선택 카드 (탭 + 큰 제목 + 워터마크 ✦).
+        public static Button ThemedPickCard(RectTransform parent, string name, string tab, string title, Color fill, Color tabCol, Vector2 pos, Vector2 size, Action onClick)
+        {
+            var card = CoastUiArt.GlossyPill(parent, name, fill, 26, 10);
+            var rt = card.rectTransform; rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 0.5f); rt.pivot = new Vector2(0.5f, 0.5f);
+            rt.anchoredPosition = pos; rt.sizeDelta = size; card.raycastTarget = true;
+
+            var tabPill = CoastUiArt.CutePill(rt, "Tab", tabCol, 12, 0);
+            var tr = tabPill.rectTransform; tr.anchorMin = tr.anchorMax = new Vector2(0.5f, 1f); tr.pivot = new Vector2(0.5f, 0.5f);
+            tr.anchoredPosition = new Vector2(0f, 6f); tr.sizeDelta = new Vector2(88f, 28f); tabPill.raycastTarget = false;
+            var tt = CoastHudLayout.MakeText(tr, "T", tab, 14, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);
+            tt.color = Color.white; tt.fontStyle = FontStyle.Bold; tt.raycastTarget = false;
+
+            Sparkle(rt, new Vector2(0.12f, 0.78f), Vector2.zero, 18, new Color(1f, 1f, 1f, 0.35f));
+            Sparkle(rt, new Vector2(0.85f, 0.25f), Vector2.zero, 14, new Color(1f, 1f, 1f, 0.28f));
+            Sparkle(rt, new Vector2(0.2f, 0.2f), Vector2.zero, 12, new Color(1f, 1f, 1f, 0.22f));
+
+            var nm = CoastHudLayout.MakeText(rt, "N", title, 26, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(18f, 20f), new Vector2(-18f, -24f));
+            nm.color = Color.white; nm.fontStyle = FontStyle.Bold; nm.horizontalOverflow = HorizontalWrapMode.Wrap;
+            nm.resizeTextForBestFit = true; nm.resizeTextMinSize = 14; nm.resizeTextMaxSize = CoastHudLayout.Scaled(28);
+            CoastUiArt.OutlineText(nm, new Color(0.12f, 0.10f, 0.28f, 0.85f), 2.4f);
+
+            var btn = card.gameObject.AddComponent<Button>(); btn.transition = Selectable.Transition.None;
+            btn.onClick.AddListener(() => { CoastPrefs.Vibrate(); onClick?.Invoke(); });
+            return btn;
+        }
     }
 }

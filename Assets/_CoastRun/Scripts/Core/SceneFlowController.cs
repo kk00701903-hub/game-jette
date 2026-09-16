@@ -157,13 +157,12 @@ namespace CoastRun
         private IEnumerator BootRoutine()
         {
             SetState(FlowState.Boot);
+            // Solid black cover only while Title loads — never UI_Loading_Mock (로딩중).
+            // TransitionType.None: as soon as Title is up, lift the veil so Title_Bus plays alone.
             _director?.UI?.Snap(1f, Color.black);
-            _director?.UI?.SetLoader(true);
-            // Warmup tick
             yield return null;
             yield return null;
-            _director?.UI?.SetLoader(false);
-            yield return GoToRoutine(FlowState.Title, TransitionType.Fade);
+            yield return GoToRoutine(FlowState.Title, TransitionType.None);
         }
 
         public void OnTitleStartPressed()
@@ -184,7 +183,7 @@ namespace CoastRun
                 }
 
                 // Menu → CH1 BGM crossfade (no prologue).
-                UnityEngine.Object.FindAnyObjectByType<TitleAudio>()?.StopMenu();
+                TitleAudio.StopMenuGlobal();
                 StartCoroutine(GoToRoutine(FlowState.Run, TransitionType.Fade));
             }
             else
@@ -224,7 +223,7 @@ namespace CoastRun
         {
             _pendingStage = Mathf.Clamp(stageIndex, 1, 20);
             _pendingChapter = Timeline.ArcOf(_pendingStage);
-            UnityEngine.Object.FindAnyObjectByType<TitleAudio>()?.StopMenu();
+            TitleAudio.StopMenuGlobal();
             if (withPrologue && _pendingStage == 1)
             {
                 _cutsceneKind = CutsceneKind.Prologue;
@@ -243,7 +242,7 @@ namespace CoastRun
             PlayerPrefs.SetInt(MainMenuController.SkipPrologueKey, 1);
             _pendingStage = Mathf.Clamp(stageIndex, 1, 20);
             _pendingChapter = ((_pendingStage - 1) / 4) + 1;
-            UnityEngine.Object.FindAnyObjectByType<TitleAudio>()?.StopMenu();
+            TitleAudio.StopMenuGlobal();
             StartCoroutine(GoToRoutine(FlowState.Run, TransitionType.Fade));
         }
 
@@ -302,8 +301,7 @@ namespace CoastRun
 
         private IEnumerator EnterStageClear(StageDef stage, bool chapterComplete)
         {
-            ArcadeRun.NoteKpopClear(stage.stageIndex);   // 39차-4: K-POP 챕터 선택의 '마지막 클리어' 갱신
-            // SlowMotion 0.3s then UI.
+            // SlowMotion 0.3s then UI. (K-POP LastClear 는 SettleKpop 만 — 스토리 클리어가 K-POP 진행을 건드리지 않음)
             yield return GoToRoutine(FlowState.StageClear, TransitionType.SlowMotion);
             var clear = UnityEngine.Object.FindAnyObjectByType<StageClearUI>();
             if (clear != null)
