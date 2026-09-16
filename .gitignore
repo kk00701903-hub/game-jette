@@ -100,3 +100,19 @@ Tools/FireflyVideo/run.txt
 Tools/FireflyVideo/raw/
 # Agent scratch sheets. The slices that ship live in Assets/Resources/CoastRun.
 Claude outputs/
+
+# 104차: 작업 중 스크래치 — 디스크에는 남기고 git 에는 올리지 않는다(합쳐 약 1.9GB).
+#   _bg20_backup 은 20:9 로 늘린 타이틀 판 보관용이라 지우지 말 것(원래 그림으로
+#   되돌렸으니 다시 20:9 로 갈 때 여기서 꺼낸다).
+Tools/_shots/
+Tools/_clip/
+Tools/_bg20_backup/
+Tools/_tasks.txt
+Tools/_upm.txt
+Tools/*_bak.png
+Tools/cleanup_old_cutscenes*.bat
+# 커밋 메시지 임시 파일(긴 한글 메시지를 파일로 넘길 때 쓴다)
+Tools/_msg*.txt
+Tools/_commit_msg.txt
+# 텔레그램 보고 스크래치(큐/결과). 토큰은 .env 에 있고 그건 이미 제외된다.
+Tools/Telegram/outbox*
