@@ -43,3 +43,4 @@ CoastRun/컷씬이미지/92_엔딩TRUE_맞닿은주파수
 CoastRun/컷씬이미지/92_엔딩TRUE_맞닿은주파수/_폴백_Cut_S
 CoastRun/컷씬이미지/98_레거시_기타/_레거시_Cut_V
 CoastRun/컷씬이미지/99_MV_Ourfrequency/_레거시_Cut_V
+CoastRun/컷씬이미지/97_v7신규

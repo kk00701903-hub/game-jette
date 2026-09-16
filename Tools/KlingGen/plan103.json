@@ -1,0 +1,615 @@
+{
+"P": {
+"M40": "Image{n} is the mother at 40 (nine years ago), a Jeju haenyeo diver: slim Korean woman (160cm), oval face, black hair in a low bun, no grey, black traditional haenyeo diving suit, orange tewak float net. In flashback cuts her FACE IS NEVER VISIBLE — show her from behind, or her hands and suit only",
+"M40P": "Image{n} is the mother at 40: a mature Korean haenyeo woman, oval face, dark gentle eyes, black hair in a low bun, warm quiet expression, black diving suit, diving mask pushed up on her head",
+"M48": "Image{n} is the mother now at 48: the same woman eight years later, thin and gaunt, hollow cheeks, tired eyes with shadows, a few grey strands in black hair tied low, faded floral blouse, beige apron, loose grey trousers, rubber slippers, no smile. She is deaf and mute and communicates by writing on paper",
+"MFB": "Image{n} is the mother in memory, seen only from behind: black haenyeo diving suit, black hair in a low bun, orange tewak float net, her face never visible",
+"GRANNY": "an old Korean village woman in her seventies, small, bent back, permed grey hair, floral work trousers"
+},
+"S": " Clean soft anime illustration in Korean webtoon key-visual style, exactly the same art style as the reference images: delicate linework, soft gradient shading, luminous atmospheric lighting, detailed painterly background, gentle pastel palette, full-bleed vertical 9:16 composition, one single scene, no split panels. Absolutely no text, no letters, no words, no logos, no watermark, no border.",
+"SBG": " Clean soft anime background illustration in Korean webtoon key-visual style: delicate linework, soft gradient shading, luminous atmospheric lighting, painterly detail, gentle pastel palette, full-bleed vertical 9:16 composition, one single scene, no split panels, no people. Absolutely no text, no letters, no words, no logos, no watermark, no border.",
+"I": [
+{
+"id": "V7_OP_01",
+"keys": [
+"H12"
+],
+"scene": "an 11-year-old girl (Image1, slightly shorter hair) standing frozen in a corner of a school playground, watching three schoolchildren pour her lunchbox into an outdoor concrete sink, a rolled egg omelette sliding toward the drain, spring afternoon, her face blank, holding back tears"
+},
+{
+"id": "V7_OP_03",
+"keys": [
+"H12"
+],
+"scene": "an 11-year-old girl (Image1) standing at the edge of a muddy roadside ditch, crying quietly, her school bag half sunk in the brown mud below, rural Jeju stone walls and fields, overcast day"
+},
+{
+"id": "V7_OP_07",
+"keys": [
+"H12"
+],
+"scene": "a 12-year-old girl (Image1) fallen on her hands and knees on a coastal road, looking up, a black car driving away small in the distance, dust, spring, scraped knee, tears in her eyes"
+},
+{
+"id": "V7_N1_01",
+"keys": [
+"H19"
+],
+"scene": "a 19-year-old young woman (Image1) just waking up, lying on an old grey blanket on the ground under a huge rusty steel transmission pylon, grey overcast stormy sky, wind lifting the blanket edge, wild grass, three stacked stones nearby, low camera"
+},
+{
+"id": "V7_N1_02",
+"keys": [],
+"bg": true,
+"scene": "looking straight up from below at a huge rusty steel transmission pylon rising into a heavy grey stormy sky, wind, wild grass and black volcanic rocks at the bottom, Jeju coast, muted colors"
+},
+{
+"id": "V7_N1_03",
+"keys": [],
+"bg": true,
+"scene": "typhoon coming: huge grey waves crashing over a concrete breakwater in white spray, a small fishing village with a loudspeaker pole in the distance, dark grey sky, bending pine trees, Jeju coast"
+},
+{
+"id": "V7_N1_05",
+"keys": [
+"H19"
+],
+"scene": "a 19-year-old young woman (Image1) kneeling on black volcanic rocks, looking down at her own face reflected in a rock pool, rain drops starting to ripple the surface, grey sky, her expression lost and confused"
+},
+{
+"id": "V7_N1_07",
+"keys": [
+"H19"
+],
+"scene": "a 19-year-old young woman (Image1) sitting on an old blanket under a rusty transmission pylon, hugging her knees and crying out loud with her mouth open, tears, wind blowing her long hair, grey stormy sky"
+},
+{
+"id": "V7_N1_11",
+"keys": [],
+"bg": true,
+"scene": "a small Jeju fishing village preparing for a typhoon: people seen from far away taping newspaper on window glass, men pulling a small fishing boat up onto land with ropes, narrow lanes between black stone walls, wind, grey sky, orange and blue buoys"
+},
+{
+"id": "V7_N1_21",
+"keys": [
+"H19",
+"KID"
+],
+"scene": "a 19-year-old young woman (Image1) rolling in on an old skateboard and arriving at the foot of a rusty transmission pylon at sunset, laughing for the first time, a 6-year-old boy in an orange raincoat (Image2) clapping his hands beside three stacked stones, golden orange sky over the sea"
+},
+{
+"id": "V7_N1_22",
+"keys": [
+"H19",
+"KID"
+],
+"scene": "night under a rusty transmission pylon in strong wind, a 19-year-old young woman (Image1) and a 6-year-old boy (Image2) asleep side by side on an old blanket, the boy's oversized orange raincoat spread open over both their shoulders like a tent, dark blue night, distant village lights"
+},
+{
+"id": "V7_E1_03",
+"keys": [
+"H19",
+"KID"
+],
+"scene": "a 19-year-old young woman (Image1) sitting on the ground of a curved lane between black Jeju stone walls after falling off a skateboard, scraped knee, a 6-year-old boy in an orange raincoat (Image2) crouching and pressing his wet finger to her knee, the skateboard lying upside down, sunny day"
+},
+{
+"id": "V7_N2_06",
+"keys": [
+"M48",
+"H19"
+],
+"scene": "in front of a small coast guard post by the harbor, a thin 48-year-old woman (Image1) in a faded floral blouse and apron silently handing out paper flyers to passers-by who mostly walk past, bowing her head, a 19-year-old young woman (Image2) watching from a few steps away, spring morning"
+},
+{
+"id": "V7_N2_08",
+"keys": [
+"M48",
+"H19"
+],
+"scene": "close: a thin 48-year-old woman (Image1) with tired sad eyes holding out a paper flyer with both hands toward a 19-year-old young woman (Image2), the two facing each other on a harbor road, the older woman's face gaunt and sorrowful, spring light"
+},
+{
+"id": "V7_N2_10",
+"keys": [
+"H19"
+],
+"scene": "close-up of a hand holding a slightly wrinkled missing-person flyer, on the flyer a small printed photo of a 19-year-old Korean girl (Image1) with long black hair and a yellow hairpin, not smiling, the rest of the flyer is blank grey blocks with no legible text, harbor blurred in the background"
+},
+{
+"id": "V7_N2_12",
+"keys": [
+"D20",
+"H19"
+],
+"scene": "a tall thin pale 20-year-old young man (Image1) wearing a clean WHITE SHIRT instead of a coat, white hospital bracelet on his left wrist, standing at an old rural bus stop holding two glass milk bottles, nodding politely to a 19-year-old young woman (Image2) who stands a few steps away, late afternoon, empty road"
+},
+{
+"id": "V7_E3_01",
+"keys": [
+"H19"
+],
+"scene": "summer, a 19-year-old young woman (Image1) sitting alone on a concrete breakwater with her legs hanging, staring at the bright blue sea, hair blowing, strong sunlight, quiet"
+},
+{
+"id": "V7_E3_02",
+"keys": [
+"KID",
+"H19"
+],
+"scene": "summer beach shallows, a 6-year-old boy (Image1) still wearing his oversized orange raincoat with the hood up jumping into ankle-deep water and splashing water toward a 19-year-old young woman (Image2) who is taking off her shoes and laughing at the water's edge, bright sun, sparkling water"
+},
+{
+"id": "V7_E3_06",
+"keys": [
+"M48",
+"H19"
+],
+"scene": "a thin 48-year-old woman (Image1) wearing a black haenyeo diving suit with an orange tewak net stopped on a breakwater at sunset, holding the hand of a wet 19-year-old young woman (Image2) sitting there, and pointing toward a hill with a lone house, a small boy in an orange raincoat standing nearby"
+},
+{
+"id": "V7_N3_01",
+"keys": [
+"M48",
+"H19"
+],
+"scene": "a lone old stone house on a hilltop above the sea, two black haenyeo diving suits hanging on a clothesline in the yard, a thin 48-year-old woman (Image1) in a floral blouse and apron handing a towel to a wet 19-year-old young woman (Image2) sitting on the wooden porch, evening"
+},
+{
+"id": "V7_N3_02",
+"keys": [
+"M48",
+"H19"
+],
+"scene": "on a wooden porch of an old stone house, a thin 48-year-old woman (Image1) writing on a small piece of paper with a pen while a 19-year-old young woman (Image2) sits beside her watching the paper, warm evening lamp light, quiet"
+},
+{
+"id": "V7_N3_06",
+"keys": [],
+"bg": true,
+"scene": "a small low Korean meal table on a wooden floor: a bowl of white rice, a bowl of seaweed soup with steam, and a plate with a rolled egg omelette cut into a heart shape, chopsticks, warm evening lamp light, humble old house interior"
+},
+{
+"id": "V7_N3_11",
+"keys": [
+"M48",
+"H19"
+],
+"scene": "at a low meal table in an old house, a thin 48-year-old woman (Image1) gently stroking the hair of a 19-year-old young woman (Image2) who is crying while holding a spoon over a bowl of seaweed soup, warm lamp light, tender"
+},
+{
+"id": "V7_N3_13",
+"keys": [
+"KID"
+],
+"scene": "night, a 6-year-old boy in an oversized orange raincoat with the hood up (Image1) standing alone in the dark yard of an old stone house, looking in through a lit paper window from outside, seen from inside the warm room, his small face half lit"
+},
+{
+"id": "V7_E4_01",
+"keys": [
+"MFB",
+"H19"
+],
+"scene": "dawn, a haenyeo woman seen only from behind (Image1) in a black diving suit walking down over black volcanic rocks toward the pale sea, a 19-year-old young woman (Image2) following behind her carrying an orange tewak float net, misty blue-grey morning light"
+},
+{
+"id": "V7_E4_02",
+"keys": [
+"H19"
+],
+"scene": "a 19-year-old young woman (Image1) sitting on a black rock at the shore counting on her fingers, far out on the grey-blue morning sea a haenyeo diver's head and an orange tewak float surfacing among small waves, the diver tiny and faceless, wide quiet sea"
+},
+{
+"id": "V7_E4_04",
+"keys": [
+"MFB"
+],
+"scene": "underwater, dim green-blue light, a haenyeo diver in a black suit seen from behind (Image1) lifting a tangled pile of old discarded fishing nets between dark rocks, searching, bubbles rising, no face visible"
+},
+{
+"id": "V7_E4_06",
+"keys": [
+"M48",
+"H19"
+],
+"scene": "on a black rock by the sea, a wet thin 48-year-old woman (Image1) in a black haenyeo diving suit with the hood off placing a single conch shell on the knee of a 19-year-old young woman (Image2), who wraps the older woman's cold hand in both of hers, the older woman smiling faintly, morning sea"
+},
+{
+"id": "V7_E4_08",
+"keys": [
+"M48",
+"H19",
+"KID"
+],
+"scene": "evening on the wooden porch of an old stone house, a thin 48-year-old woman (Image1) braiding the long black hair of a 19-year-old young woman (Image2) who sits in front of her, and at the far end of the porch a 6-year-old boy in an orange raincoat (Image3) sitting and watching them, warm lamp light"
+},
+{
+"id": "V7_N4_01",
+"keys": [
+"H19",
+"M48"
+],
+"scene": "a 19-year-old young woman (Image1) washing dishes in an old outdoor stone sink with cold water, sleeves rolled up, while a thin 48-year-old woman (Image2) cooks in the small kitchen behind her, morning light, humble hilltop house"
+},
+{
+"id": "V7_N4_04",
+"keys": [
+"M48",
+"H19"
+],
+"scene": "evening lamp light on a porch, a thin 48-year-old woman (Image1) holding out a small old photograph to a 19-year-old young woman (Image2) who looks at it, the photo shows a girl with long black hair, the older woman's expression tender and sad"
+},
+{
+"id": "V7_N4_06",
+"keys": [
+"M48",
+"H19"
+],
+"scene": "a small vegetable patch beside an old stone house, a thin 48-year-old woman (Image1) crouching and pointing at green onions and lettuce, a 19-year-old young woman (Image2) crouching beside her copying with soil on her hands, spring sunlight"
+},
+{
+"id": "V7_N4_08",
+"keys": [
+"M48",
+"H19"
+],
+"scene": "a rainy day, a thin 48-year-old woman (Image1) and a 19-year-old young woman (Image2) sitting side by side on the wooden porch of an old stone house watching the rain fall on the yard, the older woman draping a grey blanket over the girl's shoulders, soft grey light"
+},
+{
+"id": "V7_N4_14",
+"keys": [
+"D20",
+"H19"
+],
+"scene": "morning on a hill path with black stone walls, a tall thin pale 20-year-old young man (Image1) in a WHITE SHIRT, white hospital bracelet, stopped and looking up at a lone stone house on the hilltop, a 19-year-old young woman (Image2) coming down the path toward him"
+},
+{
+"id": "V7_E5_04",
+"keys": [
+"M48",
+"H19"
+],
+"scene": "a thin 48-year-old woman (Image1) walking down a hill path staring at a small photograph in her hands with an empty grieving face, passing right by a 19-year-old young woman (Image2) who has stopped at the roadside without looking at her, afternoon, stone walls"
+},
+{
+"id": "V7_N5_02",
+"keys": [],
+"bg": true,
+"scene": "close-up: a small yellow plastic waterproof case with a crooked red heart painted on its lid lying open on a wooden floor, inside on white cloth a thin silver headband set with three blue jewels, brand new, soft window light"
+},
+{
+"id": "V7_N5_18",
+"keys": [
+"H12"
+],
+"scene": "an 11-year-old girl (Image1) sitting in a dim small room, the sliding door open just a crack, through the gap a blur of an orange raincoat passing by, morning light in the crack, the girl's face anxious"
+},
+{
+"id": "V7_N5_24",
+"keys": [
+"H12",
+"MFB"
+],
+"scene": "a silent dinner in an old house, an 11-year-old girl (Image1) sitting at a low table eating without speaking, across from her the mother seen only from behind (Image2) in plain clothes, her face never visible, dim single lamp, heavy silence"
+},
+{
+"id": "V7_N6_01",
+"keys": [
+"H12",
+"D12"
+],
+"scene": "spring sea shallows, a 12-year-old girl (Image1) in a wet t-shirt holding the hands of a very pale thin 12-year-old boy (Image2) who is coughing up seawater and laughing, teaching him to swim in waist-deep clear water, bright sun, black rocks"
+},
+{
+"id": "V7_N6_05",
+"keys": [
+"D12",
+"H12"
+],
+"scene": "an abandoned haenyeo bulteok, a low round shelter of stacked black stones among sea rocks, a pale 12-year-old boy (Image1) spreading an old blanket inside it while a 12-year-old girl (Image2) watches, a broken old radio and two glass milk bottles tucked in a stone niche, sunny"
+},
+{
+"id": "V7_N6_12",
+"keys": [
+"D12",
+"H12"
+],
+"scene": "dusk at the stone bulteok by the sea, a pale 12-year-old boy (Image1) pulling a 12-year-old girl (Image2) by the hand while pointing toward a distant transmission pylon, the girl pulling her hand away with an angry frightened face, half-eaten small cake on a rock"
+},
+{
+"id": "V7_N6_14",
+"keys": [
+"H12"
+],
+"scene": "dusk, a 12-year-old girl (Image1) sitting alone inside a stone bulteok by the sea, an overturned cake plate on the rock in front of her, twelve small candles fallen and wax cooling on the black rock, her face down, orange sky fading"
+},
+{
+"id": "V7_N6_18",
+"keys": [
+"D12"
+],
+"scene": "night, seen from below a stone wall: a pale 12-year-old boy (Image1) sitting at a lit window looking out toward a distant transmission pylon, on the wall of his room a child's crayon drawing of a pylon, sunset and two kids holding a cake"
+},
+{
+"id": "V7_E8_01",
+"keys": [
+"D12",
+"H12"
+],
+"scene": "a school corridor with wooden floor and windows, a pale 12-year-old boy (Image1) stepping toward a 12-year-old girl (Image2) who turns her face away coldly, other children blurred in the background, late summer light"
+},
+{
+"id": "V7_E8_03",
+"keys": [
+"H12"
+],
+"scene": "a 12-year-old girl (Image1) standing alone at the entrance of an empty stone bulteok by the sea, a rain-soaked blanket and a silent old radio inside, grey sky, she does not go in"
+},
+{
+"id": "V7_E8_04",
+"keys": [],
+"bg": true,
+"scene": "typhoon night: a lone old stone house with a tin roof on a dark hill, blinding rain pouring sideways in white sheets, no lights in the village far below, one candle glow in a window, wind bending trees"
+},
+{
+"id": "V7_E8_05",
+"keys": [
+"H12",
+"MFB"
+],
+"scene": "typhoon night in a muddy yard, a 12-year-old girl (Image1) holding a candle in the doorway finding her mother (Image2) collapsed face-down in the rain in a wet black haenyeo suit, one hand clutching her chest, the mother's face hidden, rain everywhere"
+},
+{
+"id": "V7_E8_08",
+"keys": [
+"H12"
+],
+"scene": "typhoon night, a 12-year-old girl (Image1) soaked to the skin standing at the edge of a muddy yard screaming into the dark rain with her mouth wide open, hands cupped at her mouth, no one anywhere, only rain and darkness"
+},
+{
+"id": "V7_E8_10",
+"keys": [
+"H12",
+"MFB"
+],
+"scene": "typhoon night in a muddy yard, a 12-year-old girl (Image1) kneeling in the rain hugging her collapsed mother (Image2) in a wet black haenyeo suit, the mother's face hidden against the girl's shoulder, the girl crying, rain pouring"
+},
+{
+"id": "V7_E9_01",
+"keys": [
+"D12"
+],
+"scene": "typhoon night on a muddy hill path, a pale thin 12-year-old boy (Image1) with no raincoat soaked to the skin holding a flashlight, its beam cutting through heavy rain, running up toward the camera, determined face"
+},
+{
+"id": "V7_E2_04",
+"keys": [
+"H12"
+],
+"scene": "a 12-year-old girl (Image1) running at full speed down a narrow village lane between black stone walls, arms pumping, breathless, spring morning, her hairpin glinting, motion blur"
+},
+{
+"id": "V7_N7_01",
+"keys": [
+"H19"
+],
+"scene": "dusk, a 19-year-old young woman (Image1) sitting motionless on the wooden porch of an old stone house holding a silver headband with blue jewels in both hands, staring at nothing, the yard growing dark, one lamp"
+},
+{
+"id": "V7_N7_02",
+"keys": [
+"M40P"
+],
+"scene": "a memory finally coming into focus: the face of the mother at 40 (Image1), a mature Korean haenyeo woman with a calm gentle smile, black hair in a low bun, diving mask on her head, black diving suit, surrounded by soft glowing golden light and drifting particles, her face fully visible and clear for the first time, sea behind her"
+},
+{
+"id": "V7_N7_03",
+"keys": [
+"M48",
+"H19"
+],
+"scene": "dusk, a thin gaunt 48-year-old woman (Image1) in a faded floral blouse walking in through the gate of an old stone house yard with a photograph tucked into her blouse, a 19-year-old young woman (Image2) on the porch staring at her with wide eyes, tears starting"
+},
+{
+"id": "V7_N7_05",
+"keys": [
+"M48"
+],
+"scene": "dusk in a stone house yard, a thin gaunt 48-year-old woman (Image1) giving a small polite wave of her hand toward the camera with a faint tired smile, the way one waves at a stranger, lamp light from the porch"
+},
+{
+"id": "V7_N7_07",
+"keys": [
+"H19"
+],
+"scene": "seen from behind, a 19-year-old young woman (Image1) running hard along a harbor road at dusk, hair flying, chasing after a tall man in a white shirt far ahead of her on the long stone breakwater who keeps walking away holding two milk bottles, purple evening sky, wind"
+},
+{
+"id": "V7_E10_01",
+"keys": [
+"M48"
+],
+"scene": "an old dim kitchen, a thin gaunt 48-year-old woman (Image1) stirring a pot of seaweed soup on a stove with a ladle, steam rising, a calendar on the wall behind her with one circle drawn, evening"
+},
+{
+"id": "V7_E10_03",
+"keys": [
+"H19",
+"M48"
+],
+"scene": "in an old kitchen, a 19-year-old young woman (Image1) standing right in front of a thin 48-year-old woman (Image2), mouthing words with her hands on her own chest, tears on her face, while the older woman keeps her eyes down on the soup pot, never looking up"
+},
+{
+"id": "V7_E10_05",
+"keys": [
+"H19",
+"M48"
+],
+"scene": "a 19-year-old young woman (Image1) embracing a thin 48-year-old woman (Image2) from behind in a dim kitchen, but her arms are faint and translucent and pass through the older woman's shoulders, the older woman pulling her collar tight as if cold, soft ghostly light"
+},
+{
+"id": "V7_E10_07",
+"keys": [
+"M48"
+],
+"scene": "a thin gaunt 48-year-old woman (Image1) setting two bowls of seaweed soup on a small table on an empty wooden porch, looking around at the empty porch, a folded paper note beside the bowls, evening lamp light, old stone house"
+},
+{
+"id": "V7_E10_09",
+"keys": [
+"M48",
+"H19"
+],
+"scene": "dusk, a thin gaunt 48-year-old woman (Image1) standing outside the gate of a hilltop stone house looking down the long hill path toward the village, a 19-year-old young woman (Image2) standing right behind her, faint and translucent, unseen"
+},
+{
+"id": "V7_N8_05",
+"keys": [
+"M48"
+],
+"scene": "sunset, a thin gaunt 48-year-old woman (Image1) in a dark navy blouse climbing a grassy hill path toward a rusty transmission pylon, clutching a bundle of white chrysanthemums to her chest, her steps unsteady, orange sky over the sea"
+},
+{
+"id": "V7_N8_06",
+"keys": [
+"M48",
+"D20"
+],
+"scene": "sunset under a rusty transmission pylon, a thin gaunt 48-year-old woman (Image1) holding out a single fax paper sheet with both hands to a tall thin 20-year-old young man (Image2) in a WHITE SHIRT with a hospital bracelet who holds two glass milk bottles, his face going pale, three stacked stones at their feet"
+},
+{
+"id": "V7_N8_09",
+"keys": [
+"M48",
+"D20"
+],
+"scene": "sunset under a rusty transmission pylon, a tall thin 20-year-old young man (Image1) in a white shirt collapsed on his knees hugging two milk bottles, a thin gaunt 48-year-old woman (Image2) kneeling behind him embracing his back with her face pressed to his shoulder, tears streaming, her mouth open in a soundless cry, white chrysanthemums scattered on the grass"
+},
+{
+"id": "V7_N8_16",
+"keys": [],
+"bg": true,
+"scene": "close-up of a woman's hand holding a worn, creased, faded paper flyer with a small photo of a little boy's face, the paper torn at the edges and softened by rain, blank grey blocks where text would be, bright yellow rapeseed flower field blurred behind, spring sunset"
+},
+{
+"id": "V7_N8_22",
+"keys": [
+"H19",
+"D20",
+"M48"
+],
+"scene": "sunset under a rusty transmission pylon, a thin 48-year-old woman (Image1) with her face fully visible and identical to the reference, and a collapsed 20-year-old young man in a white shirt (Image2), are embraced from the front by a kneeling 19-year-old young woman (Image3) whose body is half dissolving into golden light particles, the older woman's face gaunt and wet with tears, three faces clearly drawn"
+},
+{
+"id": "V7_N8_26",
+"keys": [
+"D20"
+],
+"scene": "close-up at sunset, the face of a tall pale 20-year-old young man (Image1) in a white shirt, a single tear running down his cheek, eyes wide staring at an old radio on the grass in front of him, warm orange light, wind in his soft black hair"
+},
+{
+"id": "V7_EA_01",
+"keys": [],
+"bg": true,
+"scene": "a few days later, a small new grave mound with a simple grey stone marker on a green hill overlooking the blue sea, fresh earth, wild spring flowers, a rusty transmission pylon far in the distance, soft morning light, no legible text on the stone"
+},
+{
+"id": "V7_EA_02",
+"keys": [
+"D20"
+],
+"scene": "a tall thin pale 20-year-old young man (Image1) in a white shirt with a hospital bracelet crouching in front of a small new grave on a hill above the sea, laying down a bundle of white chrysanthemums and standing two glass milk bottles side by side in front of the stone, morning light"
+},
+{
+"id": "V7_EA_03",
+"keys": [
+"H19",
+"D20"
+],
+"scene": "on a hill above the sea, a 19-year-old young woman (Image1) faint and slightly translucent standing beside a tall 20-year-old young man in a white shirt (Image2) who stands before a small grave with his head bowed, she is speaking to him but he does not react, wind, soft morning light"
+},
+{
+"id": "V7_EA_05",
+"keys": [],
+"bg": true,
+"scene": "a small grave on a green hill above the sea, left alone: a bundle of white chrysanthemums and two glass milk bottles standing side by side in front of the grey stone marker, no one around, wind in the grass, the sea glittering below, late afternoon"
+},
+{
+"id": "V7_EB_04",
+"keys": [],
+"bg": true,
+"scene": "an empty wooden porch of an old stone house, a small piece of white paper with a few short scribbled pen strokes lying on the floorboards, beside it a low table with two bowls of seaweed soup gone cold, evening light, no legible text"
+},
+{
+"id": "V7_EB_06",
+"keys": [
+"M48"
+],
+"scene": "a thin gaunt 48-year-old woman (Image1) seen from behind, sitting at the end of a wooden porch of a hilltop stone house looking out at the distant sea as the sun sets, orange and violet sky, very still, alone"
+},
+{
+"id": "V7_EB_08",
+"keys": [
+"M48"
+],
+"scene": "a thin 48-year-old woman (Image1) on a porch turning around slowly to look behind her, her face suddenly bright with a joyful open smile and wet eyes, lifting one hand to beckon warmly toward the camera, golden sunset light on her face"
+},
+{
+"id": "V7_N1_08",
+"keys": [
+"KID",
+"H19"
+],
+"scene": "under a rusty transmission pylon on a grey stormy day, a 6-year-old boy in an oversized orange raincoat with the hood up (Image1) sitting close in the foreground beside three stacked stones, large in frame, calmly watching a 19-year-old young woman (Image2) who sits crying on an old blanket a few steps behind him, wind, wild grass, exactly one child"
+},
+{
+"id": "V7_E1_01",
+"keys": [
+"KID",
+"H19"
+],
+"scene": "a 19-year-old young woman (Image2) riding an old skateboard down a coastal road with exactly one 6-year-old boy in an orange raincoat (Image1) standing on the front of the board in front of her, his hood puffed up by the wind, both laughing, sea and stone walls, bright day, only two people"
+},
+{
+"id": "V7_E1_05",
+"keys": [],
+"bg": true,
+"scene": "close view at the foot of a rusty steel transmission pylon: two glass milk bottles standing side by side on the grass next to three flat stones stacked in a small tower, evening light, wild grass, no people"
+},
+{
+"id": "V7_E6_01",
+"keys": [
+"KID",
+"H19"
+],
+"scene": "winter, first snow outside, a 19-year-old young woman (Image2) and exactly one 6-year-old boy in an orange raincoat (Image1) standing at a frosted window drawing smiley faces on the fogged glass with their fingers, three simple smiley faces drawn on the frost, warm room light, snow falling outside, only two people"
+},
+{
+"id": "V7_N5_20",
+"keys": [
+"H12"
+],
+"scene": "an 11-year-old girl (Image1) standing alone in the doorway of an old stone house looking out at the empty grey sea, her face blank and tight with no smile, biting her lip and holding back tears, an orange raincoat hanging on the wall beside her, cold morning light"
+},
+{
+"id": "V7_N7_16",
+"keys": [
+"H19"
+],
+"scene": "dawn, a 19-year-old young woman (Image1) with her face clearly visible and her long black hair tied back, wearing a black haenyeo diving suit that is slightly too big for her, wading alone into the cold grey sea up to her waist, holding an orange tewak float, sad determined face, black rocks, pale mist"
+},
+{
+"id": "V7_N8_01",
+"keys": [
+"D20"
+],
+"scene": "sunset, a tall thin pale 20-year-old young man (Image1) in a white shirt with a hospital bracelet standing firmly on the grass on the ground at the foot of a huge rusty transmission pylon, holding two glass milk bottles, three stacked stones at his feet, looking down the hill path, orange sky over the sea"
+},
+{
+"id": "V7_ET_10",
+"keys": [],
+"bg": true,
+"scene": "an almost completely white frame: a rural bus stop and the faint silhouettes of a young man and a young woman facing each other are dissolving into pure white light, everything washed out and glowing, only the palest hints of shapes remain, soft radiant white"
+}
+]
+}

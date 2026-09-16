@@ -8,6 +8,9 @@ namespace CoastRun
     /// 42차: 타이틀 더보기 › 「시네마」 — 컷씬을 골라 다시 본다.
     /// 61차(사용자): 목록 = 프롤로그 영상 + 컷씬 8개(러닝 챕터 1·4·7·10·13·15·18·20 마다 하나, 오프닝/클로징 구분 없음).
     /// 해금: 프롤로그는 항상, 컷씬 N 은 그 챕터에 닿았으면(또는 읽었으면). 비밀코드(devUnlockAll)면 전부.
+    /// 103차(사용자 시안): **주차 타임라인** — 왼쪽 주차 알약 + 점선 + 오른쪽 카드. 「컷씬」은 **「메인스토리」**로 부른다.
+    ///   메인스토리(펼침 카드: 표지·제목·보기·✓) / 짧은 이야기(EV)는 접힌 한 줄(▼ 펼치기 → 카드) / 잠긴 것은 회색 「다음 콘텐츠 · 예정」.
+    ///   위에 「전체 펼치기 / 전체 접기」, 아래에 「팁: 이야기는 접혀있어요」 상자.
     public static class CinemaSelect
     {
         /// 79차(사용자): 엔딩 다시보기를 일단 전부 열어 둔다. 실제 해금(깬 엔딩만)으로 되돌리려면 false.
@@ -16,15 +19,22 @@ namespace CoastRun
         private static Canvas _canvas;
         private static Action _onClose;
         private static Action _onPlayStart; private static GameManager _gm;   // 73차: 감상 뒤 이 페이지로 돌아오기 위해
+        private static RectTransform _content; private static List<Entry> _entries;
+        /// 103차: 펼쳐진 줄(세션 동안 유지). 메인스토리·프롤로그·엔딩은 처음부터 펼침, 이야기(EV)는 접힘.
+        private static readonly HashSet<string> _expanded = new HashSet<string>();
+        private static bool _expandInit;
 
         private struct Entry
         {
             public string Label, Sub, Title;
             public bool Opening, Unlocked;
             public string EndingId;   // 77차: "END_A" | "END_B" | "END_TRUE" — 엔딩 다시보기(본 엔딩만 열림)
-            public int Index, Chapter;   // Index = 컷씬 번호(1..8), Chapter = 그 컷씬이 열리는 챕터
+            public int Index, Chapter;   // Index = 메인스토리 번호(1..8), Chapter = 그 메인스토리가 열리는 챕터
             public int Event;         // 85차: 보조 컷씬 EV n(1..10) — 0 이면 아님
             public Texture2D Cover;
+            public string Key => Opening ? "OP" : !string.IsNullOrEmpty(EndingId) ? EndingId : Event > 0 ? "EV" + Event : "CS" + Index;
+            /// 103차: 주차 라벨 — 프롤로그 1주차, 챕터는 Timeline.WeekStart, 엔딩은 「엔딩」
+            public string Week => Opening ? Loc.T("1주차", "Wk 1") : !string.IsNullOrEmpty(EndingId) ? Loc.T("엔딩", "Ending") : Loc.T($"{Timeline.WeekStart(Chapter)}주차", $"Wk {Timeline.WeekStart(Chapter)}");
         }
 
         private static readonly Color[] SeasonFill =
@@ -33,15 +43,29 @@ namespace CoastRun
         };
         private static readonly Color Navy = new Color(0.10f, 0.13f, 0.30f);
         private static readonly Color Locked = new Color(0.66f, 0.66f, 0.70f);
+        // 103차 시안 색: 메인스토리 = 노랑 카드, 이야기 = 하늘색 줄, 주차 알약 = 노랑(메인)/분홍보라(이야기)/회색(잠김)
+        private static readonly Color CardMain = new Color(1f, 0.93f, 0.55f);
+        private static readonly Color CardStory = new Color(0.72f, 0.88f, 1f);
+        private static readonly Color CardPro = new Color(1f, 0.80f, 0.86f);
+        private static readonly Color PillMain = new Color(1f, 0.88f, 0.35f);
+        private static readonly Color PillStory = new Color(0.93f, 0.70f, 0.95f);
+        private static readonly Color PillPro = new Color(1f, 0.70f, 0.80f);
+        private static readonly Color LineCol = new Color(0.62f, 0.55f, 0.85f, 0.9f);
 
         /// onPlayStart: 컷씬 재생 직전(타이틀 음악 정지 등). onClose: 페이지를 닫거나 컷씬이 끝나 돌아왔을 때.
-        /// 61차(사용자): 목록 = 프롤로그 영상 + **컷씬 8개**(오프닝/클로징 구분 없이) — 각 컷씬은 리더(StoryReaderUI.OpenCutscene)로 읽는다.
+        /// 61차(사용자): 목록 = 프롤로그 영상 + **메인스토리 8개**(오프닝/클로징 구분 없이) — 각 메인스토리는 리더(StoryReaderUI.OpenCutscene)로 읽는다.
         public static void Open(GameManager gm, Action onPlayStart, Action onClose)
         {
             Close();
             _onClose = onClose; _onPlayStart = onPlayStart; _gm = gm;
             TitleAudio.PlayRaising();   // 시네마 목록 = 스토리 모드 BGM(컷씬 재생 시 onPlayStart 가 정지)
             var entries = BuildEntries(gm);
+            _entries = entries;
+            if (!_expandInit)
+            {
+                _expandInit = true;
+                foreach (var e in entries) if (e.Event == 0) _expanded.Add(e.Key);   // 메인스토리·프롤로그·엔딩만 펼침
+            }
 
             _canvas = CoastUiCanvas.Create("CinemaSelect", 320);
             var root = CoastUiCanvas.Root(_canvas);
@@ -50,34 +74,56 @@ namespace CoastRun
             var dim = CoastHudLayout.MakeImage(root, "Dim", Vector2.zero, Vector2.one, new Vector2(-pad, -pad), new Vector2(pad, pad), new Color(0.03f, 0.05f, 0.14f, 0.72f));
             dim.raycastTarget = true;
 
-            var title = CoastHudLayout.MakeText(root, "Title", Loc.T("시네마", "CINEMA"), 44, TextAnchor.MiddleCenter,
-                new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -110f), new Vector2(0f, -30f));
-            title.color = new Color(1f, 0.85f, 0.30f);
+            // 103차 시안: 상단 보라 띠 「시네마 - 너와 나의 주파수」 + 오른쪽 「나가기」
+            var bar = CoastUiArt.GlossyPill(root, "Bar", new Color(0.36f, 0.24f, 0.60f), 18, 6);
+            var brt = bar.rectTransform; brt.anchorMin = new Vector2(0f, 1f); brt.anchorMax = new Vector2(1f, 1f); brt.pivot = new Vector2(0.5f, 1f);
+            brt.anchoredPosition = new Vector2(0f, -24f); brt.offsetMin = new Vector2(16f, -96f); brt.offsetMax = new Vector2(-16f, -24f);
+            bar.color = new Color(0.30f, 0.18f, 0.52f, 0.95f); bar.raycastTarget = false;
+            var title = CoastHudLayout.MakeText(brt, "Title", Loc.T("시네마 - 너와 나의 주파수", "CINEMA - Our Frequency"), 28, TextAnchor.MiddleLeft,
+                new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(22f, 0f), new Vector2(-130f, 0f));
+            title.color = new Color(1f, 0.85f, 0.30f); title.fontStyle = FontStyle.Bold;
+            title.resizeTextForBestFit = true; title.resizeTextMinSize = 14; title.resizeTextMaxSize = CoastHudLayout.Scaled(28);
             CoastUiArt.OutlineText(title, new Color(0.30f, 0.12f, 0.02f, 0.9f), 2.5f);
+            {
+                var xb = CoastUiArt.GlossyPill(brt, "Close", new Color(0.55f, 0.58f, 0.68f), 18, 5); xb.raycastTarget = true;
+                var xrt = xb.rectTransform; xrt.anchorMin = xrt.anchorMax = new Vector2(1f, 0.5f); xrt.pivot = new Vector2(1f, 0.5f);
+                xrt.anchoredPosition = new Vector2(-12f, 0f); xrt.sizeDelta = new Vector2(104f, 44f);
+                var xt = CoastHudLayout.MakeText(xrt, "T", Loc.T("나가기", "Exit"), 18, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(0f, 2f), Vector2.zero);
+                xt.color = Color.white; xt.fontStyle = FontStyle.Bold;
+                var xbb = xb.gameObject.AddComponent<Button>(); xbb.transition = Selectable.Transition.None;
+                xbb.onClick.AddListener(() => { var cb = _onClose; Close(); cb?.Invoke(); });
+            }
+
             int read = 0; foreach (var e in entries) if (!e.Opening && string.IsNullOrEmpty(e.EndingId) && e.Event == 0 && e.Unlocked && StoryProgress.CutsceneRead(e.Index)) read++;
             var saveForClue = gm != null && gm.HasSave ? (gm.Save ?? gm.SaveSys.Load()) : null;
             string clueLine = saveForClue != null ? " · " + ClueSystem.Summary(saveForClue) : "";
-            var sub = CoastHudLayout.MakeText(root, "Sub", Loc.T($"컷씬 {StoryProgress.CutsceneCount}편 + 이야기 {StoryProgress.EventCount}편 · 본 컷씬 {read}{clueLine}", $"{StoryProgress.CutsceneCount} cutscenes + {StoryProgress.EventCount} stories · {read} seen{clueLine}"), 13, TextAnchor.MiddleCenter,
-                new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -148f), new Vector2(0f, -120f));
-            sub.color = Color.white; CoastUiArt.OutlineText(sub, new Color(0f, 0f, 0f, 0.6f), 1.2f);
+            // 103차(사용자): 「컷씬」 → 「메인스토리」
+            var subBox = CoastUiArt.GlossyPill(root, "SubBox", new Color(1f, 0.96f, 0.86f), 16, 4); subBox.raycastTarget = false;
+            var srt = subBox.rectTransform; srt.anchorMin = new Vector2(0f, 1f); srt.anchorMax = new Vector2(1f, 1f); srt.pivot = new Vector2(0.5f, 1f);
+            srt.offsetMin = new Vector2(20f, -150f); srt.offsetMax = new Vector2(-20f, -106f);
+            var sub = CoastHudLayout.MakeText(srt, "Sub", Loc.T($"메인스토리 {StoryProgress.CutsceneCount}편 + 이야기 {StoryProgress.EventCount}편 · 본 메인스토리 {read}{clueLine}", $"{StoryProgress.CutsceneCount} main stories + {StoryProgress.EventCount} stories · {read} seen{clueLine}"), 14, TextAnchor.MiddleCenter,
+                Vector2.zero, Vector2.one, new Vector2(12f, 0f), new Vector2(-12f, 0f));
+            sub.color = new Color(0.45f, 0.25f, 0.10f); sub.fontStyle = FontStyle.Bold;
+            sub.resizeTextForBestFit = true; sub.resizeTextMinSize = 9; sub.resizeTextMaxSize = CoastHudLayout.Scaled(14);
 
-            // 우상단 X
-            var xSpr = CoastUiArt.Art("UI_CloseX");
-            var xgo = new GameObject("Close", typeof(RectTransform), typeof(Image), typeof(Button));
-            xgo.transform.SetParent(root, false);
-            var xi = xgo.GetComponent<Image>(); xi.raycastTarget = true;
-            if (xSpr != null) { xi.sprite = xSpr; xi.preserveAspect = true; } else xi.color = new Color(0.25f, 0.45f, 0.85f);
-            var xrt = xgo.GetComponent<RectTransform>(); xrt.anchorMin = xrt.anchorMax = new Vector2(1f, 1f); xrt.pivot = new Vector2(0.5f, 0.5f);
-            xrt.anchoredPosition = new Vector2(-46f, -66f); xrt.sizeDelta = new Vector2(84f, 84f);
-            var xb = xgo.GetComponent<Button>(); xb.transition = Selectable.Transition.None;
-            xb.onClick.AddListener(() => { var cb = _onClose; Close(); cb?.Invoke(); });
+            // 103차: 전체 펼치기 / 전체 접기
+            MakeTopButton(root, "ExpandAll", Loc.T("전체 펼치기", "Expand all"), new Color(1f, 0.86f, 0.30f), new Color(0.45f, 0.25f, 0.05f), -92f, () =>
+            {
+                foreach (var e in _entries) if (e.Unlocked) _expanded.Add(e.Key);
+                Rebuild();
+            });
+            MakeTopButton(root, "CollapseAll", Loc.T("전체 접기", "Collapse all"), new Color(0.60f, 0.85f, 1f), new Color(0.05f, 0.25f, 0.50f), 92f, () =>
+            {
+                _expanded.Clear();
+                Rebuild();
+            });
 
-            // 스크롤 목록 — 한 줄 = 카드 하나(왼쪽 표지 그림 + 컷씬 번호·제목·화 범위)
+            // 스크롤 목록 — 타임라인(주차 알약 + 점선 + 카드)
             var viewGo = new GameObject("View", typeof(RectTransform), typeof(RectMask2D), typeof(Image));
             viewGo.transform.SetParent(root, false);
             var vrt = viewGo.GetComponent<RectTransform>();
             vrt.anchorMin = new Vector2(0f, 0f); vrt.anchorMax = new Vector2(1f, 1f);
-            vrt.offsetMin = new Vector2(20f, 40f); vrt.offsetMax = new Vector2(-20f, -166f);
+            vrt.offsetMin = new Vector2(20f, 40f); vrt.offsetMax = new Vector2(-20f, -216f);
             var vimg = viewGo.GetComponent<Image>(); vimg.color = new Color(0f, 0f, 0f, 0.001f); vimg.raycastTarget = true;
             var content = new GameObject("Content", typeof(RectTransform)).GetComponent<RectTransform>();
             content.SetParent(vrt, false);
@@ -86,80 +132,212 @@ namespace CoastRun
             var scroll = viewGo.AddComponent<ScrollRect>();
             scroll.content = content; scroll.viewport = vrt; scroll.horizontal = false; scroll.vertical = true;
             scroll.movementType = ScrollRect.MovementType.Clamped; scroll.scrollSensitivity = 30f; scroll.inertia = true;
-
-            const float rowH = 108f, gap = 12f;   // 85차: 이야기(EV) 카드는 조금 낮게
-            float y = 0f;
-            float w = 664f - 40f;
-            foreach (var e in entries)
-            {
-                float h = e.Event > 0 ? rowH - 18f : rowH;
-                MakeCard(content, e, new Vector2(0f, -y), new Vector2(w, h), gm, onPlayStart);
-                y += h + gap;
-            }
-            content.sizeDelta = new Vector2(0f, y + 20f);
+            _content = content;
+            Rebuild();
         }
 
-        private static void MakeCard(RectTransform parent, Entry e, Vector2 pos, Vector2 size, GameManager gm, Action onPlayStart)
+        private static void MakeTopButton(Transform root, string name, string label, Color fill, Color textCol, float x, Action onTap)
         {
-            bool ending = !string.IsNullOrEmpty(e.EndingId);
-            bool isEv = e.Event > 0;
-            var fill = e.Unlocked ? (e.Opening ? new Color(1f, 0.55f, 0.65f) : ending ? new Color(0.95f, 0.78f, 0.35f) : isEv ? Color.Lerp(SeasonFill[(Mathf.Clamp(e.Chapter, 1, 20) - 1) / 5], Color.white, 0.35f) : SeasonFill[(Mathf.Clamp(e.Chapter, 1, 20) - 1) / 5]) : Locked;
-            var card = CoastUiArt.GlossyPill(parent, "Card_" + (e.Opening ? "Prologue" : ending ? e.EndingId : isEv ? "Ev" + e.Event : "Cut" + e.Index), fill, 16, 9);
+            var b = CoastUiArt.GlossyPill(root, name, fill, 20, 6); b.raycastTarget = true;
+            var rt = b.rectTransform; rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 1f); rt.pivot = new Vector2(0.5f, 1f);
+            rt.anchoredPosition = new Vector2(x, -160f); rt.sizeDelta = new Vector2(172f, 48f);
+            var t = CoastHudLayout.MakeText(rt, "T", label, 19, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(0f, 2f), Vector2.zero);
+            t.color = textCol; t.fontStyle = FontStyle.Bold;
+            t.resizeTextForBestFit = true; t.resizeTextMinSize = 11; t.resizeTextMaxSize = CoastHudLayout.Scaled(19);
+            var bb = b.gameObject.AddComponent<Button>(); bb.transition = Selectable.Transition.None;
+            bb.onClick.AddListener(() => { CoastAudioManager.PlayAnywhere(CoastSfx.Coin); onTap(); });
+        }
+
+        /// 103차: 목록만 다시 그린다(펼침/접힘 바뀔 때).
+        private static void Rebuild()
+        {
+            if (_content == null) return;
+            for (int i = _content.childCount - 1; i >= 0; i--) UnityEngine.Object.Destroy(_content.GetChild(i).gameObject);
+            const float pillW = 122f, lineX = 152f, cardX = 178f, gap = 14f;
+            float w = 664f - 40f;
+            float cardW = w - cardX;
+            float y = 0f;
+            for (int i = 0; i < _entries.Count; i++)
+            {
+                var e = _entries[i];
+                bool open = e.Unlocked && _expanded.Contains(e.Key);
+                float h = !e.Unlocked ? 52f : open ? (e.Event > 0 ? 138f : 150f) : 52f;
+                // 점선(줄 높이 + 간격만큼)
+                float segTop = y, segBot = y + h + (i < _entries.Count - 1 ? gap : 0f);
+                for (float sy = segTop + 4f; sy < segBot; sy += 16f)
+                {
+                    var d = CoastHudLayout.MakeImage(_content, "Dash", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(lineX - 2f, -(sy + 9f)), new Vector2(lineX + 2f, -sy), LineCol);
+                    d.raycastTarget = false;
+                }
+                // 주차 알약
+                var pillCol = !e.Unlocked ? Locked : e.Opening ? PillPro : !string.IsNullOrEmpty(e.EndingId) ? PillMain : e.Event > 0 ? PillStory : PillMain;
+                var pill = CoastUiArt.GlossyPill(_content, "Week_" + e.Key, pillCol, 22, 6); pill.raycastTarget = false;
+                var prt = pill.rectTransform; prt.anchorMin = prt.anchorMax = new Vector2(0f, 1f); prt.pivot = new Vector2(0f, 1f);
+                prt.anchoredPosition = new Vector2(0f, -y); prt.sizeDelta = new Vector2(pillW, 50f);
+                var pt = CoastHudLayout.MakeText(prt, "T", e.Week, 22, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(0f, 2f), Vector2.zero);
+                pt.color = !e.Unlocked ? new Color(0.30f, 0.30f, 0.36f) : new Color(0.38f, 0.16f, 0.50f); pt.fontStyle = FontStyle.Bold;
+                pt.resizeTextForBestFit = true; pt.resizeTextMinSize = 11; pt.resizeTextMaxSize = CoastHudLayout.Scaled(22);
+                // 마름모 연결점
+                var dia = CoastHudLayout.MakeImage(_content, "Dia", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(lineX - 9f, -(y + 34f)), new Vector2(lineX + 9f, -(y + 16f)), Color.Lerp(pillCol, Color.white, 0.2f));
+                dia.rectTransform.localRotation = Quaternion.Euler(0f, 0f, 45f); dia.raycastTarget = false;
+                // 연결선(마름모 → 카드)
+                var link = CoastHudLayout.MakeImage(_content, "Link", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(lineX + 8f, -(y + 26.5f)), new Vector2(cardX, -(y + 23.5f)), Color.Lerp(pillCol, Color.white, 0.2f));
+                link.raycastTarget = false;
+                if (!e.Unlocked) MakeLockedRow(_content, e, new Vector2(cardX, -y), new Vector2(cardW, h));
+                else if (open) MakeCard(_content, e, new Vector2(cardX, -y), new Vector2(cardW, h), _gm, _onPlayStart);
+                else MakeCollapsedRow(_content, e, new Vector2(cardX, -y), new Vector2(cardW, h));
+                y += h + gap;
+            }
+            // 팁 상자
+            y += 8f;
+            var tip = CoastUiArt.GlossyPill(_content, "Tip", new Color(1f, 0.84f, 0.88f), 18, 5); tip.raycastTarget = false;
+            var trt = tip.rectTransform; trt.anchorMin = trt.anchorMax = new Vector2(0.5f, 1f); trt.pivot = new Vector2(0.5f, 1f);
+            trt.anchoredPosition = new Vector2(0f, -y); trt.sizeDelta = new Vector2(w * 0.92f, 78f);
+            var t1 = CoastHudLayout.MakeText(trt, "T1", Loc.T("팁: 이야기는 접혀있어요", "Tip: stories are folded"), 20, TextAnchor.MiddleCenter, new Vector2(0f, 0.5f), new Vector2(1f, 1f), new Vector2(0f, 0f), new Vector2(0f, -6f));
+            t1.color = new Color(0.55f, 0.20f, 0.30f); t1.fontStyle = FontStyle.Bold;
+            var t2 = CoastHudLayout.MakeText(trt, "T2", Loc.T("전체 펼치기 버튼으로 한 번에 확인할 수 있어요", "Use Expand all to open them at once"), 13, TextAnchor.MiddleCenter, new Vector2(0f, 0f), new Vector2(1f, 0.5f), new Vector2(0f, 6f), new Vector2(0f, 0f));
+            t2.color = new Color(0.45f, 0.25f, 0.30f);
+            y += 78f;
+            _content.sizeDelta = new Vector2(0f, y + 24f);
+        }
+
+        /// 103차: 카드 위 한 줄 「제N화 제목 : 장소 (N주차)」 / 이야기는 「짧은 이야기 제N화-1 …」
+        private static string HeadLine(Entry e)
+        {
+            if (e.Opening) return Loc.T($"프롤로그 · 너와 나의 주파수 : 오프닝 ({e.Week})", $"Prologue · Our Frequency : Opening ({e.Week})");
+            if (!string.IsNullOrEmpty(e.EndingId)) return Loc.T($"{e.Label} · {e.Title}", $"{e.Label} · {e.Title}");
+            string place = ChapterLocation.Get(e.Chapter).Name;
+            if (e.Event > 0) return Loc.T($"짧은 이야기 제{e.Chapter}화-1 {e.Title} : {place} ({e.Week})", $"Short story Ch.{e.Chapter}-1 {e.Title} : {place} ({e.Week})");
+            return Loc.T($"제{e.Chapter}화 {e.Title} : {place} ({e.Week})", $"Ch.{e.Chapter} {e.Title} : {place} ({e.Week})");
+        }
+
+        private static Image MakeRowPill(RectTransform parent, Entry e, Vector2 pos, Vector2 size, Color fill, int radius)
+        {
+            var card = CoastUiArt.GlossyPill(parent, "Row_" + e.Key, fill, radius, 6);
             var crt = card.rectTransform;
             crt.anchorMin = crt.anchorMax = new Vector2(0f, 1f); crt.pivot = new Vector2(0f, 1f);
             crt.anchoredPosition = pos; crt.sizeDelta = size;
             card.raycastTarget = true;
-            card.color = Color.Lerp(fill, Color.black, 0.62f);
+            return card;
+        }
+
+        /// 103차: 잠긴 줄 — 회색 「다음 콘텐츠 · 예정」
+        private static void MakeLockedRow(RectTransform parent, Entry e, Vector2 pos, Vector2 size)
+        {
+            var card = MakeRowPill(parent, e, pos, size, Locked, 16);
+            card.color = new Color(0.80f, 0.80f, 0.84f);
+            bool ending = !string.IsNullOrEmpty(e.EndingId);
+            var t = CoastHudLayout.MakeText(card.rectTransform, "T", ending ? Loc.T("??? · 이 엔딩을 보면 열려요", "??? · reach this ending") : Loc.T("다음 콘텐츠 · 예정", "Next content · coming"), 15, TextAnchor.MiddleLeft,
+                Vector2.zero, Vector2.one, new Vector2(16f, 0f), new Vector2(-90f, 0f));
+            t.color = new Color(0.36f, 0.36f, 0.42f); t.fontStyle = FontStyle.Bold;
+            t.resizeTextForBestFit = true; t.resizeTextMinSize = 10; t.resizeTextMaxSize = CoastHudLayout.Scaled(15);
+            var a = CoastHudLayout.MakeText(card.rectTransform, "A", Loc.T("▼ 펼치기", "▼ Open"), 14, TextAnchor.MiddleRight, Vector2.zero, Vector2.one, new Vector2(0f, 0f), new Vector2(-14f, 0f));
+            a.color = new Color(0.45f, 0.45f, 0.52f); a.fontStyle = FontStyle.Bold;
+            var btn = card.gameObject.AddComponent<Button>(); btn.transition = Selectable.Transition.None;
+            var entry = e; btn.onClick.AddListener(() => Play(entry, _onPlayStart));   // 잠김 안내 토스트
+        }
+
+        /// 103차: 접힌 줄(이야기·접은 메인스토리) — 한 줄 제목 + 「▼ 펼치기」
+        private static void MakeCollapsedRow(RectTransform parent, Entry e, Vector2 pos, Vector2 size)
+        {
+            bool isEv = e.Event > 0;
+            var fill = e.Opening ? CardPro : isEv ? CardStory : CardMain;
+            var card = MakeRowPill(parent, e, pos, size, fill, 16);
+            card.color = Color.Lerp(fill, Color.white, 0.15f);
+            var t = CoastHudLayout.MakeText(card.rectTransform, "T", HeadLine(e), 15, TextAnchor.MiddleLeft, Vector2.zero, Vector2.one, new Vector2(16f, 0f), new Vector2(-104f, 0f));
+            t.color = isEv ? new Color(0.08f, 0.28f, 0.55f) : new Color(0.45f, 0.25f, 0.05f); t.fontStyle = FontStyle.Bold;
+            t.resizeTextForBestFit = true; t.resizeTextMinSize = 8; t.resizeTextMaxSize = CoastHudLayout.Scaled(15);
+            t.horizontalOverflow = HorizontalWrapMode.Wrap; t.verticalOverflow = VerticalWrapMode.Truncate;   // 103차: 「▼ 펼치기」와 겹치지 않게
+            var a = CoastHudLayout.MakeText(card.rectTransform, "A", Loc.T("▼ 펼치기", "▼ Open"), 14, TextAnchor.MiddleRight, Vector2.zero, Vector2.one, new Vector2(0f, 0f), new Vector2(-14f, 0f));
+            a.color = isEv ? new Color(0.10f, 0.35f, 0.70f) : new Color(0.55f, 0.30f, 0.05f); a.fontStyle = FontStyle.Bold;
+            var btn = card.gameObject.AddComponent<Button>(); btn.transition = Selectable.Transition.None;
+            var key = e.Key; btn.onClick.AddListener(() => { CoastAudioManager.PlayAnywhere(CoastSfx.Coin); _expanded.Add(key); Rebuild(); });
+        }
+
+        /// 펼친 카드: 위 한 줄(제N화 제목 : 장소 (N주차)) + 왼쪽 표지 + 「메인스토리 N · 제목」 + 「보기」 + ✓
+        private static void MakeCard(RectTransform parent, Entry e, Vector2 pos, Vector2 size, GameManager gm, Action onPlayStart)
+        {
+            bool ending = !string.IsNullOrEmpty(e.EndingId);
+            bool isEv = e.Event > 0;
+            var fill = e.Opening ? CardPro : ending ? new Color(0.95f, 0.78f, 0.35f) : isEv ? CardStory : CardMain;
+            var card = MakeRowPill(parent, e, pos, size, fill, 18);
+            card.color = Color.Lerp(fill, Color.white, 0.12f);
+            var dark = isEv ? new Color(0.08f, 0.28f, 0.55f) : new Color(0.45f, 0.25f, 0.05f);
+
+            // 위 한 줄
+            var head = CoastHudLayout.MakeText(card.rectTransform, "Head", HeadLine(e), 14, TextAnchor.MiddleLeft,
+                new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(14f, -36f), new Vector2(-96f, -6f));
+            head.color = dark; head.fontStyle = FontStyle.Bold;
+            head.resizeTextForBestFit = true; head.resizeTextMinSize = 8; head.resizeTextMaxSize = CoastHudLayout.Scaled(14);
+            head.horizontalOverflow = HorizontalWrapMode.Wrap; head.verticalOverflow = VerticalWrapMode.Truncate;
 
             // 왼쪽 표지(있으면) — 둥근 상자 안에 가득 채워 자르기
-            float textLeft = 20f;
+            float textLeft = 16f; float coverW = 128f; float top = 40f;
             if (e.Cover != null)
             {
                 var frame = new GameObject("Cover", typeof(RectTransform), typeof(Image), typeof(RectMask2D)).GetComponent<RectTransform>();
-                frame.SetParent(crt, false); frame.anchorMin = new Vector2(0f, 0f); frame.anchorMax = new Vector2(0f, 1f); frame.pivot = new Vector2(0f, 0.5f);
-                frame.anchoredPosition = new Vector2(10f, 0f); frame.sizeDelta = new Vector2(150f, -16f);
+                frame.SetParent(card.rectTransform, false); frame.anchorMin = new Vector2(0f, 0f); frame.anchorMax = new Vector2(0f, 1f); frame.pivot = new Vector2(0f, 0.5f);
+                frame.anchoredPosition = new Vector2(10f, -top * 0.5f + 4f); frame.sizeDelta = new Vector2(coverW, -(top + 8f));
                 var fimg = frame.GetComponent<Image>(); fimg.sprite = CoastUiArt.RoundedRect(12); fimg.type = Image.Type.Sliced; fimg.color = new Color(0f, 0f, 0f, 0.35f); fimg.raycastTarget = false;
                 var im = new GameObject("I", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
                 im.transform.SetParent(frame, false); im.sprite = CoastUiArt.AsSprite(e.Cover, 100f); im.raycastTarget = false; im.preserveAspect = false;
-                im.color = e.Unlocked ? Color.white : new Color(0.45f, 0.45f, 0.5f);
-                var irt = im.rectTransform; float ar = e.Cover.width / (float)e.Cover.height; float fw = 150f, fh = size.y - 16f;
+                im.color = Color.white;
+                var irt = im.rectTransform; float ar = e.Cover.width / (float)e.Cover.height; float fw = coverW, fh = size.y - top - 8f;
                 if (ar > fw / fh) { irt.anchorMin = new Vector2(0.5f, 0f); irt.anchorMax = new Vector2(0.5f, 1f); irt.sizeDelta = new Vector2(fh * ar, 0f); }
                 else { irt.anchorMin = new Vector2(0f, 0.5f); irt.anchorMax = new Vector2(1f, 0.5f); irt.sizeDelta = new Vector2(0f, fw / ar); irt.anchoredPosition = new Vector2(0f, fw / ar * 0.12f); }
-                textLeft = 176f;
+                textLeft = coverW + 20f;
             }
-            var t = CoastHudLayout.MakeText(crt, "T", e.Label, 22, TextAnchor.MiddleLeft,
-                new Vector2(0f, 0.62f), new Vector2(1f, 1f), new Vector2(textLeft, -8f), new Vector2(-16f, -6f));
-            t.color = e.Unlocked ? Navy : new Color(0.33f, 0.33f, 0.38f); t.fontStyle = FontStyle.Bold;
-            t.resizeTextForBestFit = true; t.resizeTextMinSize = 11; t.resizeTextMaxSize = CoastHudLayout.Scaled(22);
-            // 77차(사용자): 잠긴 엔딩은 제목도 알 수 없게 「???」
-            var tt = CoastHudLayout.MakeText(crt, "Title", e.Unlocked ? e.Title : ending ? "???" : Loc.T("잠김", "Locked"), 18, TextAnchor.MiddleLeft,
-                new Vector2(0f, 0.32f), new Vector2(1f, 0.62f), new Vector2(textLeft, 0f), new Vector2(-16f, 0f));
-            tt.color = e.Unlocked ? Color.Lerp(fill, Color.black, 0.55f) : new Color(0.30f, 0.30f, 0.36f); tt.fontStyle = FontStyle.Bold;
-            tt.resizeTextForBestFit = true; tt.resizeTextMinSize = 10; tt.resizeTextMaxSize = CoastHudLayout.Scaled(18);
-            var s = CoastHudLayout.MakeText(crt, "S", e.Sub, 12, TextAnchor.MiddleLeft,
-                new Vector2(0f, 0f), new Vector2(1f, 0.32f), new Vector2(textLeft, 8f), new Vector2(-16f, 0f));
-            s.color = e.Unlocked ? Color.Lerp(fill, Color.black, 0.45f) : new Color(0.30f, 0.30f, 0.36f);
-            s.resizeTextForBestFit = true; s.resizeTextMinSize = 10; s.resizeTextMaxSize = CoastHudLayout.Scaled(12);
+            // 103차(사용자): 「컷씬 N」 → 「메인스토리 N」
+            string label = e.Opening ? Loc.T("프롤로그 · 너와 나의 주파수", "Prologue · Our Frequency") : ending ? e.Label : isEv ? Loc.T($"이야기 · 제 {e.Chapter}화", $"Story · Ch. {e.Chapter}") : Loc.T($"메인스토리 {e.Index} · {e.Title}", $"Main story {e.Index} · {e.Title}");
+            var t = CoastHudLayout.MakeText(card.rectTransform, "T", label, 21, TextAnchor.MiddleLeft,
+                new Vector2(0f, 0.40f), new Vector2(1f, 1f), new Vector2(textLeft, 0f), new Vector2(-16f, -top));
+            t.color = Navy; t.fontStyle = FontStyle.Bold;
+            t.resizeTextForBestFit = true; t.resizeTextMinSize = 11; t.resizeTextMaxSize = CoastHudLayout.Scaled(21);
+            string subLine = e.Opening || ending ? e.Sub : isEv ? e.Title + " · " + e.Sub : e.Sub;
+            var s = CoastHudLayout.MakeText(card.rectTransform, "S", subLine, 12, TextAnchor.UpperLeft,
+                new Vector2(0f, 0f), new Vector2(1f, 0.40f), new Vector2(textLeft, 10f), new Vector2(-84f, 0f));
+            s.color = Color.Lerp(fill, Color.black, 0.5f);
+            s.resizeTextForBestFit = true; s.resizeTextMinSize = 9; s.resizeTextMaxSize = CoastHudLayout.Scaled(12);
             if (!e.Opening && !ending && e.Unlocked && (isEv ? StoryProgress.EventSeen(e.Event) : StoryProgress.CutsceneRead(e.Index)))
             {
-                var chk = CoastHudLayout.MakeText(crt, "Read", "✓", 26, TextAnchor.MiddleCenter, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-44f, -16f), new Vector2(-12f, 16f));
-                chk.color = new Color(0.20f, 0.60f, 0.35f); chk.fontStyle = FontStyle.Bold;
+                var ring = CoastHudLayout.MakeImage(card.rectTransform, "ReadRing", new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-46f, -42f), new Vector2(-10f, -6f), new Color(0.25f, 0.70f, 0.40f));
+                ring.sprite = CoastUiArt.RoundedRect(18); ring.type = Image.Type.Sliced; ring.raycastTarget = false;
+                var chk = CoastHudLayout.MakeText(ring.rectTransform, "Read", "✓", 22, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(0f, 1f), Vector2.zero);
+                chk.color = Color.white; chk.fontStyle = FontStyle.Bold;
             }
 
             var btn = card.gameObject.AddComponent<Button>();
             btn.transition = Selectable.Transition.None;
             var entry = e;
             btn.onClick.AddListener(() => Play(entry, onPlayStart));
-            // 68차: 컷씬 카드 오른쪽 아래 작은 「읽기」(소설식 리더)
+            // 「보기」(재생) — 오른쪽 아래 파란 알약
+            {
+                var pb = CoastUiArt.GlossyPill(card.rectTransform, "PlayBtn", new Color(0.25f, 0.50f, 0.95f), 14, 4); pb.raycastTarget = true;
+                var prt = pb.rectTransform; prt.anchorMin = prt.anchorMax = new Vector2(1f, 0f); prt.pivot = new Vector2(1f, 0f);
+                prt.anchoredPosition = new Vector2(-10f, 8f); prt.sizeDelta = new Vector2(66f, 32f);
+                var ptx = CoastHudLayout.MakeText(prt, "T", Loc.T("보기", "Play"), 16, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(0f, 2f), Vector2.zero);
+                ptx.color = Color.white; ptx.fontStyle = FontStyle.Bold;
+                var pbb = pb.gameObject.AddComponent<Button>(); pbb.transition = Selectable.Transition.None;
+                pbb.onClick.AddListener(() => Play(entry, onPlayStart));
+            }
+            // 68차: 카드 오른쪽 아래 작은 「읽기」(소설식 리더) — 보기 왼쪽
             if (!e.Opening && !ending && e.Unlocked)
             {
-                var rb = CoastUiArt.GlossyPill(crt, "ReadBtn", new Color(0.30f, 0.55f, 0.95f), 14, 4); rb.raycastTarget = true;
+                var rb = CoastUiArt.GlossyPill(card.rectTransform, "ReadBtn", new Color(0.55f, 0.45f, 0.85f), 14, 4); rb.raycastTarget = true;
                 var rrt = rb.rectTransform; rrt.anchorMin = rrt.anchorMax = new Vector2(1f, 0f); rrt.pivot = new Vector2(1f, 0f);
-                rrt.anchoredPosition = new Vector2(-10f, 8f); rrt.sizeDelta = new Vector2(64f, 30f);
+                rrt.anchoredPosition = new Vector2(-82f, 8f); rrt.sizeDelta = new Vector2(58f, 32f);
                 var rt = CoastHudLayout.MakeText(rrt, "T", Loc.T("읽기", "Read"), 14, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(0f, 2f), Vector2.zero);
                 rt.color = Color.white; rt.fontStyle = FontStyle.Bold;
                 var rbb = rb.gameObject.AddComponent<Button>(); rbb.transition = Selectable.Transition.None;
                 rbb.onClick.AddListener(() => Read(entry, onPlayStart));
+            }
+            // 103차: 오른쪽 위 「▲ 접기」
+            {
+                var a = CoastHudLayout.MakeText(card.rectTransform, "Fold", Loc.T("▲", "▲"), 14, TextAnchor.MiddleCenter, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-84f, -40f), new Vector2(-52f, -6f));
+                a.color = dark; a.fontStyle = FontStyle.Bold;
+                var fb = a.gameObject.AddComponent<Button>(); fb.transition = Selectable.Transition.None;
+                a.raycastTarget = true;
+                var key = e.Key; fb.onClick.AddListener(() => { CoastAudioManager.PlayAnywhere(CoastSfx.Coin); _expanded.Remove(key); Rebuild(); });
             }
         }
 
@@ -223,11 +401,11 @@ namespace CoastRun
         {
             var list = new List<Entry>();
             var openDef = CinematicTable.Get("OPEN"); float openLen = openDef != null ? openDef.Length : 148f;
-            list.Add(new Entry { Label = Loc.T("프롤로그 영상", "Prologue film"), Title = Loc.T($"너와 나의 주파수 — {Mathf.FloorToInt(openLen / 60f)}:{Mathf.RoundToInt(openLen % 60f):00}", $"Our Frequency — {Mathf.FloorToInt(openLen / 60f)}:{Mathf.RoundToInt(openLen % 60f):00}"), Sub = Loc.T("시네마틱 · 언제나 볼 수 있어요", "Cinematic · always available"), Opening = true, Unlocked = true, Chapter = 0, Cover = ArtAssets.LoadTexture("Cut_T_OP_01") ?? ArtAssets.LoadTexture("Cut_S_OP_1") ?? ArtAssets.LoadTexture("Cut_V_OP_1") });   // 85차: v4 오프닝 스틸
+            list.Add(new Entry { Label = Loc.T("프롤로그 영상", "Prologue film"), Title = Loc.T($"너와 나의 주파수 — {Mathf.FloorToInt(openLen / 60f)}:{Mathf.RoundToInt(openLen % 60f):00}", $"Our Frequency — {Mathf.FloorToInt(openLen / 60f)}:{Mathf.RoundToInt(openLen % 60f):00}"), Sub = Loc.T($"{Mathf.FloorToInt(openLen / 60f)}:{Mathf.RoundToInt(openLen % 60f):00} — 시네마틱 — 언제나 볼 수 있어요", $"{Mathf.FloorToInt(openLen / 60f)}:{Mathf.RoundToInt(openLen % 60f):00} — Cinematic — always available"), Opening = true, Unlocked = true, Chapter = 0, Cover = (openDef != null && openDef.cuts.Length > 0 ? ArtAssets.LoadTexture(openDef.cuts[0].still) ?? ArtAssets.LoadTexture(openDef.cuts[0].fallback) : null) ?? ArtAssets.LoadTexture("Cut_T_OP_01") ?? ArtAssets.LoadTexture("Cut_S_OP_1") ?? ArtAssets.LoadTexture("Cut_V_OP_1") });   // 103차: v7 오프닝 첫 컷
             var save = gm != null && gm.HasSave ? (gm.Save ?? gm.SaveSys.Load()) : null;
             bool all = gm != null && gm.DevUnlockAll;
             int reached = save != null ? Mathf.Clamp(save.chapter, 1, Timeline.Chapters) : 0;
-            // 85차(대본 v4): 챕터 순서대로 컷씬(CS)과 보조 컷씬(EV)을 섞어 나열 — 1 CS1 · 2 EV1 · 3 CS2 · 4 EV2 · 5 CS3 · 6 EV3 · 7 CS4 · 8 EV4 · 9 EV5 · 10 CS5 · 11 EV6 · 12 CS6 · 13 EV7 · 14 EV8 · 15 EV9 · 17 CS7 · 19 EV10 · 20 CS8
+            // 85차(대본 v4): 챕터 순서대로 메인스토리(CS)와 보조 컷씬(EV)을 섞어 나열 — 1 CS1 · 2 EV1 · 3 CS2 · 4 EV2 · 5 CS3 · 6 EV3 · 7 CS4 · 8 EV4 · 9 EV5 · 10 CS5 · 11 EV6 · 12 CS6 · 13 EV7 · 14 EV8 · 15 EV9 · 17 CS7 · 19 EV10 · 20 CS8
             for (int ch = 1; ch <= Timeline.Chapters; ch++)
             {
                 int i = StoryProgress.CutsceneIndex(ch);
@@ -237,7 +415,7 @@ namespace CoastRun
                     var def = CinematicTable.Cutscene(i); float len = def != null ? def.Length : 0f;
                     list.Add(new Entry
                     {
-                        Label = Loc.T($"컷씬 {i}", $"Cutscene {i}"), Title = StoryProgress.CutsceneTitle(i),
+                        Label = Loc.T($"메인스토리 {i}", $"Main story {i}"), Title = StoryProgress.CutsceneTitle(i),
                         Sub = Loc.T($"제 {ch}화 · {ChapterLocation.Get(ch).Name} · {Mathf.FloorToInt(len / 60f)}:{Mathf.RoundToInt(len % 60f):00}", $"Ch. {ch} · {ChapterLocation.Get(ch).Name} · {Mathf.FloorToInt(len / 60f)}:{Mathf.RoundToInt(len % 60f):00}"),
                         Index = i, Chapter = ch, Unlocked = all || reached >= ch || StoryProgress.CutsceneRead(i),
                         Cover = (def != null && def.cuts.Length > 0 ? ArtAssets.LoadTexture(def.cuts[0].still) ?? ArtAssets.LoadTexture(def.cuts[0].fallback) : null) ?? ArtAssets.LoadTexture($"Cut_S_N{i}_01") ?? ArtAssets.LoadTexture($"Cut_V_CH{ch:00}_Open") ?? ArtAssets.LoadTexture($"Cut_CH{first:00}_Open"),
@@ -286,7 +464,7 @@ namespace CoastRun
         public static void Close()
         {
             if (_canvas != null) UnityEngine.Object.Destroy(_canvas.gameObject);
-            _canvas = null;
+            _canvas = null; _content = null;
         }
 
         public static bool IsOpen => _canvas != null;

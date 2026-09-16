@@ -1,4 +1,4 @@
-﻿# 85차: 컷씬 대본 v4 — Docs/CUTSCENE_SCRIPTS_v4.md 의 자막을 지문(NARR)으로 옮긴 리더용. 시네마틱(CinematicTable)이 본편이고 이 파일은 「읽기」용.
+﻿# 103차: 컷씬 대본 v7.1 — Docs/CUTSCENE_SCRIPTS_v7.md 의 자막을 지문(NARR)으로 옮긴 리더용. 시네마틱(CinematicTable)이 본편이고 이 파일은 「읽기」용.
 # 고친 뒤  python Tools/Story/cutscene_txt.py import Tools/Story/script  로 반영. 형식은 파일 아래 다른 파일과 같다(BG/CG/SAY/NARR/BGM).
 # 이 챕터는 컷씬 없음(육성·러닝만) — 비워 둔다(ChapterVN.Play 가 건너뜀).
 제목: 조용해 | EN: Quiet
