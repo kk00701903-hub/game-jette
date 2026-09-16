@@ -235,6 +235,50 @@ namespace CoastRun.EditorTools
             for (int i = 0; i < hits.Count && i < 40; i++) sb.Append(hits[i].line);
             Debug.LogWarning(sb.ToString());
         }
+        // 95차-2(사용자: 「스토리모드 상단의 버튼들이 다 사라졌다」): 상단 줄만 콕 집어 찍는다.
+        //   「없음」이면 만들어지지 않은 것(예외·컴파일), 「밖」이면 화면 밖으로 나간 것(비율·게임뷰 배율),
+        //   「꺼짐」이면 누가 SetActive(false) 한 것 — 원인이 바로 갈린다.
+        [MenuItem("Coast Run/Dev/UI - 육성 상단바 덤프")]
+        public static void RaisingTopBarDump()
+        {
+            if (!Application.isPlaying) { Debug.Log("[TopBar] 플레이 중에만 검사합니다."); return; }
+            string[] names = { "Week", "GoalRibbon", "Money", "StatusBtn", "TutorialBtn", "RoomBtn", "ShopBtn", "BagBtn", "Home", "ActRing0", "HpTrack", "StressTrack", "NextTurn" };
+            var canvas = Object.FindObjectsByType<Canvas>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+            RectTransform root = null;
+            foreach (var c in canvas)
+                if (c != null && c.name == "TamaRaisingCanvas") { root = CoastUiCanvas.Root(c); break; }
+            if (root == null) { Debug.LogWarning("[TopBar] TamaRaisingCanvas 가 없습니다 — 육성(스토리) 화면에서 실행하세요."); return; }
+
+            float sw = Screen.width, sh = Screen.height;
+            var sa = Screen.safeArea; if (sa.width < 8f || sa.height < 8f) sa = new Rect(0f, 0f, sw, sh);
+            var all = root.GetComponentsInChildren<RectTransform>(true);
+            var sb = new System.Text.StringBuilder();
+            sb.Append($"[TopBar] 화면 {sw:0}x{sh:0} · 안전영역 {sa.width:0}x{sa.height:0}");
+            var fitBox = root.Find("Fit") as RectTransform;
+            if (fitBox != null) sb.Append($" · Fit 상자 {fitBox.rect.width:0}x{fitBox.rect.height:0} 배율 {fitBox.localScale.x:0.000}");
+            sb.Append($" · 인셋 {root.rect.width:0}x{root.rect.height:0} 배율 {root.localScale.x:0.000}");
+            var corners = new Vector3[4];
+            foreach (var n in names)
+            {
+                RectTransform rt = null;
+                foreach (var c in all) if (c != null && c.name == n) { rt = c; break; }
+                if (rt == null) { sb.Append($"\n  {n,-12} 없음 (만들어지지 않음)"); continue; }
+                if (!rt.gameObject.activeInHierarchy) { sb.Append($"\n  {n,-12} 꺼짐 (SetActive false)"); continue; }
+                rt.GetWorldCorners(corners);
+                Vector2 min = new Vector2(float.MaxValue, float.MaxValue), max = new Vector2(float.MinValue, float.MinValue);
+                for (int i = 0; i < 4; i++) { var p = RectTransformUtility.WorldToScreenPoint(null, corners[i]); min = Vector2.Min(min, p); max = Vector2.Max(max, p); }
+                float outTop = Mathf.Max(0f, max.y - sa.yMax), outBottom = Mathf.Max(0f, sa.yMin - min.y);
+                float outLeft = Mathf.Max(0f, sa.xMin - min.x), outRight = Mathf.Max(0f, max.x - sa.xMax);
+                bool outside = outTop + outBottom + outLeft + outRight > 4f;
+                var g = rt.GetComponent<UnityEngine.UI.Graphic>();
+                string vis = g == null ? "" : g.color.a < 0.02f ? " 투명" : "";
+                sb.Append($"\n  {n,-12} {(outside ? "밖 " : "OK ")} 화면 x {min.x:0}~{max.x:0} y {min.y:0}~{max.y:0}{vis}"
+                          + (outside ? (outTop > 0f ? $" 위로 {outTop:0}px" : "") + (outBottom > 0f ? $" 아래로 {outBottom:0}px" : "")
+                                     + (outLeft > 0f ? $" 왼쪽 {outLeft:0}px" : "") + (outRight > 0f ? $" 오른쪽 {outRight:0}px" : "") : ""));
+            }
+            Debug.LogWarning(sb.ToString());
+        }
+
         [MenuItem("Coast Run/Dev/Collection - Unlock all (F9)")] public static void UnlockAll() { if (Application.isPlaying) Collection.DebugUnlockAll(); }
     }
 }

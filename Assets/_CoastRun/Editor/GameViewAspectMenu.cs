@@ -63,6 +63,9 @@ namespace CoastRun.Editor
         private static void NormalizeOnReload()
         {
             if (!System.IO.File.Exists(NormalizeFlag)) return;
+            // 배치 모드(외부 컴파일 점검)에서는 Game 뷰가 없고 delayCall 도 돌지 않는다 —
+            // 깃발을 그대로 남겨 다음에 에디터를 열 때 적용되게 한다.
+            if (Application.isBatchMode) return;
             string want = "9:16";
             try { want = System.IO.File.ReadAllText(NormalizeFlag).Trim(); } catch { /* 못 읽으면 9:16 */ }
             try { System.IO.File.Delete(NormalizeFlag); } catch { /* 지우기 실패해도 아래는 한 번은 돈다 */ }
@@ -97,7 +100,7 @@ namespace CoastRun.Editor
             gv.Repaint();
         }
 
-        private static void FitZoom(EditorWindow gv)
+        private static void FitZoom(EditorWindow gv, bool log = true)
         {
             if (gv == null) return;
             try
@@ -108,9 +111,30 @@ namespace CoastRun.Editor
                 if (def == null || snap == null) return;
                 float scale = (float)def.GetValue(gv);
                 snap.Invoke(gv, new object[] { scale });
-                Debug.Log($"[Coast Run] Game 뷰 배율을 창에 맞춤(×{scale:0.00}) — 위아래 잘림은 배율이 1× 보다 클 때 생깁니다.");
+                if (log) Debug.Log($"[Coast Run] Game 뷰 배율을 창에 맞춤(×{scale:0.00}) — 위아래 잘림은 배율이 1× 보다 클 때 생깁니다.");
             }
-            catch (Exception e) { Debug.Log("[Coast Run] Game 뷰 배율 조정 건너뜀: " + e.Message); }
+            catch (Exception e) { if (log) Debug.Log("[Coast Run] Game 뷰 배율 조정 건너뜀: " + e.Message); }
+        }
+
+        /// 95차-2(사용자: 「상단 버튼들이 다 사라졌다 · 비율 조정도 안 된다」): 재생을 누를 때마다
+        ///   Game 뷰 배율을 창에 맞춘다. 배율이 1× 보다 크면 창 밖으로 넘친 위·아래(주차 알약·상단 버튼 줄,
+        ///   다음 턴 줄)가 잘려 「버튼이 사라진」 것처럼 보이는데, 해상도를 바꿔도 배율은 그대로라 고쳐지지 않는다.
+        [InitializeOnLoad]
+        private static class FitZoomOnPlay
+        {
+            static FitZoomOnPlay()
+            {
+                EditorApplication.playModeStateChanged += OnPlayModeChanged;
+                // 에디터를 열거나 스크립트를 다시 읽을 때도 한 번 — 재생을 누르기 전부터 창에 맞게 보인다.
+                EditorApplication.delayCall += () => { var gv = FindGameView(); if (gv != null) { FitZoom(gv, log: false); gv.Repaint(); } };
+            }
+
+            private static void OnPlayModeChanged(PlayModeStateChange s)
+            {
+                if (s != PlayModeStateChange.EnteredPlayMode) return;
+                var gv = FindGameView(); if (gv == null) return;
+                FitZoom(gv, log: false); gv.Repaint();
+            }
         }
 
         /// 열려 있는 Game 뷰(없으면 null) — 정상화 때문에 창을 새로 띄우지 않는다.
