@@ -25,6 +25,8 @@ namespace CoastRun
         private static readonly Color PillOn = new Color(1f, 0.80f, 0.35f);
 
         // ── 우상단 떠 있는 아이콘 ──
+        /// 103차: 기부 컵 아이콘의 y(세이프존 우상단 기준). AttachIcon 과 DonateIconAnim 이 같이 쓴다.
+        public const float IconY = -286f + 109f;
         public static GameObject AttachIcon(Transform titleUi, Func<bool> visible, Action onTap)
         {
             var go = new GameObject("DonateIcon", typeof(RectTransform), typeof(Image), typeof(Button), typeof(DonateIconAnim));
@@ -32,7 +34,10 @@ namespace CoastRun
             var rt = go.GetComponent<RectTransform>();
             rt.anchorMin = rt.anchorMax = new Vector2(1f, 1f); rt.pivot = new Vector2(0.5f, 0.5f);
             // 79차-2(사용자: 「기부부탁은 0.6cm 만 위로」) — 0.6cm = 0.6/2.54×416dpi ≈ 98px(S25) ÷ DesignScale ≈ 65 디자인 단위.
-            rt.anchoredPosition = new Vector2(-78f, -286f + 65f); rt.sizeDelta = new Vector2(124f, 124f);
+            // 103차(사용자: 「0.5cm 위로」 → 안 올라감 → 「지금보다 1cm 위로」): 아래 DonateIconAnim.Update 가 매 프레임 -286 으로
+            //   되돌려 놓고 있어서 79차 +65 도, 0.5cm 도 화면에 반영된 적이 없었다. 위치는 IconY 하나로 통일 —
+            //   보이던 자리(-286)에서 1cm(≈164px ÷ 1.5 = 109 단위) 위.
+            rt.anchoredPosition = new Vector2(-78f, IconY); rt.sizeDelta = new Vector2(124f, 124f);
             var img = go.GetComponent<Image>();
             var art = ArtAssets.LoadTexture("UI_Donate_Cup");
             if (art != null) { img.sprite = CoastUiArt.AsSprite(art); img.preserveAspect = true; img.color = Color.white; }
@@ -79,7 +84,7 @@ namespace CoastRun
                 float pulse = 1f + Mathf.Sin(_t * 3.2f) * 0.05f;
                 transform.localScale = Vector3.one * pulse;
                 var rt = (RectTransform)transform;
-                rt.anchoredPosition = new Vector2(-78f, -286f + Mathf.Sin(_t * 1.6f) * 6f);
+                rt.anchoredPosition = new Vector2(-78f, IconY + Mathf.Sin(_t * 1.6f) * 6f);   // 103차: IconY 기준으로 둥실
                 for (int i = 0; i < sparks.Length; i++)
                 {
                     var s = sparks[i]; if (s == null) continue;

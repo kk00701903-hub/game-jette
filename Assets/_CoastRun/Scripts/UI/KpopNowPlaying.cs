@@ -12,50 +12,51 @@ namespace CoastRun
         private readonly float[] _level = new float[5];
         private readonly float[] _spec = new float[256];
         private Text _spark; private float _t;
-        private const float BarMin = 6f, BarMax = 30f;
+        // 100차(사용자: K-POP 러닝 뮤직·미션이 작아 잘 안 보임): 알약 262×60 → 330×76, 글자 10/13 → 13/17, 이퀄라이저도 같이.
+        private const float BarMin = 8f, BarMax = 40f, BarW = 5.5f;
 
         /// K-POP 러닝 기본 자리 — 우하단.
         public static KpopNowPlaying Build(RectTransform root, string credit)
-            => Build(root, credit, new Vector2(1f, 0f), new Vector2(-6f, 10f));
+            => Build(root, credit, new Vector2(1f, 0f), new Vector2(-8f, 12f));
 
         /// 79차(사용자: 컷씬 음악 표시도 K-POP 러닝과 똑같이) — 자리를 골라 세울 수 있게.
         ///   컷씬은 아래에 자막이 깔리므로 좌상단(0,1)에 둔다.
         public static KpopNowPlaying Build(RectTransform root, string credit, Vector2 anchor, Vector2 offset)
         {
-            const float W = 262f, H = 60f;
+            const float W = 330f, H = 76f;
             var go = new GameObject("NowPlaying", typeof(RectTransform), typeof(Image));
             go.transform.SetParent(root, false);
             var rt = go.GetComponent<RectTransform>();
             rt.anchorMin = rt.anchorMax = anchor; rt.pivot = anchor;
             rt.anchoredPosition = offset; rt.sizeDelta = new Vector2(W, H);
             var bg = go.GetComponent<Image>();
-            bg.sprite = GradientPill(Mathf.RoundToInt(W), Mathf.RoundToInt(H), 18, new Color(0.50f, 0.32f, 0.92f), new Color(0.96f, 0.38f, 0.72f), 3);
+            bg.sprite = GradientPill(Mathf.RoundToInt(W), Mathf.RoundToInt(H), 22, new Color(0.50f, 0.32f, 0.92f), new Color(0.96f, 0.38f, 0.72f), 3);
             bg.raycastTarget = false;
             var np = go.AddComponent<KpopNowPlaying>();
 
             // 왼쪽 이퀄라이저 상자
             var box = CoastUiArt.Panel(rt, "EqBox", new Color(0.09f, 0.08f, 0.24f, 0.95f), 10);
             var brt = box.rectTransform; brt.anchorMin = brt.anchorMax = new Vector2(0f, 0.5f); brt.pivot = new Vector2(0f, 0.5f);
-            brt.anchoredPosition = new Vector2(9f, 0f); brt.sizeDelta = new Vector2(44f, 44f);
+            brt.anchoredPosition = new Vector2(11f, 0f); brt.sizeDelta = new Vector2(56f, 56f);
             for (int i = 0; i < 5; i++)
             {
                 var bar = CoastUiArt.Panel(brt, "Bar" + i, Color.Lerp(new Color(0.35f, 0.95f, 1f), new Color(0.30f, 0.45f, 1f), i / 4f), 2);
                 var r = bar.rectTransform; r.anchorMin = r.anchorMax = new Vector2(0f, 0f); r.pivot = new Vector2(0.5f, 0f);
-                r.anchoredPosition = new Vector2(8f + i * 7f, 6f); r.sizeDelta = new Vector2(4.5f, BarMin);
+                r.anchoredPosition = new Vector2(10f + i * 9f, 7f); r.sizeDelta = new Vector2(BarW, BarMin);
                 np._bars[i] = r;
             }
 
             // 글자 두 줄
-            var top = CoastHudLayout.MakeText(rt, "Top", "NOW PLAYING ♫", 10, TextAnchor.MiddleLeft, new Vector2(0f, 0.5f), new Vector2(1f, 1f), new Vector2(62f, -2f), new Vector2(-30f, -6f));
-            top.color = new Color(1f, 0.95f, 1f); top.fontStyle = FontStyle.Bold; top.resizeTextForBestFit = true; top.resizeTextMinSize = 10; top.resizeTextMaxSize = CoastHudLayout.Scaled(10);
+            var top = CoastHudLayout.MakeText(rt, "Top", "NOW PLAYING ♫", 13, TextAnchor.MiddleLeft, new Vector2(0f, 0.5f), new Vector2(1f, 1f), new Vector2(78f, -2f), new Vector2(-36f, -7f));
+            top.color = new Color(1f, 0.95f, 1f); top.fontStyle = FontStyle.Bold; top.resizeTextForBestFit = true; top.resizeTextMinSize = 10; top.resizeTextMaxSize = CoastHudLayout.Scaled(13);
             CoastUiArt.OutlineText(top, new Color(0.30f, 0.10f, 0.45f, 0.8f), 1f);
-            var title = CoastHudLayout.MakeText(rt, "Title", credit, 13, TextAnchor.MiddleLeft, new Vector2(0f, 0f), new Vector2(1f, 0.5f), new Vector2(62f, 5f), new Vector2(-18f, 2f));
-            title.color = Color.white; title.fontStyle = FontStyle.Bold; title.resizeTextForBestFit = true; title.resizeTextMinSize = 10; title.resizeTextMaxSize = CoastHudLayout.Scaled(13);
+            var title = CoastHudLayout.MakeText(rt, "Title", credit, 17, TextAnchor.MiddleLeft, new Vector2(0f, 0f), new Vector2(1f, 0.5f), new Vector2(78f, 6f), new Vector2(-20f, 2f));
+            title.color = Color.white; title.fontStyle = FontStyle.Bold; title.resizeTextForBestFit = true; title.resizeTextMinSize = 11; title.resizeTextMaxSize = CoastHudLayout.Scaled(17);
             title.horizontalOverflow = HorizontalWrapMode.Wrap; title.verticalOverflow = VerticalWrapMode.Truncate;
             CoastUiArt.OutlineText(title, new Color(0.30f, 0.10f, 0.45f, 0.9f), 1.2f);
 
             // 오른쪽 위 반짝이
-            np._spark = CoastHudLayout.MakeText(rt, "Spark", "✦", 13, TextAnchor.MiddleCenter, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-30f, -26f), new Vector2(-6f, -4f));
+            np._spark = CoastHudLayout.MakeText(rt, "Spark", "✦", 16, TextAnchor.MiddleCenter, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-36f, -32f), new Vector2(-7f, -5f));
             np._spark.color = new Color(1f, 1f, 1f, 0.95f);
             return np;
         }
@@ -74,7 +75,7 @@ namespace CoastRun
                 // 음악이 없어도 살짝 숨 쉰다
                 float idle = 0.08f + 0.06f * Mathf.Sin(Time.unscaledTime * (3f + i) + i);
                 float h = Mathf.Lerp(BarMin, BarMax, Mathf.Max(_level[i], idle));
-                if (_bars[i] != null) _bars[i].sizeDelta = new Vector2(4.5f, h);
+                if (_bars[i] != null) _bars[i].sizeDelta = new Vector2(BarW, h);
             }
             _t += dt;
             if (_spark != null) { float s = 0.75f + 0.25f * Mathf.Sin(_t * 4f); _spark.transform.localScale = Vector3.one * s; _spark.color = new Color(1f, 1f, 1f, 0.6f + 0.4f * Mathf.Sin(_t * 4f + 1f)); }

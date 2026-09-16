@@ -11,8 +11,22 @@ namespace CoastRun
         public const string InsetName = "HudInset";
         public const string BgName = "BgFullBleed";
         public const float HudPad = 28f;
-        /// 배치 코드의 단위(720×1280) → 캔버스 기준(1080×1920) 배율
+        /// 배치 코드의 단위(720×1280) → 시안 픽셀(1080×1920) 배율. 99차부터는 **픽셀 환산에만** 쓰고
+        /// (MockPixelRectToBgAnchors 등), 캔버스 트리에는 더 이상 이 배율을 localScale 로 걸지 않는다.
         public const float DesignScale = 1.5f;
+
+        // ── 99차(사용자: 「20:9 로 바꾸니 전체가 또렷하지 않고 글자가 아른거린다」) ──────────────
+        // 원인: CanvasScaler 기준을 1080×1920 으로 두고 HudInset 을 localScale 1.5 로 키워 720×1280 좌표계를
+        //   맞췄다. uGUI Text 는 캔버스 배율(scaleFactor)만 보고 글자를 굽고 RectTransform 의 스케일은
+        //   모르기 때문에, 1080 폭 폰에서는 배율 1.0 으로 구운 글자를 1.5배 늘려 그렸다 → 모든 글자가
+        //   흐릿하고, 움직이면 텍셀 사이를 보간하며 아른거렸다(79차 전엔 match 0.5 라 1.1배로 구워 조금
+        //   덜했을 뿐 같은 문제). 아이콘·그림도 같은 이유로 1.5배 확대돼 있었다.
+        // 해결: 기준 해상도를 배치 단위 그대로 **720×1280** 으로 두고 인셋 스케일을 1(×fit)로 — 캔버스
+        //   단위 = 디자인 단위이므로 배치 코드는 한 줄도 안 바뀌고, scaleFactor 가 1.5(1080 폭)·2.0(1440 폭)
+        //   이 되어 글자가 실제 픽셀 크기로 구워진다. 화면에서 차지하는 크기는 전과 완전히 같다.
+        /// CanvasScaler 기준 해상도(= 배치 단위, 720×1280).
+        public const float RefWidth = 720f;
+        public const float RefHeight = 1280f;
 
         // ── 79차(사용자) 캔버스 전략 ───────────────────────────────────────────────
         // 제작 기준   1080×2400 (20:9) — 배경은 이 크기로 길게 그려 두고 화면을 덮는다.
@@ -71,7 +85,8 @@ namespace CoastRun
             // 79차(사용자 캔버스 전략): Match 0.5 → 0(가로 기준). 0.5 에서는 세로가 길어질수록 배율이
             //   올라가 UI 가 통째로 작아졌다(S25에서 0.898). 가로를 1080 으로 고정하면 세이프존(720×1280)이
             //   19.5:9~20:9 에서 언제나 원래 크기로 들어가고, 남는 세로는 배경이 채운다.
-            scaler.referenceResolution = new Vector2(1080f, 1920f);
+            // 99차: 기준 720×1280(배치 단위) — 글자·그림이 실제 픽셀 밀도로 구워지도록. 위 주석 참조.
+            scaler.referenceResolution = new Vector2(RefWidth, RefHeight);
             scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
             scaler.matchWidthOrHeight = ScalerMatch;
 
@@ -89,7 +104,7 @@ namespace CoastRun
             inset.anchorMin = inset.anchorMax = new Vector2(0.5f, 0.5f);
             inset.pivot = new Vector2(0.5f, 0.5f);
             inset.anchoredPosition = Vector2.zero;
-            inset.localScale = new Vector3(DesignScale, DesignScale, 1f);
+            inset.localScale = Vector3.one;   // 99차: 캔버스 단위 = 디자인 단위 (fit 축소만 CoastPortraitSafeArea 가 건다)
             inset.sizeDelta = new Vector2(720f - 2f * HudPad, 1280f - 2f * HudPad);   // 실제 크기는 CoastPortraitSafeArea가 매 프레임 갱신
 
             if (go.GetComponent<CoastPortraitSafeArea>() == null)
@@ -157,10 +172,11 @@ namespace CoastRun
         public static void DesignMetrics(float screenW, float screenH, float safeW, float safeH,
                                          out Vector2 insetSize, out float fit)
         {
-            float lw = Mathf.Log(Mathf.Max(1f, screenW) / 1080f, 2f);
-            float lh = Mathf.Log(Mathf.Max(1f, screenH) / 1920f, 2f);
+            // 99차: CanvasScaler(720×1280 기준)와 같은 식 — scale 은 캔버스 scaleFactor(1080 폭이면 1.5).
+            float lw = Mathf.Log(Mathf.Max(1f, screenW) / RefWidth, 2f);
+            float lh = Mathf.Log(Mathf.Max(1f, screenH) / RefHeight, 2f);
             float scale = Mathf.Pow(2f, Mathf.Lerp(lw, lh, ScalerMatch));
-            var sz = new Vector2(safeW, safeH) / scale / DesignScale;
+            var sz = new Vector2(safeW, safeH) / scale;
             float iw = Mathf.Max(100f, sz.x - 2f * HudPad);
             float ih = Mathf.Max(100f, sz.y - 2f * HudPad);
             fit = FitScale(iw, ih);
@@ -287,13 +303,13 @@ namespace CoastRun
         public static void SafeZoneMetrics(float screenW, float screenH,
                                            out float bgScale, out float bgCropPerEdge, out bool safeZoneFits)
         {
-            float lw = Mathf.Log(Mathf.Max(1f, screenW) / 1080f, 2f);
-            float lh = Mathf.Log(Mathf.Max(1f, screenH) / 1920f, 2f);
-            float scale = Mathf.Pow(2f, Mathf.Lerp(lw, lh, ScalerMatch));
-            float designW = screenW / scale / DesignScale;   // 화면을 디자인 단위로 (가로는 늘 720)
-            float designH = screenH / scale / DesignScale;
+            float lw = Mathf.Log(Mathf.Max(1f, screenW) / RefWidth, 2f);
+            float lh = Mathf.Log(Mathf.Max(1f, screenH) / RefHeight, 2f);
+            float scale = Mathf.Pow(2f, Mathf.Lerp(lw, lh, ScalerMatch));   // 99차: = 캔버스 scaleFactor
+            float designW = screenW / scale;   // 화면을 디자인 단위로 (가로는 늘 720)
+            float designH = screenH / scale;
             bgScale = Mathf.Min(1f, designH / SafeZoneHeight);
-            bgCropPerEdge = Mathf.Max(0f, (BgDesignHeight * bgScale - designH) * 0.5f) * DesignScale * scale;
+            bgCropPerEdge = Mathf.Max(0f, (BgDesignHeight * bgScale - designH) * 0.5f) * scale;
             // 세이프존이 실제로 다 보이는가 — 가로·세로 둘 다 본다(가로 화면에서는 가로가 먼저 걸린다).
             float need = Mathf.Min(designW / SafeZoneWidth, designH / SafeZoneHeight);
             safeZoneFits = Mathf.Min(1f, need) * SafeZoneHeight <= designH + 0.5f
@@ -319,8 +335,9 @@ namespace CoastRun
             if (rw < 8f || rh < 8f) return;
             if (Mathf.Abs(rw - _lastW) < 0.25f && Mathf.Abs(rh - _lastH) < 0.25f) return;
             _lastW = rw; _lastH = rh;
-            _self.localScale = new Vector3(CoastUiCanvas.DesignScale, CoastUiCanvas.DesignScale, 1f);
-            _self.sizeDelta = new Vector2(rw / CoastUiCanvas.DesignScale, rh / CoastUiCanvas.DesignScale);
+            // 99차: 캔버스 단위 = 디자인 단위 → 스케일 없이 캔버스 크기 그대로.
+            _self.localScale = Vector3.one;
+            _self.sizeDelta = new Vector2(rw, rh);
         }
     }
 
@@ -482,8 +499,8 @@ namespace CoastRun
                 // 비율 유지 축소」로 바꾼다: 자식 좌표계는 늘 기준 크기 이상이고, 축소분을 스케일로 돌려
                 // 화면에서 차지하는 영역(sizeDelta×scale)은 예전과 동일하다 → 꽉 찬 배경도 그대로 full-bleed.
                 CoastUiCanvas.DesignMetrics(w, h, r.width, r.height, out var insetSize, out float fit);
-                float s = CoastUiCanvas.DesignScale * fit;
-                _inset.localScale = new Vector3(s, s, 1f);
+                // 99차: DesignScale 을 더 이상 곱하지 않는다(캔버스 기준이 720×1280) — fit 축소만.
+                _inset.localScale = new Vector3(fit, fit, 1f);
                 _inset.sizeDelta = insetSize;
             }
         }

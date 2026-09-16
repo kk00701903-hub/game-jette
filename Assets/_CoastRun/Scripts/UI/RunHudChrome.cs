@@ -528,14 +528,15 @@ namespace CoastRun
             var conds = ArcadeRun.Conditions;
             for (int i = 0; i < 3 && i < conds.Length; i++)
             {
-                var pill = CoastUiArt.CutePill(root, "KpopChip" + i, ArcadeRun.IsKpopMissionDone(i) ? ChipOn : ChipOff, 12, 2);
+                // 100차(사용자: 미션이 작아 잘 안 보임): 230×32/14pt/간격 36 → 290×42/18pt/간격 48.
+                var pill = CoastUiArt.CutePill(root, "KpopChip" + i, ArcadeRun.IsKpopMissionDone(i) ? ChipOn : ChipOff, 15, 2);
                 var rt = pill.rectTransform; rt.anchorMin = rt.anchorMax = new Vector2(0f, 1f); rt.pivot = new Vector2(0f, 1f);
-                rt.anchoredPosition = new Vector2(8f, -134f - i * 36f); rt.sizeDelta = new Vector2(230f, 32f);
+                rt.anchoredPosition = new Vector2(8f, -134f - i * 48f); rt.sizeDelta = new Vector2(290f, 42f);
                 pill.raycastTarget = false;
-                var t = CoastHudLayout.MakeText(pill.transform, "T", ChipLabel(i), 14, TextAnchor.MiddleLeft, Vector2.zero, Vector2.one, new Vector2(12f, 0f), new Vector2(-8f, 0f));
+                var t = CoastHudLayout.MakeText(pill.transform, "T", ChipLabel(i), 18, TextAnchor.MiddleLeft, Vector2.zero, Vector2.one, new Vector2(14f, 0f), new Vector2(-8f, 0f));
                 t.color = Color.white; t.fontStyle = FontStyle.Bold; t.raycastTarget = false;
                 t.horizontalOverflow = HorizontalWrapMode.Overflow; t.verticalOverflow = VerticalWrapMode.Truncate;
-                CoastUiArt.OutlineText(t, new Color(0.05f, 0.07f, 0.18f, 0.9f), 1.2f);
+                CoastUiArt.OutlineText(t, new Color(0.05f, 0.07f, 0.18f, 0.9f), 1.4f);
                 _kpopChipText[i] = t; _kpopChipBg[i] = pill; _kpopChipRt[i] = rt;
             }
             ArcadeRun.OnKpopMissionDone -= HandleKpopMission;

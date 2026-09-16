@@ -443,6 +443,13 @@ namespace CoastRun
         }
 
 
+        /// 98차(사용자: 「메인페이지는 위아래 이상한데 원래대로 돌려줘」): 79차에 1080×2400 으로 늘린
+        /// UI_Title_Mock(위엔 밋밋한 하늘 띠, 아래엔 뒤집힌 길)이 어색해 **1080×1920 원본**으로 되돌렸다.
+        /// false = 원본 그림을 67차처럼 안전영역에 꽉 채운다(20:9 폰에선 세로로 조금 늘어남, 버튼 히트는
+        /// 그림 비율 앵커라 어긋나지 않음). true = 79차 방식(제작 1080×2400 풀블리드) — 그때는 그림도
+        /// Tools/_bg20_backup/UI_Title_Mock_1080x2400.png 로 바꿔야 한다.
+        public static readonly bool GateArt20x9 = false;
+
         /// 프린세스 메이커 대문식 타이틀: 전면 키아트 + 상단 로고 + 장식 메뉴 패널.
         private void BuildGateUi(Transform root)
         {
@@ -456,9 +463,10 @@ namespace CoastRun
             //   16:9 는 위아래 240px 이 잘린다 — 잘리는 곳은 하늘·꽃밭뿐이고 그림의 중앙 16:9(로고·버튼)는
             //   어느 비율에서도 온전히 보인다. 전엔 안전영역에 늘여 붙여(preserveAspect=false) 20:9 폰에서
             //   인물이 세로로 늘어났다.
+            // 98차: GateArt20x9=false 면 원본(1080×1920)을 안전영역(인셋+HudPad)에 채우는 67차 방식.
             var sprite = CoastUiArt.AsSprite(useMock ? mockArt : _gateArt, 100f);
             var canvas = root.GetComponentInParent<Canvas>();
-            var bg = canvas != null
+            var bg = GateArt20x9 && canvas != null
                 ? CoastUiCanvas.FullBleedBackground(canvas, "GateArt", sprite)
                 : CoastHudLayout.MakeImage(root, "GateArt", Vector2.zero, Vector2.one, new Vector2(-pad, -pad), new Vector2(pad, pad), Color.white);
             if (bg.sprite == null) bg.sprite = sprite;
@@ -506,7 +514,14 @@ namespace CoastRun
                 {
                     var b = RunHudChrome.HitButton(bg.transform, n, Vector2.zero, Vector2.zero, a);
                     var r = b.GetComponent<RectTransform>();
-                    CoastUiCanvas.SafeZoneRectToBgAnchors(c, sz, out var aMin, out var aMax);
+                    Vector2 aMin, aMax;
+                    if (GateArt20x9) CoastUiCanvas.SafeZoneRectToBgAnchors(c, sz, out aMin, out aMax);
+                    else
+                    {
+                        // 98차: 원본 그림(720×1280 좌표계 그대로) — 67차 식.
+                        aMin = new Vector2((c.x - sz.x * 0.5f) / CoastUiCanvas.SafeZoneWidth, (c.y - sz.y * 0.5f) / CoastUiCanvas.SafeZoneHeight);
+                        aMax = new Vector2((c.x + sz.x * 0.5f) / CoastUiCanvas.SafeZoneWidth, (c.y + sz.y * 0.5f) / CoastUiCanvas.SafeZoneHeight);
+                    }
                     r.anchorMin = aMin; r.anchorMax = aMax;
                     r.pivot = new Vector2(0.5f, 0.5f); r.anchoredPosition = Vector2.zero; r.sizeDelta = Vector2.zero;
                     _gateHits.Add(b);
@@ -558,7 +573,14 @@ namespace CoastRun
                 var chip = CoastUiArt.GlossyPill(bg.transform, "ChapterChip", new Color(0.22f, 0.58f, 0.97f), 21, 5);
                 var crt = chip.rectTransform;
                 // 79차: 그림이 1080×2400 으로 길어졌으니 시안 픽셀(1080×1920) 자리를 그대로 옮겨 준다.
-                CoastUiCanvas.MockPixelRectToBgAnchors(656f, 1396f, 880f, 1486f, out var chipMin, out var chipMax);
+                Vector2 chipMin, chipMax;
+                if (GateArt20x9) CoastUiCanvas.MockPixelRectToBgAnchors(656f, 1396f, 880f, 1486f, out chipMin, out chipMax);
+                else
+                {
+                    // 98차: 원본 그림 픽셀(1080×1920, 좌상단 원점) 비율 그대로 — 67차 식.
+                    chipMin = new Vector2(656f / 1080f, 1f - 1486f / 1920f);
+                    chipMax = new Vector2(880f / 1080f, 1f - 1396f / 1920f);
+                }
                 crt.anchorMin = chipMin; crt.anchorMax = chipMax;
                 crt.pivot = new Vector2(0.5f, 0.5f); crt.anchoredPosition = Vector2.zero; crt.sizeDelta = Vector2.zero;
                 chip.raycastTarget = true;

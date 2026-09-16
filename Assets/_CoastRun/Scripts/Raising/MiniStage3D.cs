@@ -74,7 +74,9 @@ namespace CoastRun
         {
             var size = _field.rect.size;
             float px = Mathf.Abs(_field.lossyScale.x);
-            int w = Mathf.Clamp(Mathf.RoundToInt(size.x * px), 64, 1200), h = Mathf.Clamp(Mathf.RoundToInt(size.y * px), 64, 1600);
+            // 99차(사용자: 20:9 에서 화면이 흐릿함): 상한 1200×1600 → 1440×2560. 1080×2340 화면에서 RT 가 1600 으로
+            //   잘려 세로 1.46배로 늘려 그려졌다(16:9 때도 1.2배). 이제 화면 픽셀 그대로.
+            int w = Mathf.Clamp(Mathf.RoundToInt(size.x * px), 64, 1440), h = Mathf.Clamp(Mathf.RoundToInt(size.y * px), 64, 2560);
             if (!force && _rt != null && Mathf.Abs(_rt.width - w) < 3 && Mathf.Abs(_rt.height - h) < 3) return;
             if (_rt != null) { Cam.targetTexture = null; _rt.Release(); Destroy(_rt); }
             _rt = new RenderTexture(w, h, 24, RenderTextureFormat.ARGB32) { name = "MiniStageRT", antiAliasing = 1, useMipMap = false, filterMode = FilterMode.Bilinear };
