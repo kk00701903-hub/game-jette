@@ -31,7 +31,8 @@ namespace CoastRun
             go.transform.SetParent(titleUi, false);
             var rt = go.GetComponent<RectTransform>();
             rt.anchorMin = rt.anchorMax = new Vector2(1f, 1f); rt.pivot = new Vector2(0.5f, 0.5f);
-            rt.anchoredPosition = new Vector2(-78f, -286f); rt.sizeDelta = new Vector2(124f, 124f);
+            // 79차-2(사용자: 「기부부탁은 0.6cm 만 위로」) — 0.6cm = 0.6/2.54×416dpi ≈ 98px(S25) ÷ DesignScale ≈ 65 디자인 단위.
+            rt.anchoredPosition = new Vector2(-78f, -286f + 65f); rt.sizeDelta = new Vector2(124f, 124f);
             var img = go.GetComponent<Image>();
             var art = ArtAssets.LoadTexture("UI_Donate_Cup");
             if (art != null) { img.sprite = CoastUiArt.AsSprite(art); img.preserveAspect = true; img.color = Color.white; }
