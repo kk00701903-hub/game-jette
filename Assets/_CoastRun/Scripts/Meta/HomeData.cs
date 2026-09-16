@@ -30,15 +30,19 @@ namespace CoastRun
         public int rice;                  // 성공 시 쌀 주분
         public bool rose;                 // 성공 시 스트레스 0
         public Color petal, center;
+        public string emoji;              // 텃밭 말풍선·카드 아이콘
+        public string growHintKo, growHintEn; // "성장 2-3분" 식 표기
         public string Name => Loc.T(ko, en);
         public int waters => weeks;       // 구 코드 호환(성장 단계 수)
         public bool Edible => food > 0 || rice > 0;
         public string RewardText => rose ? Loc.T("스트레스 0", "Stress → 0") : rice > 0 ? Loc.T($"쌀 {rice}주분", $"Rice ×{rice}w") : Loc.T($"반찬 {food}주분", $"Side ×{food}w");
+        public string GrowHint => Loc.T(growHintKo ?? "", growHintEn ?? "");
+        public string Emoji => string.IsNullOrEmpty(emoji) ? "🌱" : emoji;
     }
 
     public static class HomeData
     {
-        public const int PotCount = 4;
+        public const int PotCount = 3;
         public const int MiniGameRewardPerWeek = 3;
 
         // ── 가구(방 꾸미기 v2에서 추가된 것; 장식 12종은 RoomDeco.All) ──
@@ -206,16 +210,17 @@ namespace CoastRun
         // ── 베란다 화분 ──
         public static readonly SeedDef[] Seeds =
         {
-            new SeedDef { id = "tomato", ko = "토마토",  en = "Tomato", price = 200, weeks = 2, chance = 0.70f, food = 2, petal = new Color(0.95f, 0.25f, 0.20f), center = new Color(0.40f, 0.70f, 0.35f) },
-            new SeedDef { id = "potato", ko = "감자",    en = "Potato", price = 180, weeks = 3, chance = 0.80f, food = 3, petal = new Color(0.82f, 0.66f, 0.38f), center = new Color(0.45f, 0.70f, 0.35f) },
-            new SeedDef { id = "rice",   ko = "쌀(벼)",  en = "Rice",   price = 200, weeks = 3, chance = 0.50f, rice = 2, petal = new Color(0.90f, 0.80f, 0.35f), center = new Color(0.55f, 0.75f, 0.30f) },
-            new SeedDef { id = "rose",   ko = "장미",    en = "Rose",   price = 180, weeks = 2, chance = 0.60f, rose = true, petal = new Color(0.98f, 0.45f, 0.62f), center = new Color(0.35f, 0.60f, 0.30f) },
+            new SeedDef { id = "tomato",   ko = "토마토",  en = "Tomato",   price = 200, weeks = 2, chance = 0.70f, food = 2, petal = new Color(0.95f, 0.25f, 0.20f), center = new Color(0.40f, 0.70f, 0.35f), emoji = "🍅", growHintKo = "성장 2-3분", growHintEn = "grow 2-3m" },
+            new SeedDef { id = "potato",   ko = "감자",    en = "Potato",   price = 180, weeks = 3, chance = 0.80f, food = 3, petal = new Color(0.82f, 0.66f, 0.38f), center = new Color(0.45f, 0.70f, 0.35f), emoji = "🥔", growHintKo = "성장 3-4분", growHintEn = "grow 3-4m" },
+            new SeedDef { id = "rice",     ko = "벼",      en = "Rice",     price = 200, weeks = 3, chance = 0.50f, rice = 2, petal = new Color(0.90f, 0.80f, 0.35f), center = new Color(0.55f, 0.75f, 0.30f), emoji = "🌾", growHintKo = "성장 2-3분", growHintEn = "grow 2-3m" },
+            new SeedDef { id = "rose",     ko = "장미",    en = "Rose",     price = 180, weeks = 2, chance = 0.60f, rose = true, petal = new Color(0.98f, 0.45f, 0.62f), center = new Color(0.35f, 0.60f, 0.30f), emoji = "🌹", growHintKo = "성장 1-2분", growHintEn = "grow 1-2m" },
+            new SeedDef { id = "lavender", ko = "라벤더",  en = "Lavender", price = 160, weeks = 2, chance = 0.40f, food = 1, petal = new Color(0.72f, 0.55f, 0.92f), center = new Color(0.40f, 0.68f, 0.40f), emoji = "💜", growHintKo = "성장 1-2분", growHintEn = "grow 1-2m" },
         };
         public static SeedDef Seed(string id) { foreach (var s in Seeds) if (s.id == id) return s; return null; }
         public static void EnsurePots(SaveData s)
         {
             if (s == null) return;
-            if (s.pots == null || s.pots.Length < PotCount)
+            if (s.pots == null || s.pots.Length != PotCount)
             {
                 var n = new PotState[PotCount];
                 for (int i = 0; i < n.Length; i++) n[i] = s.pots != null && i < s.pots.Length && s.pots[i] != null ? s.pots[i] : new PotState();

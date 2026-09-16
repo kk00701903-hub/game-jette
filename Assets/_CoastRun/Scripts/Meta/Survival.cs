@@ -85,7 +85,7 @@ namespace CoastRun
             if (r.harvested > 0)
             {
                 string crops = r.harvestNames.Count > 0 ? string.Join(", ", r.harvestNames) : $"{r.harvested}";
-                r.lines.Add(Loc.T($"텃밭에 다 자람: {crops} — 마이룸에서 수확", $"Garden ready: {crops} — harvest in My Room"));
+                r.lines.Add(Loc.T($"텃밭에 다 자랐다: {crops} — 마이룸에서 수확", $"Garden ready: {crops} — harvest in My Room"));
             }
             r.lines.Add(r.slept ? Loc.T("잘 잤다", "Slept well") : Loc.T($"잠을 못 잤다 ({s.sleepDebt}주째)", $"No sleep ({s.sleepDebt} wk)"));
             r.lines.Add(r.clothesWorn ? Loc.T("옷이 낡아서 못 입겠다 — 새 옷을 사자", "Clothes worn out — buy new") : Loc.T($"옷 {s.clothesWeeks}주 남음", $"Clothes {s.clothesWeeks} wk left"));
