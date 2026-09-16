@@ -1,0 +1,13 @@
+
+# ── Android 에뮬레이터/실기기 (adb) — Tools/Mcp/android_mcp_server.py 가 읽음 ──
+# Cursor 는 터미널 권한으로 adb/emulator 를 직접 돌렸고, Claude 데스크톱은 android MCP 서버로 같은 일을 한다.
+# 비워 두면 기본값: %LOCALAPPDATA%\Android\Sdk 아래 platform-tools\adb.exe, emulator\emulator.exe
+ANDROID_SDK_ROOT=C:\Users\ares2\AppData\Local\Android\Sdk
+ANDROID_ADB=C:\Users\ares2\AppData\Local\Android\Sdk\platform-tools\adb.exe
+ANDROID_EMULATOR=C:\Users\ares2\AppData\Local\Android\Sdk\emulator\emulator.exe
+# AVD: CoastRun_ARM64(ARM 이미지, x86_64 호스트 QEMU2 에서 부팅 불가) / CoastRun_API30(x86_64, ARM APK 는 SIGILL)
+# → Unity 6 APK 시각 확인은 실기기 USB(adb) 가 사실상 유일 (Tools/Mcp/EMU_VISUAL.md)
+ANDROID_AVD=CoastRun_ARM64
+ANDROID_AVD_ALT=CoastRun_API30
+ANDROID_PKG=com.jette.coastrun
+ANDROID_ACTIVITY=com.unity3d.player.UnityPlayerActivity

@@ -1,0 +1,18 @@
+=== bird pets 2026-09-06 23:06:37.36 
+C:\dev\game\Tools\blender\bird_pet.py:14: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  m.use_nodes = True
+C:\dev\game\Tools\blender\bird_pet.py:14: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  m.use_nodes = True
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Pet_Sparrow.fbx'
+export finished in 0.0454 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Pet_Sparrow.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Pet_WildGoose.fbx'
+export finished in 0.0428 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Pet_WildGoose.fbx
+bird pets done
+Blender 5.2.1 LTS (hash 9e2066aef7ef built 2026-08-25 02:38:20)
+
+Blender quit
+exit 0 

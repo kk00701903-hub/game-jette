@@ -1,0 +1,20 @@
+FBX version: 7700
+armature: Armature bones: 52 scale: (0.009999999776482582, 0.009999999776482582, 0.009999999776482582)
+missing: []
+forward: (0.01, -1.0, 0.0) side: (-1.0, -0.01, 0.0)
+hip height (world): 0.6977667808532715
+check f1 LeftArm: fwd 0.060 side -0.127 up 0.351
+check f1 LeftForeArm: fwd 0.025 side -0.191 up 0.176
+check f1 LeftHand: fwd 0.207 side -0.259 up 0.133
+check f1 LeftFoot: fwd -0.377 side -0.075 up -0.273
+check f1 RightFoot: fwd -0.230 side 0.076 up -0.560
+check f1 Head: fwd 0.086 side -0.000 up 0.472
+check: LeftFoot at frame1 fwd comp: -0.377 (다리 앞뒤 스윙 기준점: 0 근처)
+check: LeftFoot at frame6 fwd comp: 0.043 (양수면 왼발이 앞으로 나감 = 정상)
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Rig\\Anim_Run.fbx'
+export finished in 0.1643 sec.
+exported: C:\dev\game\Assets\Resources\CoastRun\Rig\Anim_Run.fbx 412060
+Blender 5.2.1 LTS (hash 9e2066aef7ef built 2026-08-25 02:38:20)
+
+Blender quit

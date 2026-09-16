@@ -1,0 +1,72 @@
+=== Jeju kit build 2026-09-05 17:42:12.57 
+C:\dev\game\Tools\blender\jeju_kit.py:34: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  m.use_nodes = True
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\Bldg_A.fbx'
+export finished in 0.0131 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\Bldg_A.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\Bldg_B.fbx'
+export finished in 0.0150 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\Bldg_B.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\Bldg_C.fbx'
+export finished in 0.0117 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\Bldg_C.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\Bldg_D.fbx'
+export finished in 0.0132 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\Bldg_D.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\Bldg_E.fbx'
+export finished in 0.0128 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\Bldg_E.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\Bldg_F.fbx'
+export finished in 0.0143 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\Bldg_F.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\Bldg_G.fbx'
+export finished in 0.0135 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\Bldg_G.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\Bldg_H.fbx'
+export finished in 0.0085 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\Bldg_H.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\Prop_Skateboard.fbx'
+export finished in 0.0088 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\Prop_Skateboard.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\Prop_Hareubang.fbx'
+export finished in 0.0113 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\Prop_Hareubang.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\Prop_Palm.fbx'
+export finished in 0.0094 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\Prop_Palm.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\Prop_StoneWall.fbx'
+export finished in 0.0090 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\Prop_StoneWall.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\Prop_OrangeTree.fbx'
+export finished in 0.0089 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\Prop_OrangeTree.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\Prop_UtilityPole.fbx'
+export finished in 0.0112 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\Prop_UtilityPole.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\Prop_Bench.fbx'
+export finished in 0.0092 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\Prop_Bench.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\Prop_OrangeStall.fbx'
+export finished in 0.0115 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\Prop_OrangeStall.fbx
+Jeju kit done: 16 objects → C:\dev\game\Assets\Resources\CoastRun\Models
+Blender 5.2.1 LTS (hash 9e2066aef7ef built 2026-08-25 02:38:20)
+
+Blender quit
+exit 0 

@@ -1,0 +1,387 @@
+[
+ {
+  "id": "CHIBI_BASE",
+  "keys": [
+   "H19"
+  ],
+  "ratio": "9:16",
+  "sig": "chibi base",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Draw her as a cute chibi sticker: big head (1/3 of height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border. spring, beginner look: chin-length black bob with the yellow hairpin, yellow short-sleeve t-shirt, denim shorts, white sneakers, small blue backpack, standing relaxed, calm gentle smile, hands at her sides. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_S1_Normal",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "S1 Normal",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in spring, beginner look: chin-length black bob with the yellow hairpin, yellow short-sleeve t-shirt, denim shorts, white sneakers, small blue backpack; pose: standing relaxed, calm gentle smile, hands at her sides. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_S1_Happy",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "S1 Happy",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in spring, beginner look: chin-length black bob with the yellow hairpin, yellow short-sleeve t-shirt, denim shorts, white sneakers, small blue backpack; pose: both arms raised high, big open-mouth laugh, eyes closed with joy, bouncing. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_S1_Tired",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "S1 Tired",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in spring, beginner look: chin-length black bob with the yellow hairpin, yellow short-sleeve t-shirt, denim shorts, white sneakers, small blue backpack; pose: slouching, dark circles under the eyes, eyes half closed, mouth in a flat line, one hand rubbing her neck. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_S2_Normal",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "S2 Normal",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in summer look: hair a little longer (to the shoulders) tied in a low ponytail, light sun tan, sky-blue short-sleeve t-shirt, denim shorts, sandals, a straw hat hanging on her back; pose: standing relaxed, calm gentle smile, hands at her sides. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_S2_Happy",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "S2 Happy",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in summer look: hair a little longer (to the shoulders) tied in a low ponytail, light sun tan, sky-blue short-sleeve t-shirt, denim shorts, sandals, a straw hat hanging on her back; pose: both arms raised high, big open-mouth laugh, eyes closed with joy, bouncing. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_S2_Tired",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "S2 Tired",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in summer look: hair a little longer (to the shoulders) tied in a low ponytail, light sun tan, sky-blue short-sleeve t-shirt, denim shorts, sandals, a straw hat hanging on her back; pose: slouching, dark circles under the eyes, eyes half closed, mouth in a flat line, one hand rubbing her neck. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_S3_Normal",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "S3 Normal",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in autumn look: shoulder-length black hair down, sky-blue hoodie, denim shorts, white sneakers, a small old radio hanging from a strap; pose: standing relaxed, calm gentle smile, hands at her sides. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_S3_Happy",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "S3 Happy",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in autumn look: shoulder-length black hair down, sky-blue hoodie, denim shorts, white sneakers, a small old radio hanging from a strap; pose: both arms raised high, big open-mouth laugh, eyes closed with joy, bouncing. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_S3_Tired",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "S3 Tired",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in autumn look: shoulder-length black hair down, sky-blue hoodie, denim shorts, white sneakers, a small old radio hanging from a strap; pose: slouching, dark circles under the eyes, eyes half closed, mouth in a flat line, one hand rubbing her neck. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_S4_Normal",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "S4 Normal",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in winter look, almost twenty: long straight black hair below the shoulders, grey wool coat over the sky-blue hoodie, knitted scarf, jeans, boots, a little taller and more grown-up face; pose: standing relaxed, calm gentle smile, hands at her sides. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_S4_Happy",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "S4 Happy",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in winter look, almost twenty: long straight black hair below the shoulders, grey wool coat over the sky-blue hoodie, knitted scarf, jeans, boots, a little taller and more grown-up face; pose: both arms raised high, big open-mouth laugh, eyes closed with joy, bouncing. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_S4_Tired",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "S4 Tired",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in winter look, almost twenty: long straight black hair below the shoulders, grey wool coat over the sky-blue hoodie, knitted scarf, jeans, boots, a little taller and more grown-up face; pose: slouching, dark circles under the eyes, eyes half closed, mouth in a flat line, one hand rubbing her neck. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_Pose_SleepLying",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "pose SleepLying",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in spring, beginner look: chin-length black bob with the yellow hairpin, yellow short-sleeve t-shirt, denim shorts, white sneakers, small blue backpack; pose: lying on her side asleep on a thin futon, eyes closed, small 'z z z', hugging a pillow. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_Pose_Cook",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "pose Cook",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in spring, beginner look: chin-length black bob with the yellow hairpin, yellow short-sleeve t-shirt, denim shorts, white sneakers, small blue backpack; pose: wearing an apron, stirring a small pot with a wooden spoon, steam rising, tongue out in concentration. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_Pose_Run",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "pose Run",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in spring, beginner look: chin-length black bob with the yellow hairpin, yellow short-sleeve t-shirt, denim shorts, white sneakers, small blue backpack; pose: running fast to the right with arms pumping, hair flying, determined face. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_Pose_Raincoat",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "pose Raincoat",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in autumn look: shoulder-length black hair down, sky-blue hoodie, denim shorts, white sneakers, a small old radio hanging from a strap; pose: hugging an old orange rain coat to her chest with both arms, eyes closed, soft sad smile. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_Pose_Birthday",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "pose Birthday",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in spring, beginner look: chin-length black bob with the yellow hairpin, yellow short-sleeve t-shirt, denim shorts, white sneakers, small blue backpack; pose: holding a small cake with lit candles, surprised happy face, cheeks pink. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_Pose_Garden",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "pose Garden",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in spring, beginner look: chin-length black bob with the yellow hairpin, yellow short-sleeve t-shirt, denim shorts, white sneakers, small blue backpack; pose: watering a potted tomato plant with a small watering can, kneeling, smiling. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_Pose_Marbles",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "pose Marbles",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in spring, beginner look: chin-length black bob with the yellow hairpin, yellow short-sleeve t-shirt, denim shorts, white sneakers, small blue backpack; pose: crouching and flicking a glass marble with her thumb, one eye closed to aim. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_Pose_HugKid",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "pose HugKid",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in spring, beginner look: chin-length black bob with the yellow hairpin, yellow short-sleeve t-shirt, denim shorts, white sneakers, small blue backpack; pose: kneeling and hugging a small child in an oversized orange rain coat (hood up, face hidden), her eyes closed, tender. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_Pose_NightWalk",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "pose NightWalk",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in autumn look: shoulder-length black hair down, sky-blue hoodie, denim shorts, white sneakers, a small old radio hanging from a strap; pose: walking with a flashlight at night, wearing a reflective vest over her clothes, alert face. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_Pose_Sick",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "pose Sick",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in spring, beginner look: chin-length black bob with the yellow hairpin, yellow short-sleeve t-shirt, denim shorts, white sneakers, small blue backpack; pose: lying under a blanket with a wet towel on her forehead, flushed cheeks, weak expression. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_Pose_Radio",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "pose Radio",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in autumn look: shoulder-length black hair down, sky-blue hoodie, denim shorts, white sneakers, a small old radio hanging from a strap; pose: sitting cross-legged holding a small old radio to her ear, eyes closed, listening. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_Pose_Letter",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "pose Letter",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in autumn look: shoulder-length black hair down, sky-blue hoodie, denim shorts, white sneakers, a small old radio hanging from a strap; pose: sitting and reading a letter, eyes wet, one hand over her mouth. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_Pose_Milk",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "pose Milk",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in spring, beginner look: chin-length black bob with the yellow hairpin, yellow short-sleeve t-shirt, denim shorts, white sneakers, small blue backpack; pose: drinking from a glass milk bottle with both hands, eyes closed, content. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_Pose_Wave",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "pose Wave",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in spring, beginner look: chin-length black bob with the yellow hairpin, yellow short-sleeve t-shirt, denim shorts, white sneakers, small blue backpack; pose: waving one hand toward the viewer with a bright smile. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_Pose_Think",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "pose Think",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in spring, beginner look: chin-length black bob with the yellow hairpin, yellow short-sleeve t-shirt, denim shorts, white sneakers, small blue backpack; pose: one finger on her chin, looking up, thinking, question mark in the air. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_Pose_Shy",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "pose Shy",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in spring, beginner look: chin-length black bob with the yellow hairpin, yellow short-sleeve t-shirt, denim shorts, white sneakers, small blue backpack; pose: hands clasped in front, blushing, looking sideways. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_Pose_Surprised",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "pose Surprised",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in spring, beginner look: chin-length black bob with the yellow hairpin, yellow short-sleeve t-shirt, denim shorts, white sneakers, small blue backpack; pose: both hands on her cheeks, mouth open, wide eyes. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_Pose_Tower",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "pose Tower",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in autumn look: shoulder-length black hair down, sky-blue hoodie, denim shorts, white sneakers, a small old radio hanging from a strap; pose: seen from behind at three-quarter angle, looking up at a tiny distant transmission tower (drawn small in the corner), hand shading her eyes. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_Pose_Snow",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "pose Snow",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in winter look, almost twenty: long straight black hair below the shoulders, grey wool coat over the sky-blue hoodie, knitted scarf, jeans, boots, a little taller and more grown-up face; pose: wearing a scarf, holding a small snowball, snowflakes around, cheeks red from cold, laughing. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Raise_Girl_Pose_BusStop",
+  "keys": [
+   "H19",
+   "CHIBI"
+  ],
+  "ratio": "9:16",
+  "sig": "pose BusStop",
+  "prompt": "Image1 is HANEUL's face reference: a Korean girl, oval face, straight black hair with a small yellow hairpin, dark clear eyes, no makeup — keep her face and hair. Image2 is the chibi art style reference — copy its style exactly: cute chibi sticker illustration, big head (head is 1/3 of total height), small body, thick clean dark outlines, soft flat shading with a little watercolor texture, white sticker border around the figure. Draw HANEUL in autumn look: shoulder-length black hair down, sky-blue hoodie, denim shorts, white sneakers, a small old radio hanging from a strap; pose: standing at a small bus stop sign holding two glass milk bottles, looking down the road, waiting. Full body, centered, single character only, plain solid flat magenta (#FF00FF) background with nothing else, no shadow on the ground, no text, no letters, no watermark, vertical 9:16."
+ },
+ {
+  "id": "Sched_job_sushi",
+  "keys": [],
+  "ratio": "4:3",
+  "sig": "card job_sushi",
+  "prompt": "a small seaside sashimi restaurant interior, the girl in an apron carrying a tray of dishes between wooden tables, big window showing the sea Soft watercolor storybook illustration, warm pastel colors, gentle light, the girl small in the scene (chin-length black bob, yellow hairpin, yellow t-shirt), no text, no letters, no signs with words, horizontal 4:3."
+ },
+ {
+  "id": "Sched_job_patrol",
+  "keys": [],
+  "ratio": "4:3",
+  "sig": "card job_patrol",
+  "prompt": "night, a small caretaker's hut at the foot of a huge transmission tower, the girl in a reflective vest holding a flashlight on patrol, stars, tall grass Soft watercolor storybook illustration, warm pastel colors, gentle light, the girl small in the scene (chin-length black bob, yellow hairpin, yellow t-shirt), no text, no letters, no signs with words, horizontal 4:3."
+ },
+ {
+  "id": "Sched_job_store",
+  "keys": [],
+  "ratio": "4:3",
+  "sig": "card job_store",
+  "prompt": "a tiny village convenience store at dusk, the girl behind the counter stacking milk bottles on a shelf Soft watercolor storybook illustration, warm pastel colors, gentle light, the girl small in the scene (chin-length black bob, yellow hairpin, yellow t-shirt), no text, no letters, no signs with words, horizontal 4:3."
+ },
+ {
+  "id": "Sched_job_market",
+  "keys": [],
+  "ratio": "4:3",
+  "sig": "card job_market",
+  "prompt": "an early morning Jeju fish market, the girl in rubber boots carrying a crate of fish, ice and buckets Soft watercolor storybook illustration, warm pastel colors, gentle light, the girl small in the scene (chin-length black bob, yellow hairpin, yellow t-shirt), no text, no letters, no signs with words, horizontal 4:3."
+ },
+ {
+  "id": "Sched_job_library",
+  "keys": [],
+  "ratio": "4:3",
+  "sig": "card job_library",
+  "prompt": "a small quiet village library, the girl on a step stool shelving books, afternoon light Soft watercolor storybook illustration, warm pastel colors, gentle light, the girl small in the scene (chin-length black bob, yellow hairpin, yellow t-shirt), no text, no letters, no signs with words, horizontal 4:3."
+ },
+ {
+  "id": "Sched_job_radio",
+  "keys": [],
+  "ratio": "4:3",
+  "sig": "card job_radio",
+  "prompt": "a small local radio station booth, the girl wearing headphones adjusting a dial, 'on air' lamp without letters Soft watercolor storybook illustration, warm pastel colors, gentle light, the girl small in the scene (chin-length black bob, yellow hairpin, yellow t-shirt), no text, no letters, no signs with words, horizontal 4:3."
+ },
+ {
+  "id": "Sched_job_field",
+  "keys": [],
+  "ratio": "4:3",
+  "sig": "card job_field",
+  "prompt": "a Jeju garlic and cabbage field in the wind, the girl weeding with a hoe, stone walls, sea in the distance Soft watercolor storybook illustration, warm pastel colors, gentle light, the girl small in the scene (chin-length black bob, yellow hairpin, yellow t-shirt), no text, no letters, no signs with words, horizontal 4:3."
+ },
+ {
+  "id": "Sched_job_nets",
+  "keys": [],
+  "ratio": "4:3",
+  "sig": "card job_nets",
+  "prompt": "a harbor pier, the girl untangling and coiling old fishing nets beside orange buoys, seagulls Soft watercolor storybook illustration, warm pastel colors, gentle light, the girl small in the scene (chin-length black bob, yellow hairpin, yellow t-shirt), no text, no letters, no signs with words, horizontal 4:3."
+ }
+]

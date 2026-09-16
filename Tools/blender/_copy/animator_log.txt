@@ -1,0 +1,57 @@
+08:10:39 [Mixamo] BuildAnimator start
+08:10:40 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Collect.fbx: defaultClips=1 clipAnimations=0 first='mixamo.com' 0-240 loop=False
+08:10:40 [Mixamo] clip settings → Assets/Resources/CoastRun/Rig/Anim_Collect.fbx loop=False
+08:10:40 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Hit.fbx: defaultClips=1 clipAnimations=0 first='mixamo.com' 0-55 loop=False
+08:10:40 [Mixamo] clip settings → Assets/Resources/CoastRun/Rig/Anim_Hit.fbx loop=False
+08:10:40 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Jump.fbx: defaultClips=1 clipAnimations=0 first='mixamo.com' 0-28 loop=False
+08:10:41 [Mixamo] clip settings → Assets/Resources/CoastRun/Rig/Anim_Jump.fbx loop=False
+08:10:41 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Push.fbx: defaultClips=1 clipAnimations=0 first='mixamo.com' 0-65 loop=False
+08:10:41 [Mixamo] clip settings → Assets/Resources/CoastRun/Rig/Anim_Push.fbx loop=True
+08:10:41 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Run.fbx: defaultClips=1 clipAnimations=0 first='Scene' 1-21 loop=False
+08:10:41 [Mixamo] clip settings → Assets/Resources/CoastRun/Rig/Anim_Run.fbx loop=True
+08:10:41 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Skate.fbx: defaultClips=1 clipAnimations=0 first='mixamo.com' 0-30 loop=False
+08:10:41 [Mixamo] clip settings → Assets/Resources/CoastRun/Rig/Anim_Skate.fbx loop=True
+08:10:42 [Mixamo] run clip: Scene len=0.6666667 loop=False
+08:11:51 [Mixamo] BuildAnimator start
+08:11:51 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Collect.fbx: defaultClips=1 clipAnimations=0 first='mixamo.com' 0-240 loop=False
+08:11:51 [Mixamo] clip settings → Assets/Resources/CoastRun/Rig/Anim_Collect.fbx loop=False
+08:11:51 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Hit.fbx: defaultClips=1 clipAnimations=0 first='mixamo.com' 0-55 loop=False
+08:11:51 [Mixamo] clip settings → Assets/Resources/CoastRun/Rig/Anim_Hit.fbx loop=False
+08:11:51 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Jump.fbx: defaultClips=1 clipAnimations=0 first='mixamo.com' 0-28 loop=False
+08:11:52 [Mixamo] clip settings → Assets/Resources/CoastRun/Rig/Anim_Jump.fbx loop=False
+08:11:52 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Push.fbx: defaultClips=1 clipAnimations=0 first='mixamo.com' 0-65 loop=False
+08:11:52 [Mixamo] clip settings → Assets/Resources/CoastRun/Rig/Anim_Push.fbx loop=True
+08:11:52 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Run.fbx: defaultClips=1 clipAnimations=0 first='Scene' 1-21 loop=False
+08:11:52 [Mixamo] clip settings → Assets/Resources/CoastRun/Rig/Anim_Run.fbx loop=True
+08:11:52 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Skate.fbx: defaultClips=1 clipAnimations=0 first='mixamo.com' 0-30 loop=False
+08:11:53 [Mixamo] clip settings → Assets/Resources/CoastRun/Rig/Anim_Skate.fbx loop=True
+08:11:53 [Mixamo] run clip: Run len=0.6666667 loop=True
+08:12:09 [Mixamo] BuildAnimator start
+08:12:09 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Collect.fbx: defaultClips=1 clipAnimations=1 first='mixamo.com' 0-240 loop=False
+08:12:09 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Hit.fbx: defaultClips=1 clipAnimations=1 first='mixamo.com' 0-55 loop=False
+08:12:09 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Jump.fbx: defaultClips=1 clipAnimations=1 first='mixamo.com' 0-28 loop=False
+08:12:09 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Push.fbx: defaultClips=1 clipAnimations=1 first='mixamo.com' 0-65 loop=False
+08:12:09 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Run.fbx: defaultClips=1 clipAnimations=1 first='Scene' 1-21 loop=False
+08:12:09 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Skate.fbx: defaultClips=1 clipAnimations=1 first='mixamo.com' 0-30 loop=False
+08:12:09 [Mixamo] run clip: Run len=0.6666667 loop=True
+21:01:22 [Mixamo] BuildAnimator start
+21:01:22 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Collect.fbx: defaultClips=1 clipAnimations=1 first='mixamo.com' 0-240 loop=False
+21:01:22 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_DoubleJump.fbx: defaultClips=1 clipAnimations=0 first='Scene' 1-19 loop=False
+21:01:22 [Mixamo] clip settings → Assets/Resources/CoastRun/Rig/Anim_DoubleJump.fbx loop=False
+21:01:22 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Hit.fbx: defaultClips=1 clipAnimations=1 first='mixamo.com' 0-55 loop=False
+21:01:22 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Jump.fbx: defaultClips=1 clipAnimations=1 first='mixamo.com' 0-28 loop=False
+21:01:22 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Push.fbx: defaultClips=1 clipAnimations=1 first='mixamo.com' 0-65 loop=False
+21:01:22 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Run.fbx: defaultClips=1 clipAnimations=1 first='mixamo.com' 0-21 loop=False
+21:01:22 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Skate.fbx: defaultClips=1 clipAnimations=1 first='mixamo.com' 0-30 loop=False
+21:01:23 [Mixamo] run clip: Run len=0.7 loop=True
+21:10:32 [Mixamo] BuildAnimator start
+21:10:32 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Collect.fbx: defaultClips=1 clipAnimations=1 first='mixamo.com' 0-240 loop=False
+21:10:32 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_DoubleJump.fbx: defaultClips=1 clipAnimations=1 first='mixamo.com' 0-33 loop=False
+21:10:32 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_DoubleJumpBlender.fbx: defaultClips=1 clipAnimations=0 first='Scene' 1-19 loop=False
+21:10:33 [Mixamo] clip settings → Assets/Resources/CoastRun/Rig/Anim_DoubleJumpBlender.fbx loop=False
+21:10:33 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Hit.fbx: defaultClips=1 clipAnimations=1 first='mixamo.com' 0-55 loop=False
+21:10:33 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Jump.fbx: defaultClips=1 clipAnimations=1 first='mixamo.com' 0-28 loop=False
+21:10:33 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Push.fbx: defaultClips=1 clipAnimations=1 first='mixamo.com' 0-65 loop=False
+21:10:33 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Run.fbx: defaultClips=1 clipAnimations=1 first='mixamo.com' 0-21 loop=False
+21:10:33 [Mixamo] Assets/Resources/CoastRun/Rig/Anim_Skate.fbx: defaultClips=1 clipAnimations=1 first='mixamo.com' 0-30 loop=False
+21:10:33 [Mixamo] run clip: Run len=0.7 loop=True

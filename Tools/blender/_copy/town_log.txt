@@ -1,0 +1,84 @@
+=== town kit build 2026-09-08 11:15:34.72 
+C:\dev\game\Tools\blender\town_kit.py:15: DeprecationWarning: 'Material.use_nodes' is expected to be removed in Blender 6.0
+  m = bpy.data.materials.new(name); m.use_nodes = True
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\Shop_A.fbx'
+export finished in 0.0171 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\Shop_A.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\Shop_B.fbx'
+export finished in 0.0120 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\Shop_B.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\Shop_C.fbx'
+export finished in 0.0163 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\Shop_C.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\Shop_D.fbx'
+export finished in 0.0160 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\Shop_D.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\Shop_E.fbx'
+export finished in 0.0137 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\Shop_E.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\Shop_F.fbx'
+export finished in 0.0128 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\Shop_F.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\House_A.fbx'
+export finished in 0.0181 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\House_A.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\House_B.fbx'
+export finished in 0.0123 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\House_B.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\Prop_CafeSet.fbx'
+export finished in 0.0081 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\Prop_CafeSet.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\Prop_Pavilion.fbx'
+export finished in 0.0083 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\Prop_Pavilion.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\FShop_Sq.fbx'
+export finished in 0.0105 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\FShop_Sq.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\FShop_Sq_Flat.fbx'
+export finished in 0.0131 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\FShop_Sq_Flat.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\FShop_Sq_Gable.fbx'
+export finished in 0.0156 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\FShop_Sq_Gable.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\FShop_Tall.fbx'
+export finished in 0.0120 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\FShop_Tall.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\FShop_Tall_Flat.fbx'
+export finished in 0.0165 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\FShop_Tall_Flat.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\FShop_Wide.fbx'
+export finished in 0.0109 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\FShop_Wide.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\FShop_Wide_Flat.fbx'
+export finished in 0.0115 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\FShop_Wide_Flat.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\FShop_Low.fbx'
+export finished in 0.0098 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\FShop_Low.fbx
+
+FBX export starting... 'C:\\dev\\game\\Assets\\Resources\\CoastRun\\Models\\FShop_Low_Gable.fbx'
+export finished in 0.0137 sec.
+exported C:\dev\game\Assets\Resources\CoastRun\Models\FShop_Low_Gable.fbx
+town kit done
+Blender 5.2.1 LTS (hash 9e2066aef7ef built 2026-08-25 02:38:20)
+
+Blender quit
+exit 0 
