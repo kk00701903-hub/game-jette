@@ -1056,7 +1056,8 @@ namespace CoastRun
             switch (v.key)
             {
                 case "speed": return Save.runMode == RunMode.Skateboard ? "스케이트보드: 속도 ×1.3 · 코인 ×1.3 (고급)" : "러닝: 속도 ×1.0 · 코인 ×1.0";
-                case "hp": return $"런닝 시작 HP {(RunTuning.BurnoutStart ? RunTuning.MaxHp * 0.7f : RunTuning.MaxHp):0} / {RunTuning.MaxHp:0}" + (RunTuning.BurnoutStart ? " (번아웃 -30%)" : "");
+                // 104차: 번아웃 -30% 는 스토리 러닝만 — K-POP 은 늘 만복으로 시작한다(ArcadeRun.StartKpop).
+                case "hp": return $"스토리 러닝 시작 HP {(RunTuning.BurnoutStart ? RunTuning.MaxHp * 0.7f : RunTuning.MaxHp):0} / {RunTuning.MaxHp:0}" + (RunTuning.BurnoutStart ? " (번아웃 -30% · K-POP 은 제외)" : "");
                 case "hearts": { var rec = Save.CurrentChapter; return rec != null ? $"이번 챕터 ♥{Save.chapterHearts} / {rec.heartsTarget} · S급 컷 {Mathf.CeilToInt(rec.heartsTarget * ChapterGrading.S_Ratio)}" : ""; }
                 case "luck": return $"대성공 확률 {ScheduleJudge.GreatChance(ScheduleTable.Get("job_cafe"), st):P1}" + (st.Burnout ? " (번아웃 ×0.2)" : st.Stage == StressStage.Worn ? " (지침 ×0.55)" : "");
             }

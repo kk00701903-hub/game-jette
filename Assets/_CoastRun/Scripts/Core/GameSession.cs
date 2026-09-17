@@ -375,6 +375,7 @@ namespace CoastRun
             // 체력 스탯 높은 런이 절반 게이지로 시작하거나, K-POP↔스토리 전환 시 수치가 어긋났다.
             _health?.ApplyTuning();
             _health?.ResetFull();
+            feedback?.Chrome?.SnapHealthGauge();   // 104차: 「다시」로 이어 달릴 때 게이지가 0 에서 차오르지 않게
             if (_jellies != null && player != null)
             {
                 _jellies.ConfigureHearts(stage.targetDistance);

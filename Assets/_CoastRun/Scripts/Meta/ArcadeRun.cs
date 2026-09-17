@@ -354,6 +354,10 @@ namespace CoastRun
             LastStampCoins = 0; LastAllClearCoins = 0; LastAllClear = false; LastNewBest = false; LastDoubled = false; LastMoney = 0; LastJelly = 0;
 
             RunTuning.Configure(save);   // 세이브 null이면 Reset()과 같다
+            // 104차(사용자: 「K-POP 러닝에서 체력이 100으로 시작 안 하는 경우가 있다」): 번아웃(스트레스 한계 초과)
+            //   이면 시작 HP 가 70% 였다 — 스토리 러닝은 그 주차의 몸 상태를 반영하는 게 맞지만, K-POP 은
+            //   곡을 골라 도는 아케이드라 육성 상태와 상관없이 늘 만복으로 시작한다.
+            RunTuning.BurnoutStart = false;
             RunTuning.HasSeason = true;
             RunTuning.Season = Season;
             if (save != null) RunTuning.Mode = save.runMode;

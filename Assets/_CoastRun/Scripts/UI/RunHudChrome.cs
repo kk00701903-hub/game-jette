@@ -180,6 +180,19 @@ namespace CoastRun
             health.OnHealed -= HandleHealed;
             health.OnHealed += HandleHealed;
             HandleHealth(health.Current, health.Max);
+            SnapHealthGauge();
+        }
+
+        /// 104차(사용자: 「K-POP 러닝에서 체력이 100으로 시작 안 하는 경우가 있다」): 게이지는 실제 값을
+        ///   부드럽게 따라가는데(_hpShown), 결과창에서 「다시」를 누르면 HUD 는 그대로 재사용되어
+        ///   죽을 때 값(0)에서 100 까지 차오르는 게 그대로 보였다 — 스테이지를 시작할 때 즉시 맞춘다.
+        public void SnapHealthGauge()
+        {
+            var health = HealthSystem.Instance;
+            if (health == null) return;
+            _hpShown = health.Normalized;
+            if (_hpGaugeFill != null) _hpGaugeFill.fillAmount = _hpShown;
+            if (_hpGaugeText != null) _hpGaugeText.text = Mathf.RoundToInt(_hpShown * 100f).ToString();
         }
 
         // ── 8차 노을 규칙 HUD ─────────────────────────────────────────
