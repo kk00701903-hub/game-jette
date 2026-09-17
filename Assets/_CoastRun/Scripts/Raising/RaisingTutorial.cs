@@ -48,6 +48,9 @@ namespace CoastRun
             return new List<Step>
             {
                 new Step { target = null, ko = "바다누나, 처음이지?\n내가 내가 알려 줄게. 하나씩 눌러 볼 거야.", en = "First time, sis?\nI'll show you. One by one, one by one." },
+                // 105차(사용자): 버튼 설명에 들어가기 전에 이야기의 틀 — 제주소녀와 서울소년의 첫사랑, 그리고 엔딩 셋.
+                new Step { target = null, ko = "이제 <b>제주소녀와 서울소년의 첫사랑 이야기</b>가 시작돼.\n누나랑 그 서울 오빠 이야기야. 그 오빠.", en = "Now the <b>first love of a Jeju girl and a Seoul boy</b> begins.\nSis and that Seoul boy. That boy." },
+                new Step { target = null, ko = "누나를 <b>어떻게 키우는지</b>에 따라\n이야기는 <b>세 가지 엔딩</b>으로 갈려. 세 개나 있어.", en = "How you <b>raise her</b> decides the story —\nit splits into <b>three endings</b>. Three of them." },
                 new Step { target = "Week", ko = "여기 <b>몇 주째</b>인지, 무슨 계절인지 나와.\n한 주에 세 번 움직이면 다음 주로 가.", en = "This says the <b>week</b> and the season.\nThree things each week, then the week ends." },
                 new Step { target = "GoalRibbon", ko = "이번에 <b>뭘 해야 하는지</b> 여기 써 있어.\n모르면 여기 봐. 여기 보면 돼.", en = "This ribbon says <b>what you need</b> this chapter.\nWhen you're lost, look here." },
                 new Step { target = "Money", ko = "<b>G</b>는 돈이야. 쌀 사고 옷 사고.\n다 쓰면 밥을 못 먹어. 못 먹어.", en = "<b>G</b> is money — rice, clothes, stuff.\nSpend it all and there's no dinner." },
