@@ -16,9 +16,9 @@ namespace CoastRun
         public static bool IsRunChapter(int chapter) { foreach (var c in RunChapters) if (c == chapter) return true; return false; }
 
         /// 85차: 컷씬(시네마틱 CS1~8)이 열리는 챕터 — v4 배치표(Docs/CUTSCENE_SCRIPTS_v4.md 「챕터 배치」).
-        public static readonly int[] CutsceneChapters = { 1, 3, 5, 7, 11, 12, 17, 20 };   // 103차(사용자): CS5 「파란 머리띠」 CH10→11 — EV6 「첫눈」이 기억 회상 뒤에 오면 태평해 보여 앞으로
-        /// 85차: 보조 컷씬 EV n 이 열리는 챕터(EV1 CH2 · EV2 CH4 · EV3 CH6 · EV4 CH8 · EV5 CH9 · EV6 CH10(103차) · EV7 CH13 · EV8 CH14 · EV9 CH15 · EV10 CH19)
-        public static readonly int[] EventChapters = { 2, 4, 6, 8, 9, 10, 13, 14, 15, 19 };   // 103차: EV6 CH11→10
+        public static readonly int[] CutsceneChapters = { 1, 3, 5, 7, 10, 12, 17, 20 };   // 107차(사용자): 대본 머리 순서와 같게 — CS5 CH10(EV6 첫눈은 CH9 로 그 앞)
+        /// 107차(사용자): 보조 컷씬 EV n 이 열리는 챕터 = 대본 순서(EV1 CH2 · EV3 CH4 · EV4 CH6 · EV5 CH8 · EV6 CH9 · EV7 CH11 · EV8 CH13 · EV9 CH14 · **EV2 CH15**(회상 묶음 끝) · EV10 CH19). 배열 인덱스 = EV 번호−1.
+        public static readonly int[] EventChapters = { 2, 15, 4, 6, 8, 9, 11, 13, 14, 19 };
 
         /// 스토리 러닝 한 판 상한(m) — 평균 11 m/s 로 3분 이내. StageManager 가 targetDistance 에 씌운다.
         public const float MaxRunMeters = 1500f;

@@ -124,7 +124,7 @@ namespace CoastRun
             }
         };
 
-        // ── 컷씬 2 「사진 속 얼굴」 · BGM_M6 · 15컷 ──
+        // ── 컷씬 2 「사진 속 얼굴」 · BGM_M6 · 16컷 ──
         private static readonly Def CS2 = new Def
         {
             id = "CS2", title = "사진 속 얼굴", bgm = "BGM_M6", sat = 0.78f, cardMain = "사진 속 얼굴",
@@ -143,21 +143,22 @@ namespace CoastRun
                 new Cut(null, "Cut_T_E5_03", "꼬마가 전단지를 접어 자기 우비 주머니에 넣었다. 「내가 갖고 있을게.」 후드를 더 눌러썼다.", 6.5f, false, null, "Cut_S_N5_04", 2),
                 new Cut(null, "Cut_T_V7_N2_12", "정류장에 키 큰 남자가 있었다. 흰 셔츠. 우유 두 병. 남자가 나를 보고 고개를 살짝 숙였다. 「안녕하세요.」", 6.5f, false, null, "Cut_T_E3_03", 3),
                 new Cut(null, "Cut_T_V7_N2_12", "나도 「안녕하세요」 했다. 남자는 버스가 안 오는 정류장에 그냥 서 있었다. 뭘 기다리는지 몰랐다.", 6.5f, false, null, null, 1),
-                new Cut(null, "Cut_T_N7_10", "밤에 가게 유리창에 얼굴을 비춰 봤다. 낮에 본 전단지 얼굴이 떠올랐다.", 6.5f, false, null, "Cut_S_N7_12", 0),
-                new Cut(null, "Cut_T_N7_10", "꼬마가 옆에 와서 유리를 보더니 손바닥으로 김을 닦았다. 「누나, 자자.」 「응.」 탑 아래 담요로 돌아갔다.", 6.5f, false, null, "Cut_S_N7_12", 3),
+                new Cut(null, "Cut_T_V7_N2_12", "남자가 입을 막고 오래 기침했다. 입술이 파랬다. 기침이 끝나자 다시 정류장에 섰다.", 6.5f, false, null, null, 0),
+                new Cut(null, "Cut_T_N7_10", "밤에 가게 유리창에 얼굴을 비춰 봤다. 낮에 본 전단지 얼굴이 떠올랐다.", 6.5f, false, null, "Cut_S_N7_12", 3),
+                new Cut(null, "Cut_T_N7_10", "꼬마가 옆에 와서 유리를 보더니 손바닥으로 김을 닦았다. 「누나, 자자.」 「응.」 탑 아래 담요로 돌아갔다.", 6.5f, false, null, "Cut_S_N7_12", 2),
             }
         };
 
-        // ── 보조 컷씬 EV3 「물장구」 · BGM_M6 · CH6 · 8컷 ──
+        // ── 보조 컷씬 EV3 「물장구」 · BGM_M6 · CH4 · 8컷 ──
         private static readonly Def EV3 = new Def
         {
-            id = "EV3", title = "물장구", bgm = "BGM_M6", sat = 0.70f, cardMain = "물장구", cardSub = "이야기 · 제 6화",
+            id = "EV3", title = "물장구", bgm = "BGM_M6", sat = 0.70f, cardMain = "물장구", cardSub = "이야기 · 제 4화",
             cuts = new[]
             {
                 new Cut(null, "Cut_T_V7_E3_01", "여름. 나는 방파제에 앉아 바다만 봤다. 며칠째 그랬다.", 6.0f, false, null, "Cut_T_N2_13", 0),
                 new Cut(null, "Cut_T_V7_E3_02", "꼬마가 내 앞에서 얕은 물로 첨벙 들어갔다. 우비를 입은 채로. 「누나, 봐 봐.」", 6.0f, false, null, "Cut_T_E4_04", 1),
                 new Cut(null, "Cut_T_V7_E3_02", "물을 튀기고, 넘어지고, 다시 튀겼다. 물에 뜬 주황색이 웃었다. 나도 신을 벗고 들어갔다.", 6.0f, false, null, null, 2),
-                new Cut(null, "Cut_T_V7_E3_02", "「우비 안 벗어?」 「엄마가 벗지 말랬어.」 「물에서도?」 꼬마는 대답 대신 물을 끼얹었다.", 6.0f, false, null, null, 3),
+                new Cut(null, "Cut_T_V7_E3_02", "「우비 안 벗어?」 「엄마가 벗지 말랬어.」 「엄마는 어디 있어?」 「뭍에.」 꼬마가 물을 끼얹었다.", 6.0f, false, null, null, 3),
                 new Cut(null, "Cut_T_E4_04", "모래에 둘이 누워 숨을 골랐다. 꼬마가 왼쪽 눈을 접으며 웃었다. 나도 웃었다.", 6.0f, false, null, null, 1),
                 new Cut(null, "Cut_T_V7_E3_06", "해가 지도록 놀았다. 배가 고팠다. 젖은 채로 방파제에 앉아 있는데 해녀복을 입은 아줌마가 지나가다 멈췄다.", 6.0f, false, null, "Cut_T_E6_04", 0),
                 new Cut(null, "Cut_T_V7_E3_06", "초소 앞에서 본 아줌마였다. 아줌마는 나를 한참 보더니 내 손을 잡았다. 그리고 언덕 쪽을 가리켰다.", 6.0f, false, null, null, 3),
@@ -188,10 +189,10 @@ namespace CoastRun
             }
         };
 
-        // ── 보조 컷씬 EV4 「태왁」 · BGM_M1 · CH8 · 9컷 ──
+        // ── 보조 컷씬 EV4 「태왁」 · BGM_M1 · CH6 · 9컷 ──
         private static readonly Def EV4 = new Def
         {
-            id = "EV4", title = "태왁", bgm = "BGM_M1", sat = 0.60f, cardMain = "태왁", cardSub = "이야기 · 제 8화",
+            id = "EV4", title = "태왁", bgm = "BGM_M1", sat = 0.60f, cardMain = "태왁", cardSub = "이야기 · 제 6화",
             cuts = new[]
             {
                 new Cut(null, "Cut_T_V7_E4_01", "새벽. 아줌마가 해녀복을 입고 바다로 갔다. 나는 태왁을 들고 따라갔다. 아줌마가 손짓했다. 「여기 앉아 있어.」", 6.0f, false, null, "Cut_T_E2_01", 0),
@@ -232,28 +233,29 @@ namespace CoastRun
             }
         };
 
-        // ── 보조 컷씬 EV5 「우유 두 병」 · BGM_M3 · CH9 · 9컷 ──
+        // ── 보조 컷씬 EV5 「우유 두 병」 · BGM_M3 · CH8 · 10컷 ──
         private static readonly Def EV5 = new Def
         {
-            id = "EV5", title = "우유 두 병", bgm = "BGM_M3", sat = 0.50f, cardMain = "우유 두 병", cardSub = "이야기 · 제 9화",
+            id = "EV5", title = "우유 두 병", bgm = "BGM_M3", sat = 0.50f, cardMain = "우유 두 병", cardSub = "이야기 · 제 8화",
             cuts = new[]
             {
                 new Cut(null, "Cut_T_E3_03", "가게 앞. 그 남자가 우유 두 병을 샀다. 딸깍, 딸깍. 주인 할머니가 물었다. 「오늘도 두 개라?」 「예.」", 6.0f, false, null, "Cut_S_EB_08", 0),
-                new Cut(null, "Cut_T_E3_03", "남자가 나를 보고 또 「안녕하세요」 했다. 나도 「안녕하세요」 했다. 매일 같은 자리, 같은 시간.", 6.0f, false, null, "Cut_S_EB_08", 1),
-                new Cut(null, "Cut_T_E3_03", "남자와 눈이 마주쳤다. 나는 괜히 신발 끈을 다시 묶었다.", 6.0f, false, null, "Cut_S_EB_08", 2),
-                new Cut(null, "Cut_T_V7_E5_04", "언덕길에서 아줌마가 내려오고 있었다. 나는 다가가려다 걸음을 멈췄다.", 6.0f, false, null, "Cut_T_N5_13", 3),
-                new Cut(null, "Cut_T_V7_E5_04", "아줌마는 내 쪽은 보지도 않고, 손에 든 사진만 뚫어지게 보며 스쳐 지나갔다.", 6.0f, false, null, null, 1),
-                new Cut(null, "Cut_T_V7_E5_04", "매일 나에게 따뜻한 밥을 차려 주던 얼굴인데, 사진을 보는 그 표정은 텅 비어 있었다.", 6.0f, false, null, null, 0),
-                new Cut(null, "Cut_T_V7_E5_04", "그 지독한 슬픔 때문에 마치 처음 보는 사람 같았다.", 6.0f, false, null, null, 3),
-                new Cut(null, "Cut_T_N5_13", "남자는 우유 두 병을 들고 탑 쪽으로 갔다. 아줌마는 초소 쪽으로 갔다.", 6.0f, false, null, null, 2),
-                new Cut(null, "Cut_T_N5_13", "두 사람의 등이 서로 반대편으로 멀어졌다. 나는 그 사이에 서 있었다. 꼬마가 내 소매를 꽉 잡고 있었다.", 6.0f, false, null, null, 0),
+                new Cut(null, "Cut_T_E3_03", "「요양 왔으민 고기도 먹어사주. 우유만 먹엉 어떵 살아.」 남자는 웃기만 했다.", 6.0f, false, null, "Cut_S_EB_08", 1),
+                new Cut(null, "Cut_T_E3_03", "남자가 나를 보고 또 「안녕하세요」 했다. 나도 「안녕하세요」 했다. 매일 같은 자리, 같은 시간.", 6.0f, false, null, "Cut_S_EB_08", 2),
+                new Cut(null, "Cut_T_E3_03", "남자와 눈이 마주쳤다. 나는 괜히 신발 끈을 다시 묶었다.", 6.0f, false, null, "Cut_S_EB_08", 3),
+                new Cut(null, "Cut_T_V7_E5_04", "언덕길에서 아줌마가 내려오고 있었다. 나는 다가가려다 걸음을 멈췄다.", 6.0f, false, null, "Cut_T_N5_13", 1),
+                new Cut(null, "Cut_T_V7_E5_04", "아줌마는 내 쪽은 보지도 않고, 손에 든 사진만 뚫어지게 보며 스쳐 지나갔다.", 6.0f, false, null, null, 0),
+                new Cut(null, "Cut_T_V7_E5_04", "매일 나에게 따뜻한 밥을 차려 주던 얼굴인데, 사진을 보는 그 표정은 텅 비어 있었다.", 6.0f, false, null, null, 3),
+                new Cut(null, "Cut_T_V7_E5_04", "그 지독한 슬픔 때문에 마치 처음 보는 사람 같았다.", 6.0f, false, null, null, 2),
+                new Cut(null, "Cut_T_N5_13", "남자는 우유 두 병을 들고 탑 쪽으로 갔다. 아줌마는 초소 쪽으로 갔다.", 6.0f, false, null, null, 0),
+                new Cut(null, "Cut_T_N5_13", "두 사람의 등이 서로 반대편으로 멀어졌다. 나는 그 사이에 서 있었다. 꼬마가 내 소매를 꽉 잡고 있었다.", 6.0f, false, null, null, 1),
             }
         };
 
-        // ── 보조 컷씬 EV6 「첫눈」 · BGM_M3 · CH10 · 6컷 ──
+        // ── 보조 컷씬 EV6 「첫눈」 · BGM_M3 · CH9 · 6컷 ──
         private static readonly Def EV6 = new Def
         {
-            id = "EV6", title = "첫눈", bgm = "BGM_M3", sat = 0.50f, cardMain = "첫눈", cardSub = "이야기 · 제 10화",
+            id = "EV6", title = "첫눈", bgm = "BGM_M3", sat = 0.50f, cardMain = "첫눈", cardSub = "이야기 · 제 9화",
             cuts = new[]
             {
                 new Cut(null, "Cut_T_V7_E6_01", "첫눈. 꼬마와 창가 성에에 얼굴을 그렸다. 꼬마 하나, 나 하나. 꼬마가 하나 더 그렸다. 「누구야?」 「몰라.」", 6.0f, false, null, "Cut_T_E7_01", 0),
@@ -299,10 +301,10 @@ namespace CoastRun
             }
         };
 
-        // ── 보조 컷씬 EV7 「흰 셔츠」 · BGM_M6 · CH13 · 7컷 ──
+        // ── 보조 컷씬 EV7 「흰 셔츠」 · BGM_M6 · CH11 · 7컷 ──
         private static readonly Def EV7 = new Def
         {
-            id = "EV7", title = "흰 셔츠", bgm = "BGM_M6", sat = 0.42f, cardMain = "흰 셔츠", cardSub = "이야기 · 제 13화",
+            id = "EV7", title = "흰 셔츠", bgm = "BGM_M6", sat = 0.42f, cardMain = "흰 셔츠", cardSub = "이야기 · 제 11화",
             cuts = new[]
             {
                 new Cut(null, "Cut_T_OP_09", "전학생이 왔다. 서울에서. 몸이 아파서 요양하러 제주에 왔다고 했다.", 6.0f, true, "— 회상 · 열두 살 봄 —", "Cut_S_OP_4", 0),
@@ -343,10 +345,10 @@ namespace CoastRun
             }
         };
 
-        // ── 보조 컷씬 EV8 「태풍」 · BGM_M4 · CH14 · 10컷 ──
+        // ── 보조 컷씬 EV8 「태풍」 · BGM_M4 · CH13 · 10컷 ──
         private static readonly Def EV8 = new Def
         {
-            id = "EV8", title = "태풍", bgm = "BGM_M4", sat = 0.42f, cardMain = "태풍", cardSub = "이야기 · 제 14화",
+            id = "EV8", title = "태풍", bgm = "BGM_M4", sat = 0.42f, cardMain = "태풍", cardSub = "이야기 · 제 13화",
             cuts = new[]
             {
                 new Cut(null, "Cut_T_V7_E8_01", "그 뒤로 도윤이와 나는 말을 하지 않았다. 학교 복도에서 도윤이가 먼저 다가왔다. 「하늘아, 그날……」", 6.0f, true, "— 회상 · 여름 끝 —", "Cut_T_N4_07", 0),
@@ -362,10 +364,10 @@ namespace CoastRun
             }
         };
 
-        // ── 보조 컷씬 EV9 「리어카」 · BGM_M4 · CH15 · 9컷 ──
+        // ── 보조 컷씬 EV9 「리어카」 · BGM_M4 · CH14 · 9컷 ──
         private static readonly Def EV9 = new Def
         {
-            id = "EV9", title = "리어카", bgm = "BGM_M4", sat = 0.32f, cardMain = "리어카", cardSub = "이야기 · 제 15화",
+            id = "EV9", title = "리어카", bgm = "BGM_M4", sat = 0.32f, cardMain = "리어카", cardSub = "이야기 · 제 14화",
             cuts = new[]
             {
                 new Cut(null, "Cut_T_V7_E9_01", "빗속에서 손전등 불빛이 올라왔다. 도윤이였다. 우비도 없이 흠뻑 젖어서. 「너 걱정돼서.」", 6.0f, true, "— 회상 —", "Cut_T_N5_04", 0),
@@ -380,10 +382,10 @@ namespace CoastRun
             }
         };
 
-        // ── 보조 컷씬 EV2 「스무 살 생일」 · BGM_M1 · CH4 · 10컷 ──
+        // ── 보조 컷씬 EV2 「스무 살 생일」 · BGM_M1 · CH15 · 10컷 ──
         private static readonly Def EV2 = new Def
         {
-            id = "EV2", title = "스무 살 생일", bgm = "BGM_M1", sat = 0.78f, cardMain = "스무 살 생일", cardSub = "이야기 · 제 4화",
+            id = "EV2", title = "스무 살 생일", bgm = "BGM_M1", sat = 0.78f, cardMain = "스무 살 생일", cardSub = "이야기 · 제 15화",
             cuts = new[]
             {
                 new Cut(null, "Cut_T_N5_09", "응급실 문이 닫히자 도윤이가 복도에 쓰러졌다. 늘 입술이 파랗게 질려 있던 이유를 나는 그때 처음 알았다.", 6.0f, true, "— 회상 —", "Cut_S_N5_10", 0),
@@ -472,8 +474,8 @@ namespace CoastRun
                 new Cut(null, "Cut_T_N8_12", "꼬마가 내 옆에 섰다. 주황 우비를 벗어 바닥에 내려놓았다. 「아빠.」 「응.」", 6.5f, false, null, null, 3),
                 new Cut(null, "Cut_T_N8_12", "「나 이제 가나 봐.」 「응. 바닷물 찼지. 이제 춥지 않은 데로 가, 우리 딸.」", 6.5f, false, null, null, 1),
                 new Cut(null, "Cut_T_N8_12", "「아빠, 무서워.」 「괜찮아. 아빠가 여기서 보고 있을게. 1년 동안 하늘이 혼자 안 둬서 다행이다.」", 6.5f, false, null, null, 0),
-                new Cut(null, "Cut_T_N8_14", "멀리서 「민재야!」 하고 부르는 소리가 들렸다. 유채밭 사이로 한 여자가 달려오고 있었다.", 6.5f, false, null, null, 3),
-                new Cut(null, "Cut_T_V7_N8_16", "여자의 손에 다 해진 전단지가 들려 있었다. 『민재를 찾습니다.』 날짜는 작년 봄이었다.", 6.5f, false, null, "Cut_T_N8_14", 2),
+                new Cut(null, "Cut_T_N8_14", "멀리서 「민재야!」 부르는 소리가 들렸다. 뭍 말씨였다. 유채밭 사이로 한 여자가 달려오고 있었다.", 6.5f, false, null, null, 3),
+                new Cut(null, "Cut_T_V7_N8_16", "여자의 손에 다 해진 전단지. 『민재를 찾습니다.』 전화번호 앞자리가 뭍 것이었다. 날짜는 작년 봄.", 6.5f, false, null, "Cut_T_N8_14", 2),
                 new Cut(null, "Cut_T_N8_11", "아빠가 나를 보고 웃었다. 왼쪽 눈이 접히는, 내가 가장 사랑했던 얼굴.", 6.5f, false, null, null, 0),
                 new Cut(null, "Cut_T_N8_14", "눈을 깜빡이는 순간, 그 웃음이 지워졌다. 나를 보는 꼬마의 눈에 더 이상 아빠는 없었다.", 6.5f, false, null, null, 1),
                 new Cut(null, "Cut_T_N8_14", "그 시선은 나를 완전히 잃어버린 채, 유채밭 쪽만 멍하니 향해 있었다.", 6.5f, false, null, null, 2),

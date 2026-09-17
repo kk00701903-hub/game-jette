@@ -169,9 +169,9 @@ def gen_cs(secs):
 
 
 # ── 리더용 txt(소설식 리더 StoryReaderUI / ChapterVN) — v4 자막을 NARR 줄로 ──
-CS_CH = {1: 'CS1', 3: 'CS2', 5: 'CS3', 7: 'CS4', 11: 'CS5', 12: 'CS6', 17: 'CS7', 20: 'CS8'}   # 103차: CS5 CH10→11(EV6 첫눈을 앞으로)
+CS_CH = {1: 'CS1', 3: 'CS2', 5: 'CS3', 7: 'CS4', 10: 'CS5', 12: 'CS6', 17: 'CS7', 20: 'CS8'}   # 107차(사용자): 대본 순서대로 — CS5 CH10
 NO_CUT_TITLE = {16: ('지나간다', 'Passing by'), 18: ('조용해', 'Quiet')}   # 컷씬 없는 챕터의 제목(v3 유지)
-EV_CH = {2: 'EV1', 4: 'EV2', 6: 'EV3', 8: 'EV4', 9: 'EV5', 10: 'EV6', 13: 'EV7', 14: 'EV8', 15: 'EV9', 19: 'EV10'}   # 103차: EV6 CH11→10
+EV_CH = {2: 'EV1', 4: 'EV3', 6: 'EV4', 8: 'EV5', 9: 'EV6', 11: 'EV7', 13: 'EV8', 14: 'EV9', 15: 'EV2', 19: 'EV10'}   # 107차(사용자): 대본 순서 OPEN→CS1→EV1→CS2→EV3→CS3→EV4→CS4→EV5→EV6→CS5→EV7→CS6→EV8→EV9→EV2→CS7→EV10→CS8
 TXT_HEAD = ('# 103차: 컷씬 대본 v7.1 — Docs/CUTSCENE_SCRIPTS_v7.md 의 자막을 지문(NARR)으로 옮긴 리더용. 시네마틱(CinematicTable)이 본편이고 이 파일은 「읽기」용.\n'
             '# 고친 뒤  python Tools/Story/cutscene_txt.py import Tools/Story/script  로 반영. 형식은 파일 아래 다른 파일과 같다(BG/CG/SAY/NARR/BGM).\n')
 
