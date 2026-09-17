@@ -33,14 +33,17 @@ namespace CoastRun
             new Shot("open_3", "BG_TowerSunset", null, "(오프닝 3/3 — 새 대본 자리)", 6f, new Vector2(1.05f, 0.0f), new Vector2(1.16f, 0.03f)),
         };
 
-        public static void Play(Action onDone)
+        public static void Play(Action onDone) => Play(onDone, null, null);
+
+        /// 105차: 시네마에서 프롤로그를 볼 때도 마무리 카드에 「다음화 이어보기」를 띄운다(공용 시네마틱 경로만).
+        public static void Play(Action onDone, string nextLabel, Action onNext)
         {
             // 68차: 오프닝은 공용 시네마틱(CinematicTable "OPEN" — 9컷 영상/스틸 + 자막 + M3). 옛 VN 「PRO」·3컷 플레이스홀더는 폴백.
             if (CinematicTable.Get("OPEN") != null)
             {
                 PlayerPrefs.SetInt(SeenKey, 1); PlayerPrefs.Save();
                 PlayerPrefs.SetInt("CoastRun_VN_PRO", 1);   // 프롤로그 본 것으로(롱컷 카운트·레코드 해금 공유)
-                CinematicPlayer.Play("OPEN", onDone);
+                CinematicPlayer.Play("OPEN", onDone, nextLabel, onNext);
                 return;
             }
             if (ChapterScript.Has("PRO"))

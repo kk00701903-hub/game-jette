@@ -353,24 +353,36 @@ namespace CoastRun
             CoastAudioManager.PlayAnywhere(CoastSfx.Coin);
             // 73차(사용자): 다 보고 나면 메인이 아니라 **이 시네마 선택 페이지로** 돌아온다(닫기 X 를 눌러야 메인).
             var back = Reopener();
+            // 105차(사용자: 「한 컷씬 끝나면 우측 하단에 다음화 이어보기」): 목록 순서에서 다음으로 볼 편을 미리 골라 둔다.
+            string nextLabel = null; Action nextPlay = null;
+            if (TryNextPlayable(e, out var nx))
+            {
+                var entry = nx; var ps = onPlayStart;
+                nextLabel = string.IsNullOrEmpty(entry.Title) ? entry.Label : entry.Label + " · " + entry.Title;
+                nextPlay = () => Play(entry, ps);
+            }
             Close();
             onPlayStart?.Invoke();
             if (e.Opening)
             {
                 PlayerPrefs.SetInt("CoastRun_OpeningSeen", 1);
-                OpeningCinematic.Play(back);
+                OpeningCinematic.Play(back, nextLabel, nextPlay);
             }
             else if (!string.IsNullOrEmpty(e.EndingId))
             {
-                CinematicPlayer.Play(e.EndingId, back);   // 77차: 엔딩 다시보기(시네마틱)
+                CinematicPlayer.Play(e.EndingId, back, nextLabel, nextPlay);   // 77차: 엔딩 다시보기(시네마틱)
             }
             else if (e.Event > 0)
             {
-                CinematicPlayer.Play("EV" + e.Event, () => { StoryProgress.MarkEventSeen(e.Event); back(); });   // 85차: 보조 컷씬
+                int ev = e.Event;   // 85차: 보조 컷씬
+                CinematicPlayer.Play("EV" + ev, () => { StoryProgress.MarkEventSeen(ev); back(); },
+                    nextLabel, nextPlay == null ? null : () => { StoryProgress.MarkEventSeen(ev); nextPlay(); });
             }
             else if (CinematicTable.Cutscene(e.Index) != null)
             {
-                CinematicPlayer.Play("CS" + e.Index, () => { StoryProgress.MarkCutsceneSeen(e.Index); back(); });   // 68차: 시네마틱
+                int idx = e.Index;   // 68차: 시네마틱
+                CinematicPlayer.Play("CS" + idx, () => { StoryProgress.MarkCutsceneSeen(idx); back(); },
+                    nextLabel, nextPlay == null ? null : () => { StoryProgress.MarkCutsceneSeen(idx); nextPlay(); });
             }
             else
             {
@@ -388,6 +400,27 @@ namespace CoastRun
             onPlayStart?.Invoke();
             if (e.Event > 0) StoryReaderUI.OpenChapter(e.Chapter, back);
             else StoryReaderUI.OpenCutscene(e.Index, back);
+        }
+
+        /// 105차: 목록 순서에서 지금 보는 편 뒤에 있는, **열려 있고 시네마틱이 있는** 첫 항목.
+        ///   잠긴 편·리더로만 읽는 편·프롤로그는 건너뛴다. 없으면 false — 그러면 이어보기 버튼이 안 뜬다.
+        private static bool TryNextPlayable(Entry cur, out Entry next)
+        {
+            next = default;
+            var list = _entries != null && _entries.Count > 0 ? _entries : BuildEntries(_gm);
+            int at = list.FindIndex(x => x.Key == cur.Key);
+            if (at < 0) return false;
+            for (int i = at + 1; i < list.Count; i++)
+            {
+                var e = list[i];
+                if (!e.Unlocked || e.Opening) continue;
+                bool playable = !string.IsNullOrEmpty(e.EndingId)
+                    || (e.Event > 0 && CinematicTable.Event(e.Event) != null)
+                    || (e.Event == 0 && e.Index > 0 && CinematicTable.Cutscene(e.Index) != null);
+                if (!playable) continue;
+                next = e; return true;
+            }
+            return false;
         }
 
         /// 73차: 지금 열린 페이지의 인자를 붙들어 두었다가, 감상이 끝나면 같은 인자로 다시 연다.

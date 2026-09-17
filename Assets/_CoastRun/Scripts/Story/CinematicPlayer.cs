@@ -16,14 +16,19 @@ namespace CoastRun
         public static bool IsPlaying { get; private set; }
         public static string CurrentId { get; private set; }
 
-        public static void Play(string id, Action onDone)
+        public static void Play(string id, Action onDone) => Play(id, onDone, null, null);
+
+        /// 105차(사용자: 「한 컷씬 끝나면 우측 하단에 다음화 이어보기」): 마무리 카드가 떠 있는 동안
+        ///   오른쪽 아래에 「다음화 이어보기」가 나타난다. 누르면 onNext(다음 편을 바로 재생),
+        ///   안 누르면 예전처럼 onDone(시네마 목록으로). nextLabel 은 버튼 위에 적히는 다음 편 이름.
+        public static void Play(string id, Action onDone, string nextLabel, Action onNext)
         {
             var def = CinematicTable.Get(id);
             if (def == null) { Debug.LogWarning("[Cine] 대본 없음: " + id); onDone?.Invoke(); return; }
             if (IsPlaying) { Debug.LogWarning("[Cine] 이미 재생 중: " + CurrentId); onDone?.Invoke(); return; }
             var go = new GameObject("Cinematic_" + id);
             DontDestroyOnLoad(go);
-            go.AddComponent<CinematicPlayer>().Begin(def, onDone);
+            go.AddComponent<CinematicPlayer>().Begin(def, onDone, nextLabel, onNext);
         }
 
         private CinematicTable.Def _def;
@@ -41,15 +46,18 @@ namespace CoastRun
         private RenderTexture _rt;
         private bool _skip;
         private Button _skipBtn;
+        // 105차: 다음화 이어보기
+        private Action _onNext; private string _nextLabel; private bool _goNext;
+        private CanvasGroup _nextCg; private RectTransform _nextRt;
         private float _hold;
         private const float FinalFade = 0.9f;
         // 72차(사용자 「이미지 움직이는 효과」): 빛 입자 · 광선 스윕 · 숨 쉬는 비네트 · 살짝 도는 켄번즈
         private Image _barTop, _barBot, _flash, _grain; private bool _wasSepia;   // 75차: 회상 연출(레터박스·화이트 플래시·그레인)
         private RectTransform _fx; private Image _vignette, _sweep; private readonly RectTransform[] _motes = new RectTransform[26]; private readonly float[] _moteSeed = new float[26];
 
-        private void Begin(CinematicTable.Def def, Action onDone)
+        private void Begin(CinematicTable.Def def, Action onDone, string nextLabel = null, Action onNext = null)
         {
-            _def = def; _onDone = onDone;
+            _def = def; _onDone = onDone; _onNext = onNext; _nextLabel = nextLabel;
             IsPlaying = true; CurrentId = def.id;
             // 스토리 모드(육성) BGM과 컷씬 BGM이 겹치지 않게 — VnMusic.Cue 와 동일
             TitleAudio.StopMenuGlobal();
@@ -132,12 +140,55 @@ namespace CoastRun
             _fader = CoastHudLayout.MakeImage(root, "Fader", Vector2.zero, Vector2.one, new Vector2(-pad, -pad), new Vector2(pad, pad), Color.black);
             _fader.raycastTarget = false;
             _skipBtn = CoastOrnate.MenuButton(root, "Skip", Loc.T("건너뛰기", "Skip"), new Vector2(1f, 1f), new Vector2(-70f, -40f), new Vector2(120f, 46f), () => _skip = true, CoastOrnate.WoodDark, 18);
+            if (_onNext != null) BuildNextButton(root);
 
             var music = new GameObject("CineMusic"); music.transform.SetParent(transform, false);
             _music = music.AddComponent<AudioSource>();
             _music.playOnAwake = false; _music.spatialBlend = 0f; _music.volume = 0.85f; _music.loop = true;   // 77차: 컷씬이 곡보다 길어져(1:42~1:57) 루프
             _music.clip = CoastBgmLibrary.Load(_def.bgm);
             _nowPlaying = BuildNowPlaying(root, _def.bgm);
+        }
+
+        /// 105차: 오른쪽 아래 「다음화 이어보기 ▶」 — 마무리 카드가 뜰 때까지는 숨어 있다(ShowNext).
+        ///   버튼 위 작은 줄에 다음 편 이름을 적어, 무엇으로 넘어가는지 보고 누르게 한다.
+        private void BuildNextButton(RectTransform root)
+        {
+            var go = new GameObject("NextUp", typeof(RectTransform), typeof(CanvasGroup));
+            go.transform.SetParent(root, false);
+            _nextRt = go.GetComponent<RectTransform>();
+            _nextRt.anchorMin = _nextRt.anchorMax = new Vector2(1f, 0f); _nextRt.pivot = new Vector2(1f, 0f);
+            _nextRt.anchoredPosition = new Vector2(-24f, 40f); _nextRt.sizeDelta = new Vector2(280f, 96f);
+            _nextCg = go.GetComponent<CanvasGroup>(); _nextCg.alpha = 0f; _nextCg.blocksRaycasts = false;
+            go.SetActive(false);
+
+            if (!string.IsNullOrEmpty(_nextLabel))
+            {
+                var cap = CoastHudLayout.MakeText(_nextRt, "Label", _nextLabel, 15, TextAnchor.MiddleRight,
+                    new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -30f), new Vector2(-8f, -2f));
+                cap.color = new Color(1f, 0.95f, 0.85f, 0.92f);
+                cap.resizeTextForBestFit = true; cap.resizeTextMinSize = 10; cap.resizeTextMaxSize = 15;   // 제목이 길면 줄여서 한 줄로
+                CoastUiArt.OutlineText(cap, new Color(0f, 0f, 0f, 0.75f), 1.5f);
+            }
+            CoastOrnate.MenuButton(_nextRt, "Btn", Loc.T("다음화 이어보기 ▶", "Next episode ▶"),
+                new Vector2(0.5f, 0f), new Vector2(0f, 28f), new Vector2(256f, 54f),
+                () => { if (!_goNext) { _goNext = true; CoastAudioManager.PlayAnywhere(CoastSfx.Coin); } },
+                CoastOrnate.WoodDark, 20);
+        }
+
+        private void ShowNext()
+        {
+            if (_nextRt == null) return;
+            _nextRt.gameObject.SetActive(true);
+            _nextRt.SetAsLastSibling();
+            if (_nextCg != null) _nextCg.blocksRaycasts = true;
+        }
+
+        /// 이어보기 버튼 위를 눌렀으면 「아무 데나 탭 = 넘기기」로 세지 않는다 — 안 그러면 버튼이 눌리기 전에 카드가 끝난다.
+        private bool PointerOverNext()
+        {
+            if (_nextRt == null || !_nextRt.gameObject.activeSelf) return false;
+            Vector2 p = Input.touchCount > 0 ? Input.GetTouch(0).position : (Vector2)Input.mousePosition;
+            return RectTransformUtility.RectangleContainsScreenPoint(_nextRt, p, null);
         }
 
         /// 좌상단 — 지금 흐르는 컷씬 BGM 제목.
@@ -249,13 +300,23 @@ namespace CoastRun
             _titleCg.alpha = 1f; _caption.text = ""; _tag.text = "";
             float h = 0f;
             float hold = _def.holdToSeconds > 0f && !cutShort ? Mathf.Max(2.2f, _def.holdToSeconds - FinalFade - (Time.unscaledTime - started)) : 2.2f;
-            while (h < hold && !_skip) { h += Time.unscaledDeltaTime; if (Tapped()) break; yield return null; }
+            // 105차: 마무리 카드와 함께 「다음화 이어보기」를 띄우고, 누를 틈이 있게 카드를 조금 더 붙잡는다.
+            if (_onNext != null && !_skip) { ShowNext(); hold = Mathf.Max(hold, 5f); }
+            while (h < hold && !_skip && !_goNext)
+            {
+                h += Time.unscaledDeltaTime;
+                if (_nextCg != null && _nextCg.alpha < 1f) _nextCg.alpha = Mathf.Clamp01(_nextCg.alpha + Time.unscaledDeltaTime / 0.35f);
+                if (Tapped() && !PointerOverNext()) break;
+                yield return null;
+            }
             float f = 0f, v0 = _music.volume;
             while (f < FinalFade)
             {
                 f += Time.unscaledDeltaTime;
                 var c = _fader.color; c.a = Mathf.Clamp01(f / FinalFade); _fader.color = c;
                 _music.volume = Mathf.Lerp(v0, 0f, f / FinalFade);
+                // 버튼은 암전과 함께 사라진다 — 손가락을 떼는 순간(onClick)까지는 살아 있게 마지막에 끈다.
+                if (_nextCg != null) _nextCg.alpha = Mathf.Clamp01(1f - f / FinalFade);
                 yield return null;
             }
             Finish();
@@ -409,7 +470,9 @@ namespace CoastRun
         private void Finish()
         {
             IsPlaying = false; CurrentId = null;
-            var cb = _onDone; _onDone = null;
+            // 105차: 이어보기를 눌렀으면 목록으로 돌아가지 않고 곧장 다음 편으로.
+            var cb = _goNext && _onNext != null ? _onNext : _onDone;
+            _onDone = null; _onNext = null;
             if (_music != null) _music.Stop();
             if (_player != null) _player.Stop();
             if (_rt != null) _rt.Release();
