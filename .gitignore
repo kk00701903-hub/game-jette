@@ -116,5 +116,6 @@ Tools/_msg*.txt
 Tools/_commit_msg.txt
 # 텔레그램 보고 스크래치(큐/결과). 토큰은 .env 에 있고 그건 이미 제외된다.
 Tools/Telegram/outbox*
-# 구글 드라이브 동기화가 저장소 루트에 만드는 업로드 임시 폴더(수백 개 파일)
+# 구글 드라이브 동기화가 저장소 루트에 만드는 임시 폴더(수백 개 파일)
 .tmp.driveupload/
+.tmp.drivedownload/
