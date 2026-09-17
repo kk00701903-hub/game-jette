@@ -77,14 +77,102 @@ namespace CoastRun
             }
         }
 
-        /// 단서 카드 — sceneId 컷씬이 끝난 뒤 육성 화면에서. 단서가 없거나 이미 가진 것이면 바로 onDone.
-        ///   편지·돌은 두 번째 버튼(다시 쌓기 / 전부 읽기)을 눌러야 얻는다.
+        // ── 105차(재미요소 P2-1): 단서마다 **육성에서 해야 할 일** — 컷씬은 그대로 재생되고, 조건이 모자라면 「아직 뭔가 모자라」 카드 뒤 보류(cluePendingMask).
+        //    보류된 단서는 행동으로 조건을 채우는 순간 카드가 다시 떠서 얻는다(놓쳐도 만회 가능, 기한 없음). 이름(CS7)은 조건 없음 — 엔딩 A/B 기본 분기 유지.
+        public static readonly string[] RadioCards = { "dev_radio", "les_ham", "job_dj_assist" };
+        public static readonly string[] TowerCards = { "job_tower_fix", "job_tower_watch" };
+        public static readonly string[] SeaCards = { "job_haenyeo", "rest_sea", "les_swim" };
+        public static readonly string[] MailCards = { "job_delivery", "job_night_delivery", "job_market" };
+        private static int Uses(SaveData s, string[] ids) { int n = 0; foreach (var id in ids) n += RaisingFun.MasteryUses(s, id); return n; }
+        /// 단서 조건 통과 여부.
+        public static bool ConditionMet(SaveData s, Clue c)
+        {
+            if (s == null) return false;
+            switch (c)
+            {
+                case Clue.Radio: return Uses(s, RadioCards) >= 3;
+                case Clue.Stones: return Uses(s, TowerCards) >= 2 || s.stats.stamina >= 60;
+                case Clue.Heart: return Uses(s, SeaCards) >= 2;
+                case Clue.Letters: return Uses(s, MailCards) >= 2;
+                case Clue.Headband: return s.stats.sense >= 40;
+                default: return true;
+            }
+        }
+        /// 조건 설명 + 진행(「라디오 교육 2/3」).
+        public static string ConditionText(SaveData s, Clue c)
+        {
+            if (s == null) return "";
+            switch (c)
+            {
+                case Clue.Radio: return Loc.T($"라디오·햄·DJ 보조 {Mathf.Min(3, Uses(s, RadioCards))}/3회", $"Radio/ham/DJ cards {Mathf.Min(3, Uses(s, RadioCards))}/3");
+                case Clue.Stones: return Loc.T($"송전탑 알바 {Mathf.Min(2, Uses(s, TowerCards))}/2회 또는 체력 {s.stats.stamina}/60", $"Tower jobs {Mathf.Min(2, Uses(s, TowerCards))}/2 or stamina {s.stats.stamina}/60");
+                case Clue.Heart: return Loc.T($"해녀·바다 {Mathf.Min(2, Uses(s, SeaCards))}/2회", $"Sea cards {Mathf.Min(2, Uses(s, SeaCards))}/2");
+                case Clue.Letters: return Loc.T($"배달·시장 {Mathf.Min(2, Uses(s, MailCards))}/2회", $"Delivery/market {Mathf.Min(2, Uses(s, MailCards))}/2");
+                case Clue.Headband: return Loc.T($"감성 {s.stats.sense}/40", $"Sense {s.stats.sense}/40");
+                default: return "";
+            }
+        }
+        /// 보류 단서에 도움이 되는 카드 id 들(카드 2장 뽑을 때 우선).
+        public static System.Collections.Generic.List<string> HelpfulCards(SaveData s)
+        {
+            var list = new System.Collections.Generic.List<string>();
+            if (s == null || s.cluePendingMask == 0) return list;
+            if ((s.cluePendingMask & (int)Clue.Radio) != 0) list.AddRange(RadioCards);
+            if ((s.cluePendingMask & (int)Clue.Stones) != 0) list.AddRange(TowerCards);
+            if ((s.cluePendingMask & (int)Clue.Heart) != 0) list.AddRange(SeaCards);
+            if ((s.cluePendingMask & (int)Clue.Letters) != 0) list.AddRange(MailCards);
+            return list;
+        }
+        public static bool IsPending(SaveData s, Clue c) => s != null && (s.cluePendingMask & (int)c) != 0;
+        /// 보류 단서 요약(상태창·달력): 「보류: 라디오(라디오 교육 1/3)」
+        public static string PendingSummary(SaveData s)
+        {
+            if (s == null || s.cluePendingMask == 0) return null;
+            var sb = new System.Text.StringBuilder();
+            foreach (Clue c in new[] { Clue.Radio, Clue.Stones, Clue.Heart, Clue.Letters, Clue.Headband })
+                if (IsPending(s, c)) { if (sb.Length > 0) sb.Append(" · "); sb.Append(Name(c)).Append(" — ").Append(ConditionText(s, c)); }
+            return Loc.T("아직 못 얻은 단서: ", "Clues to earn: ") + sb;
+        }
+        /// 행동 뒤 호출 — 보류 단서 중 조건이 채워진 것이 있으면 그 카드를 띄운다(한 번에 하나). 없으면 즉시 onDone.
+        public static void CheckPending(SaveData save, Action onDone)
+        {
+            if (save == null || save.cluePendingMask == 0) { onDone?.Invoke(); return; }
+            foreach (Clue c in new[] { Clue.Radio, Clue.Stones, Clue.Heart, Clue.Letters, Clue.Headband })
+            {
+                if (!IsPending(save, c) || Has(save, c)) continue;
+                if (!ConditionMet(save, c)) continue;
+                save.cluePendingMask &= ~(int)c; GameManager.I?.Persist();
+                if (c == Clue.Letters) { ShowLetterReading(save, onDone); return; }
+                Show(save, c, c == Clue.Stones, onDone);
+                return;
+            }
+            onDone?.Invoke();
+        }
+        /// 조건이 모자랄 때 카드 — 「아직 뭔가 모자라」 + 조건 한 줄. 단서는 보류로.
+        private static void ShowNotYet(SaveData save, Clue c, Action onDone)
+        {
+            Close();
+            save.cluePendingMask |= (int)c; GameManager.I?.Persist();
+            var card = EventCardKit.Card("ClueCard", 340, new Vector2(560f, 470f), out _canvas, 20f);
+            EventCardKit.JellyTitle(card, Loc.T("단서?", "CLUE?"), new Color(0.80f, 0.82f, 0.90f), new Color(0.25f, 0.22f, 0.35f), 26f, 70f, 46);
+            EventCardKit.Divider(card, 104f);
+            EventCardKit.IconRow(card, Icon(c), new Color(0.75f, 0.75f, 0.80f), Name(c), 132f, 56f, 26, Loc.T("보류", "later"), new Color(0.60f, 0.55f, 0.70f));
+            var box = EventCardKit.InfoBox(card, 200f, 140f);
+            var body = CoastHudLayout.MakeText(box, "Body", Loc.T("아직 뭔가 모자라. 손이 닿지 않는다.\n", "Not yet. Something's missing.\n") + ConditionText(save, c), 19, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(18f, 10f), new Vector2(-18f, -10f));
+            body.color = EventCardKit.Ink; body.horizontalOverflow = HorizontalWrapMode.Wrap;
+            body.resizeTextForBestFit = true; body.resizeTextMinSize = 12; body.resizeTextMaxSize = CoastHudLayout.Scaled(19);
+            CoastToast.Show(Loc.T($"단서 보류 — {ConditionText(save, c)} 을 채우면 얻는다", $"Clue on hold — {ConditionText(save, c)}"));
+            EventCardKit.IconButton(card, "Ok", "Icon_Refresh", Loc.T("나중에 다시", "Come back later"), new Color(0.55f, 0.58f, 0.68f), new Vector2(0.5f, 0f), new Vector2(0f, 30f), new Vector2(300f, 70f), () => { Close(); onDone?.Invoke(); });
+        }
+
         /// 단서 카드 — sceneId 컷씬이 끝난 뒤 육성 화면에서. 단서가 없거나 이미 가진 것이면 바로 onDone.
         ///   편지·돌은 행동을 골라야 얻는다. 편지는 발췌 2~3장을 넘긴 뒤 「전부 읽기 / 덮기」.
+        ///   105차: 육성 조건(ConditionMet)이 모자라면 「아직 뭔가 모자라」 카드 → 보류(cluePendingMask).
         public static void ShowAfterScene(SaveData save, string sceneId, Action onDone)
         {
             var c = ClueFor(sceneId);
             if (save == null || c == Clue.None || Has(save, c)) { onDone?.Invoke(); return; }
+            if (!ConditionMet(save, c)) { ShowNotYet(save, c, onDone); return; }
             if (c == Clue.Letters) { ShowLetterReading(save, onDone); return; }
             bool choice = c == Clue.Stones;
             Show(save, c, choice, onDone);
@@ -150,9 +238,12 @@ namespace CoastRun
             var card = EventCardKit.Card("ClueCard", 340, new Vector2(560f, choice ? 520f : 440f), out _canvas, 20f);
             EventCardKit.JellyTitle(card, Loc.T("단서", "CLUE"), new Color(1f, 0.85f, 0.30f), new Color(0.35f, 0.16f, 0.02f), 26f, 70f, 46);
             EventCardKit.Divider(card, 104f);
-            EventCardKit.IconRow(card, Icon(c), new Color(0.98f, 0.80f, 0.35f), Name(c), 132f, 56f, 26, $"{Count(save) + (choice ? 0 : 1)}/6", new Color(0.30f, 0.55f, 0.95f));
+            var prof = GameManager.I != null ? GameManager.I.Profile : null;
+            bool seenBefore = prof != null && (prof.clueSeenMask & (int)c) != 0;   // 105차: 2회차 「본 적 있음」
+            EventCardKit.IconRow(card, Icon(c), new Color(0.98f, 0.80f, 0.35f), Name(c), 132f, 56f, 26, seenBefore ? Loc.T("본 적 있음", "seen before") : $"{Count(save) + (choice ? 0 : 1)}/6", seenBefore ? new Color(0.60f, 0.55f, 0.70f) : new Color(0.30f, 0.55f, 0.95f));
             var box = EventCardKit.InfoBox(card, 200f, choice ? 150f : 110f);
-            var body = CoastHudLayout.MakeText(box, "Body", Body(c), 19, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(18f, 10f), new Vector2(-18f, -10f));
+            string cond = ConditionText(save, c);
+            var body = CoastHudLayout.MakeText(box, "Body", Body(c) + (string.IsNullOrEmpty(cond) ? "" : "\n✓ " + cond), 19, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(18f, 10f), new Vector2(-18f, -10f));
             body.color = EventCardKit.Ink; body.horizontalOverflow = HorizontalWrapMode.Wrap;
             body.resizeTextForBestFit = true; body.resizeTextMinSize = 12; body.resizeTextMaxSize = CoastHudLayout.Scaled(19);
             Action finish = () => { Close(); onDone?.Invoke(); };

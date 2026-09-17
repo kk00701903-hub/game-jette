@@ -85,6 +85,17 @@ namespace CoastRun
             wallet.color = Color.white; wallet.fontStyle = FontStyle.Bold;
             wallet.resizeTextForBestFit = true; wallet.resizeTextMinSize = 12; wallet.resizeTextMaxSize = CoastHudLayout.Scaled(20);
 
+            // 105차(재미요소 P0-4): 지갑 알약 오른쪽 작은 「정기 장보기」 토글 — 켜 두면 결산 때 먹을 게 없을 때 흰밥을 자동으로 산다
+            if (_tab == 0)
+            {
+                var ag = CoastUiArt.GlossyPill(crt, "AutoGrocery", save.autoGrocery ? new Color(0.30f, 0.72f, 0.45f) : new Color(0.62f, 0.60f, 0.66f), 18, 5);
+                var agr = ag.rectTransform; agr.anchorMin = agr.anchorMax = new Vector2(1f, 1f); agr.pivot = new Vector2(1f, 1f);
+                agr.anchoredPosition = new Vector2(-22f, -HeaderShift - 158f); agr.sizeDelta = new Vector2(150f, 46f); ag.raycastTarget = true;
+                var agt = CoastHudLayout.MakeText(agr, "T", Loc.T(save.autoGrocery ? "정기 장보기 ON" : "정기 장보기 OFF", save.autoGrocery ? "Auto buy ON" : "Auto buy OFF"), 14, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(4f, 2f), new Vector2(-4f, 0f));
+                agt.color = Color.white; agt.fontStyle = FontStyle.Bold; agt.resizeTextForBestFit = true; agt.resizeTextMinSize = 10; agt.resizeTextMaxSize = CoastHudLayout.Scaled(14);
+                var agb = ag.gameObject.AddComponent<Button>(); agb.transition = Selectable.Transition.None;
+                agb.onClick.AddListener(() => { CoastPrefs.Vibrate(); save.autoGrocery = !save.autoGrocery; _gm?.Persist(); CoastToast.Show(save.autoGrocery ? Loc.T("먹을 게 없으면 결산 때 흰밥을 자동으로 살게.", "Auto-buys rice at week end when out of food.") : Loc.T("정기 장보기 끔.", "Auto buy off.")); Build(); });
+            }
             if (_tab == 0) BuildGoods(crt, save);
             else BuildPets(crt, save);
 

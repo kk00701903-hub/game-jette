@@ -20,6 +20,8 @@ namespace CoastRun
             public int hungerBefore, hungerAfter, condBefore, condAfter, riceLeft, sideLeft, clothesLeft, harvested;
             public int stressBefore, stressAfter, stressLimit;   // 74차: 주간 스트레스 변화(결산 줄)
             public bool died;
+            public bool goodMonth;   // 105차: 4주 연속 잘 살았다 — 다음 주 성장 +20%
+            public string autoBuy;   // 105차: 정기 장보기로 산 것(없으면 null)
             public readonly List<string> lines = new List<string>();
             public readonly List<string> harvestNames = new List<string>();
         }
@@ -95,6 +97,17 @@ namespace CoastRun
             r.died = s.dangerWeeks >= DangerWeeksToDie || s.starveWeeks >= 4 || s.stressCrisisWeeks >= DangerWeeksToDie;
             if (r.died) s.deaths++;
 
+            // ── 105차(재미요소 P0-4): 생활 관리에 「상」 — 잘 먹고·잘 자고·옷 멀쩡하고·컨디션 50↑ 인 주가 4번 이어지면 「좋은 한 달」(다음 주 성장 +20%) ──
+            s.goodMonthBonus = false;
+            bool goodWeek = r.ateRice && r.slept && !r.clothesWorn && s.condition >= 50 && !r.died;
+            s.goodWeeks = goodWeek ? s.goodWeeks + 1 : 0;
+            if (s.goodWeeks >= 4) { s.goodWeeks = 0; s.goodMonthBonus = true; r.goodMonth = true; }
+            // 105차: 정기 장보기 — 먹을 요리가 없으면 결산 때 흰밥 한 그릇을 자동으로 산다(돈 있을 때만)
+            if (s.autoGrocery && !r.died && !LifeItems.HasEdible(s))
+            {
+                string buy = LifeItems.CanBuy(s, "dish_rice", 1) ? "dish_rice" : LifeItems.CanBuy(s, "dish_egg", 1) ? "dish_egg" : null;
+                if (buy != null && LifeItems.Buy(s, buy, 1)) { var bd = LifeItems.Get(buy); r.autoBuy = bd.HasValue ? Loc.T(bd.Value.nameKo, bd.Value.nameEn) : buy; }
+            }
             LifeItems.SyncLegacy(s);
             r.hungerAfter = s.hunger; r.condAfter = s.condition;
             r.stressAfter = s.stats.stress; r.stressLimit = s.stats.StressLimit;
@@ -112,6 +125,8 @@ namespace CoastRun
                 string crops = r.harvestNames.Count > 0 ? string.Join(", ", r.harvestNames) : $"{r.harvested}";
                 r.lines.Add(Loc.T($"텃밭에 다 자랐다: {crops} — 마이룸에서 수확", $"Garden ready: {crops} — harvest in My Room"));
             }
+            if (r.goodMonth) r.lines.Add(Loc.T("좋은 한 달 — 다음 주 성장 +20%", "A good month — next week growth +20%"));
+            if (r.autoBuy != null) r.lines.Add(Loc.T($"정기 장보기: {r.autoBuy}", $"Auto grocery: {r.autoBuy}"));
             r.lines.Add(r.slept ? Loc.T("잘 잤다", "Slept well") : Loc.T($"잠을 못 잤다 ({s.sleepDebt}주째)", $"No sleep ({s.sleepDebt} wk)"));
             r.lines.Add(r.clothesWorn ? Loc.T("옷이 낡아서 못 입겠다 — 새 옷을 사자", "Clothes worn out — buy new") : Loc.T($"옷 {s.clothesWeeks}주 남음", $"Clothes {s.clothesWeeks} wk left"));
             r.lines.Add(Loc.T($"배부름 {r.hungerBefore} → {s.hunger}  ·  컨디션 {r.condBefore} → {s.condition}", $"Fullness {r.hungerBefore} → {s.hunger}  ·  Condition {r.condBefore} → {s.condition}"));

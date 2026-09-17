@@ -171,7 +171,7 @@ namespace CoastRun
         {
             Close();
             if (d == null) { onGo?.Invoke(); return; }
-            var crt = EventCardKit.Card("ContestIntroCanvas", 466, new Vector2(640f, 640f), out _canvas, 20f);
+            var crt = EventCardKit.Card("ContestIntroCanvas", 466, new Vector2(640f, 720f), out _canvas, 20f);
             var kicker = CoastHudLayout.MakeText(crt, "K", Loc.T("이번 주 대회", "This week's contest"), 18, TextAnchor.MiddleCenter, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -56f), new Vector2(0f, -24f));
             kicker.color = new Color(0.90f, 0.32f, 0.45f); kicker.fontStyle = FontStyle.Bold;
             EventCardKit.JellyTitle(crt, d.Name, new Color(0.45f, 0.35f, 0.95f), new Color(0.20f, 0.12f, 0.45f), 56f, 84f, 44);
@@ -180,9 +180,15 @@ namespace CoastRun
             string icon = d.goal == StoryContest.Goal.Photos ? "Icon_Camera" : d.goal == StoryContest.Goal.Coins ? "Icon_Coin" : d.goal == StoryContest.Goal.Boss ? "Icon_Bang" : "Icon_Tower";
             EventCardKit.IconRow(crt, icon, new Color(1f, 0.85f, 0.45f), Loc.T("조건 · ", "Goal · ") + d.GoalText, 180f, 64f, 24);
             EventCardKit.IconRow(crt, "Icon_Speed", new Color(0.70f, 0.80f, 1f), Loc.T($"제한시간 · {m}:{sec:00}", $"Time limit · {m}:{sec:00}"), 254f, 64f, 24);
-            var box = EventCardKit.InfoBox(crt, 336f, 150f);
+            var box = EventCardKit.InfoBox(crt, 336f, 226f);
             EventCardKit.IconRow(box, "Icon_Bulb", new Color(0.80f, 0.88f, 1f), Loc.T("이야기와 상관없는 마을 대회야.", "A village contest, unrelated to the story."), 14f, 52f, 19, null, null, 18f, 14f);
             EventCardKit.IconRow(box, "Icon_Bang", new Color(1f, 0.85f, 0.45f), Loc.T("조건을 못 채우면 이 주는 넘어가지 않아.", "Miss the goal and the week doesn't advance."), 82f, 52f, 19, null, null, 18f, 14f);
+            // 105차(재미요소): 내가 키운 스탯이 이 대회에서 어떻게 쓰이는지(RunTuning 공식) + 추천 스탯
+            var gm = GameManager.I; var sv = gm != null ? gm.Save : null;
+            var rs = RaisingFun.RecommendedStat(d);
+            string rec = sv != null ? Loc.T($"이 대회는 {RaisingFun.StatName(rs)}이 힘 — ", $"{RaisingFun.StatName(rs)} matters here — ") + RaisingFun.ContestStatLine(sv) : "";
+            var statT = EventCardKit.IconRow(box, "Icon_Star", new Color(0.75f, 0.62f, 1f), rec, 150f, 64f, 15, null, null, 18f, 14f);
+            if (statT != null) { statT.horizontalOverflow = HorizontalWrapMode.Wrap; statT.resizeTextForBestFit = true; statT.resizeTextMinSize = 10; statT.resizeTextMaxSize = CoastHudLayout.Scaled(16); }
             EventCardKit.IconButton(crt, "Go", "Icon_Arrow", Loc.T("출발!", "GO!"), new Color(1f, 0.52f, 0.10f), new Vector2(0.5f, 0f), new Vector2(0f, 30f), new Vector2(440f, 84f), () => { Close(); onGo?.Invoke(); }, 32);
             CoastAudioManager.PlayAnywhere(CoastSfx.ChapterClear, 0.5f);
         }

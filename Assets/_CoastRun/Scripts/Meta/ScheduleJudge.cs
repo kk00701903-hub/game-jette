@@ -42,6 +42,8 @@ namespace CoastRun
         public static bool SnackOn;
         /// 74차: 컨디션(0~100)도 판정에 들어간다. GameManager 가 Save.condition 을 넣어 준다.
         public static int Condition = 50;
+        /// 105차: 숙련 ★ 배율(1.0~1.4)·자동 모드(0.85)·「좋은 한 달」(1.2) — 성장·수입에 곱한다. GameManager/TamaRaisingUI 가 넣는다.
+        public static float GainMul = 1f;
         public static float RhythmStaminaMul => Rhythm == LifeRhythm.Hard ? 1.3f : Rhythm == LifeRhythm.Easy ? 0.8f : 1f;
         public static float RhythmStressMul => (Rhythm == LifeRhythm.Hard ? 1.3f : Rhythm == LifeRhythm.Easy ? 0.7f : 1f) * (SnackOn ? 0.8f : 1f);
         public static float RhythmChanceAdd => Rhythm == LifeRhythm.Hard ? -0.03f : Rhythm == LifeRhythm.Easy ? 0.03f : 0f;
@@ -93,6 +95,7 @@ namespace CoastRun
                 o = Outcome.Success;
 
             float gain = o == Outcome.GreatSuccess ? GreatGainMult : o == Outcome.Success ? 1f : 0f;
+            gain *= Mathf.Max(0.1f, GainMul);   // 105차: 숙련·자동·좋은 한 달
             float seasonMul = d.hasBonusSeason && d.bonusSeason == season ? d.seasonBonus : 1f;
 
             // 체력 성장은 리듬 배율(빡세게 ×1.3 / 무리 안 함 ×0.8), 감소는 그대로.

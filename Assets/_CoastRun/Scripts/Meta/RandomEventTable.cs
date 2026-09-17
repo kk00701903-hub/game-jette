@@ -18,7 +18,7 @@ namespace CoastRun
         public SeasonKind season;
         /// 74차: 스트레스가 이 값 이상일 때만 뜨는 사건(프메의 반항·가출 계열). 0 이면 항상 후보.
         public int condStressMin;
-        // Legacy condition fields kept for data; choices replace auto-branching.
+        // 105차(재미요소 P1-1): condStat/condMin 은 이제 **선택 A 의 스탯 체크** — 모자라면 A 버튼이 잠기고 「N 더」가 뜬다(Long Live the Queen 식). condMoneyBelow 는 잠금에 안 씀.
         public StatKind condStat = StatKind.None;
         public int condMin;
         public bool condMoneyBelow;
@@ -31,6 +31,11 @@ namespace CoastRun
             if (condStat == StatKind.None) return true;
             return s.Get(condStat) >= condMin;
         }
+        /// 105차: 선택 A 에 스탯 체크가 걸려 있는가.
+        public bool HasStatCheck => !condMoneyBelow && condStat != StatKind.None && condMin > 0;
+        /// 105차: 체크 통과 여부 / 모자란 만큼.
+        public bool CheckPasses(PlayerStats s) => !HasStatCheck || (s != null && s.Get(condStat) >= condMin);
+        public int CheckShort(PlayerStats s) => HasStatCheck && s != null ? Mathf.Max(0, condMin - s.Get(condStat)) : 0;
 
         public string ChoiceALabel => Loc.T(choiceA, choiceA);
         public string ChoiceBLabel => Loc.T(choiceB, choiceB);
@@ -71,7 +76,7 @@ namespace CoastRun
                     altBody = "라디오 주파수를 물었는데 얼버무렸다. 꼬마가 입을 다물었다.",
                     choiceA = "91.9라고 말한다", choiceB = "얼버무린다",
                     dHearts = 2, altHearts = 0, altStress = 2 },
-                new RandomEventDef { id = "ev_rain", title = "오름에서 소나기", weight = 1.0f,
+                new RandomEventDef { id = "ev_rain", title = "오름에서 소나기", weight = 1.0f, condStat = StatKind.Stamina, condMin = 35,
                     body = "갑자기 소나기. 뛰어서 비를 맞으며 내려왔다 — 상쾌하지만 지친다.",
                     altBody = "바위에서 잠깐 비를 피했다. 옷은 덜 젖었지만 시간이 좀 갔다.",
                     choiceA = "뛰어 내려간다", choiceB = "비를 피한다",
@@ -96,17 +101,17 @@ namespace CoastRun
                     altBody = "멀리서 배웅만 했다. 혼자 병을 여는 등이 작아 보였다.",
                     choiceA = "옆에 선다", choiceB = "멀리서 본다",
                     dHearts = 1, dStress = 2, altHearts = 0, altStress = 1 },
-                new RandomEventDef { id = "ev_snow", title = "첫눈", weight = 1.0f, hasSeason = true, season = SeasonKind.Winter,
+                new RandomEventDef { id = "ev_snow", title = "첫눈", weight = 1.0f, hasSeason = true, season = SeasonKind.Winter, condStat = StatKind.Sense, condMin = 25,
                     body = "첫눈. 꼬마가 우비 모자를 젖히고 웃었다. 성에 창에 얼굴이 둘 그려져 있었다.",
                     altBody = "창문으로만 첫눈을 봤다. 나가기엔 너무 추웠다.",
                     choiceA = "밖에 나간다", choiceB = "창문으로 본다",
                     dHearts = 1, dStress = -4, altStress = -1 },
-                new RandomEventDef { id = "ev_sea", title = "여름 바다", weight = 1.0f, hasSeason = true, season = SeasonKind.Summer,
+                new RandomEventDef { id = "ev_sea", title = "여름 바다", weight = 1.0f, hasSeason = true, season = SeasonKind.Summer, condStat = StatKind.Stamina, condMin = 40,
                     body = "갯바위에 발만 담갔다. 물때가 빠지며 짠내가 났다. 피로가 풀렸다.",
                     altBody = "바다를 보기만 하고 돌아왔다. 발은 안 적셨다.",
                     choiceA = "발을 담근다", choiceB = "구경만",
                     dStress = -8, dStamina = 1, altStress = -2 },
-                new RandomEventDef { id = "ev_yuchae", title = "유채꽃밭", weight = 1.0f, hasSeason = true, season = SeasonKind.Spring,
+                new RandomEventDef { id = "ev_yuchae", title = "유채꽃밭", weight = 1.0f, hasSeason = true, season = SeasonKind.Spring, condStat = StatKind.Charm, condMin = 30,
                     body = "유채꽃밭에서 관광객이 사진을 부탁했다. 찍어주고 귤 하나 받았다.",
                     altBody = "바쁘다고 손을 흔들며 지나쳤다.",
                     choiceA = "사진을 찍어준다", choiceB = "그냥 지나간다",
@@ -116,7 +121,7 @@ namespace CoastRun
                     altBody = "도윤이 우유를 집는 걸 보고 발걸음을 돌렸다. 가슴이 뛰었다.",
                     choiceA = "자리를 지킨다", choiceB = "발길을 돌린다",
                     dHearts = 1, dStress = -2, altStress = 2 },
-                new RandomEventDef { id = "ev_name", title = "바다누나", weight = 1.0f,
+                new RandomEventDef { id = "ev_name", title = "바다누나", weight = 1.0f, condStat = StatKind.Sense, condMin = 35,
                     body = "꼬마가 또 「바다누나」라고 불렀다. 촌스럽다고 했지만 가슴이 저렸다.",
                     altBody = "이름을 묻자 입을 다물었다. 「말하면 다른 사람이 돼.」",
                     choiceA = "그대로 받아 준다", choiceB = "진짜 이름을 묻는다",
@@ -127,7 +132,7 @@ namespace CoastRun
                     altBody = "참고 라디오를 켰다. 낯선 사연 하나가 밤을 데워 줬다.",
                     choiceA = "울다 잠든다", choiceB = "라디오를 켠다",
                     dStress = -12, dStamina = -1, altStress = -6, altHearts = 1 },
-                new RandomEventDef { id = "ev_snap", title = "말이 먼저 나갔다", weight = 1.8f, condStressMin = 62,
+                new RandomEventDef { id = "ev_snap", title = "말이 먼저 나갔다", weight = 1.8f, condStressMin = 62, condStat = StatKind.Charm, condMin = 35,
                     body = "삼춘의 농담에 날카롭게 받아쳤다. 돌아서서 귤 한 봉지를 사 들고 사과하러 갔다.",
                     altBody = "모른 척 지나갔다. 며칠 동안 그 얼굴이 떠올랐다.",
                     choiceA = "사과하러 간다", choiceB = "모른 척한다",

@@ -89,10 +89,11 @@ namespace CoastRun
         {
             switch (npc)
             {
-                case Rua: return Loc.T("이웃 루아", "Neighbor Rua");
-                case Mansu: return Loc.T("마을 만수", "Village Mansu");
-                case Grandma: return Loc.T("할머니", "Grandma");
-                default: return Loc.T("주파수(라디오)", "Frequency (radio)");
+                // 105차(재미요소 P1-2): 옛 원고 이름(루아·만수) → 현행 대본 인물. 슬롯·비트는 그대로(세이브 호환).
+                case Rua: return Loc.T("우비 꼬마", "The kid in the raincoat");
+                case Mansu: return Loc.T("밥 해 주는 아줌마", "The lady who cooks");
+                case Grandma: return Loc.T("마을 할머니", "Village grandma");
+                default: return Loc.T("주파수 91.9", "Frequency 91.9");
             }
         }
         /// 짧은 호감 줄용 별칭.
@@ -100,8 +101,8 @@ namespace CoastRun
         {
             switch (npc)
             {
-                case Rua: return Loc.T("루아", "Rua");
-                case Mansu: return Loc.T("만수", "Mansu");
+                case Rua: return Loc.T("꼬마", "Kid");
+                case Mansu: return Loc.T("아줌마", "Lady");
                 case Grandma: return Loc.T("할머니", "Grandma");
                 default: return Loc.T("주파수", "Freq");
             }

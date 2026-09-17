@@ -83,6 +83,25 @@ namespace CoastRun
             Save = SaveSys.CreateNew();
             Save.runMode = mode;
             ChapterGrading.InitRecords(Save);
+            // 105차(재미요소 P2-3, 우마무스메 인자 계승): 엔딩을 한 번이라도 봤으면 2회차 — 지난 회차 최종 스탯의 10% + 숙련 절반을 물려받는다.
+            if (Profile != null && Profile.hasLastFinal && Profile.lastFinalStats != null)
+            {
+                Save.playthrough = Mathf.Max(2, Profile.endingsSeen + 1);
+                var lf = Profile.lastFinalStats;
+                Save.stats.stamina += Mathf.RoundToInt(lf.stamina * 0.10f);
+                Save.stats.agility += Mathf.RoundToInt(lf.agility * 0.10f);
+                Save.stats.charm += Mathf.RoundToInt(lf.charm * 0.10f);
+                Save.stats.sense += Mathf.RoundToInt(lf.sense * 0.10f);
+                Save.stats.Clamp();
+                if (Profile.lastMasteryIds != null && Profile.lastMasteryCounts != null)
+                {
+                    var ids = new System.Collections.Generic.List<string>(); var cs = new System.Collections.Generic.List<int>();
+                    for (int i = 0; i < Profile.lastMasteryIds.Length && i < Profile.lastMasteryCounts.Length; i++)
+                        if (Profile.lastMasteryCounts[i] / 2 > 0) { ids.Add(Profile.lastMasteryIds[i]); cs.Add(Profile.lastMasteryCounts[i] / 2); }
+                    Save.masteryIds = ids.ToArray(); Save.masteryCounts = cs.ToArray();
+                }
+                Save.inheritedShown = false;
+            }
             if (DevUnlockAll) PetShop.UnlockAllPets(Save);
             Profile.playthroughsStarted++;
             SaveSys.WriteProfile(Profile);
@@ -144,6 +163,12 @@ namespace CoastRun
         }
 
         /// 이번 주 페이즈 i 실행. Story면 null을 돌려주고 호출자가 StartStoryRun()으로 넘긴다.
+        /// 105차: 자동 모드로 행동 중인가(TamaRaisingUI 가 ResolvePhase 앞에서 켠다) — 효율 85%.
+        public bool AutoActing;
+        /// 105차: 직전 ResolvePhase 에서 숙련 ★이 올랐으면 새 레벨, 아니면 0.
+        public int LastMasteryUp;
+        /// 105차(P1-2): 직전 행동으로 하트 문턱을 넘었으면 {npc, level}, 아니면 null.
+        public int[] LastDailyScene;
         public PhaseResult? ResolvePhase(int i)
         {
             if (Save == null || i < 0 || i >= Timeline.PhasesPerWeek) return null;
@@ -156,16 +181,22 @@ namespace CoastRun
             }
 
             ScheduleJudge.Rhythm = Save.rhythm; ScheduleJudge.SnackOn = Save.snackOn; ScheduleJudge.Condition = Save.condition;
+            // 105차: 숙련 ★ × 자동 모드 × 좋은 한 달
+            ScheduleJudge.GainMul = RaisingFun.MasteryMul(RaisingFun.MasteryLevel(Save, def.id)) * (AutoActing ? RaisingFun.AutoEfficiency : 1f) * (Save.goodMonthBonus ? 1.2f : 1f);
             var result = ScheduleJudge.Resolve(def, Save.stats, Timeline.SeasonOf(Save.week), SaveSys.NextDouble());
+            ScheduleJudge.GainMul = 1f;
+            LastMasteryUp = RaisingFun.NoteUse(Save, def.id);
             Save.stats = result.after;
             Save.chapterHearts += result.heartsGained;
             if (def.id == "dev_radio" && result.outcome == Outcome.GreatSuccess) Collection.OnRadioGreat();
             Collection.CheckStatCards(Save.stats);
             var side = Affinity.OnSchedule(Save, def.id, result.outcome);
             // 81차 이후: 옛 미니컷씬(SIDE_* ChapterVN)은 자동으로 안 튼다 — 호감 문턱 보상만 즉시.
+            LastDailyScene = null;
             if (side != null)
             {
                 int lvl = side.EndsWith("_3") ? 3 : side.EndsWith("_2") ? 2 : 1;
+                LastDailyScene = new int[] { Affinity.NpcOf(def.id), lvl };   // 105차(P1-2): TamaRaisingUI 가 일상 장면 카드를 띄운다
                 Affinity.Reward(Save, lvl);
                 CoastToast.Show(Loc.T($"호감도 {Affinity.ShortName(Affinity.NpcOf(def.id))} · {lvl}단계 보상",
                     $"Affinity {Affinity.ShortName(Affinity.NpcOf(def.id))} · Lv{lvl} reward"));
@@ -448,6 +479,7 @@ namespace CoastRun
 
         // ── 엔딩 / 타임라인 ────────────────────────────────────────────────
 
+        private bool _epilogueShown;
         public void ResolveEnding()
         {
             if (Save == null) return;
@@ -468,6 +500,10 @@ namespace CoastRun
             p.endingMask |= endId == "END_A" ? 1 : endId == "END_B" ? 1 << 3 : 1 << 6;
             if (Save.trueEndingPending) p.trueEndingSeen = true;
             p.lastFinalStats = st.Clone(); p.hasLastFinal = true;
+            // 105차(재미요소 P2-3): 다음 회차 계승용 — 숙련·본 단서
+            p.lastMasteryIds = Save.masteryIds != null ? (string[])Save.masteryIds.Clone() : new string[0];
+            p.lastMasteryCounts = Save.masteryCounts != null ? (int[])Save.masteryCounts.Clone() : new int[0];
+            p.clueSeenMask |= Save.clueMask;
             p.endingsSeen++;
             if (kind == EndingKind.Happy) p.happyEndings++;
             p.skateboardUnlocked = true;          // 엔딩 종류와 무관하게 해금
@@ -494,6 +530,14 @@ namespace CoastRun
         /// 엔딩 끝. 비극이면 타임라인으로, 해피면 타이틀로.
         public void OnEndingFinished()
         {
+            // 105차(재미요소 P2-2): 엔딩 시네마 뒤 「스무 살, 하늘」 에필로그 카드 한 장 → 그 다음 원래 흐름
+            if (Save != null && !_epilogueShown)
+            {
+                _epilogueShown = true;
+                EpilogueUI.Show(Save, OnEndingFinished);
+                return;
+            }
+            _epilogueShown = false;
             if (Save != null && PendingEnding == EndingKind.Tragic)
             {
                 OpenTimelineOnRaising = true;

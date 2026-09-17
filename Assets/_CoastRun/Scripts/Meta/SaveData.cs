@@ -159,6 +159,16 @@ namespace CoastRun
         public bool restedThisWeek;          // 이번 주 밥/휴식 행동을 했는가
         public bool boundaryPending;         // 챕터 마지막 주가 끝나 다음 턴에 컷씬·대회가 기다리는 중
         public int contestFails;             // 대회 미달 횟수(통계)
+        // 105차(재미요소): 카드 숙련(행동 id → 횟수, JsonUtility 라 배열 두 개) · 지난주에 고른 카드(쉼/놀기/알바) · 잘 산 주 연속(생활 보상)
+        public string[] masteryIds = new string[0];
+        public int[] masteryCounts = new int[0];
+        public string[] lastCardIds = new string[3];
+        public int goodWeeks;                // 잘 먹고 잘 잔 주 연속(4주 = 「좋은 한 달」)
+        public bool goodMonthBonus;          // 이번 주 성장 +20% (지난주 「좋은 한 달」)
+        public bool autoGrocery;             // 정기 장보기(결산 때 쌀·반찬 자동 구입)
+        public int[] festivalPlace = new int[4];   // 105차: 계절 축제 등수(0 없음 / 1~3 / 4 참가)
+        public int cluePendingMask;          // 105차: 컷씬은 봤지만 육성 조건이 모자라 아직 못 얻은 단서(ClueSystem.Condition) — 조건을 채우면 카드가 다시 뜬다
+        public bool inheritedShown;          // 105차: 2회차 계승 안내를 보여 줬는가
 
         public ChapterRecord CurrentChapter =>
             chapters != null && chapter >= 1 && chapter <= chapters.Length ? chapters[chapter - 1] : null;
@@ -216,6 +226,9 @@ namespace CoastRun
         public bool trueEndingSeen;
         public bool hasLastFinal;                // NG+ 계승용 마지막 회차 최종 스탯
         public PlayerStats lastFinalStats;
+        public string[] lastMasteryIds = new string[0];   // 105차: 지난 회차 숙련(다음 회차에 절반 계승)
+        public int[] lastMasteryCounts = new int[0];
+        public int clueSeenMask;                 // 105차: 한 번이라도 얻어 본 단서(2회차 카드에 「본 적 있음」)
         public int recordMask;                   // 37차: 레코드(M1~M7) 해금 비트 — bit(n-1). 보너스 3곡은 S급 18/20 또는 비밀코드
         public int recordNewMask;                // 37차: 아직 안 들어 본 새 레코드 비트
         public bool devUnlockAll;                // 37차: 설정 비밀코드(1111) — 전체 챕터·레코드 열림(테스트용)

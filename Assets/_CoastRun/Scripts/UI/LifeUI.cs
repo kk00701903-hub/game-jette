@@ -61,7 +61,7 @@ namespace CoastRun
             var card = CoastUiArt.CutePill(root, "Card", LifeUiKit.Cream, 34, 6);
             var crt = card.rectTransform; crt.anchorMin = crt.anchorMax = new Vector2(0.5f, 0.5f); crt.pivot = new Vector2(0.5f, 0.5f);
             bool hasNote = !string.IsNullOrEmpty(nextNote);
-            int rows = 4 + (rep != null && rep.harvested > 0 ? 1 : 0);
+            int rows = 4 + (rep != null && rep.harvested > 0 ? 1 : 0) + (rep != null && rep.goodMonth ? 1 : 0) + (rep != null && rep.autoBuy != null ? 1 : 0);   // 105차: 좋은 한 달·정기 장보기 줄
             float listH = 12f + rows * 78f;
             // 94차: 아래 빈 공간 제거 / 74차: 미터가 2개(배부름·컨디션) → 3개(+스트레스)라 88 더
             float h = 120f + listH + 272f + (hasNote ? 60f : 0f) + 24f;
@@ -123,6 +123,11 @@ namespace CoastRun
                         Loc.T($"텃밭에 다 자랐다: {crops} — 마이룸에서 수확", $"Garden ready: {crops} — harvest in My Room"),
                         false, drawTomatoPot: true);
                 }
+                // 105차(재미요소): 잘 산 4주 → 「좋은 한 달」 도장, 정기 장보기 결과
+                if (rep.goodMonth)
+                    ColorRow(crt, ref y, new Color(1f, 0.92f, 0.62f), "WK_Stamp", Loc.T("좋은 한 달! — 다음 주 성장 +20%", "A good month! — next week growth +20%"), false);
+                if (rep.autoBuy != null)
+                    ColorRow(crt, ref y, RowCols[0], "WK_Rice", Loc.T($"정기 장보기: {rep.autoBuy}", $"Auto grocery: {rep.autoBuy}"), false);
             }
 
             y -= 8f;
