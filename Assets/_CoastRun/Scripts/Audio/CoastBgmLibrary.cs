@@ -60,7 +60,11 @@ namespace CoastRun
             : cleared && Has("BGM_Menu_Cleared") ? "BGM_Menu_Cleared" : "BGM_Menu";
 
         /// 스토리 모드(육성 허브 05_Raising) 배경 — M13 「하늘의 약속」. 없으면 메뉴곡으로 폴백.
-        public static string RaisingHub() => Has("BGM_M13") ? "BGM_M13" : Menu(false);
+        /// 104차(사용자: 「육성 화면 배경음을 프린세스 메이커 같은 음악으로」): 프메풍 왈츠 M15 가
+        ///   있으면 그걸 먼저 쓰고, 없으면 예전 M13(하늘의 약속)으로 돌아간다 — 파일만 빼면 원복된다.
+        public static string RaisingHub() =>
+            Has("BGM_M15") ? "BGM_M15"
+            : Has("BGM_M13") ? "BGM_M13" : Menu(false);
         /// 26차: K-POP 러닝모드 트랙 — Resources/CoastRun/BGM/BGM_KPOP_1.ogg … 순서대로. 없으면 null(챕터 스템으로 폴백).
         public static AudioClip Kpop(int index)
         {

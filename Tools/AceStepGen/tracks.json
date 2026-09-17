@@ -439,6 +439,17 @@
    "duration": 10,
    "seed": 9707,
    "loop": false
+  },
+  {
+   "name": "BGM_M15",
+   "group": "menu",
+   "priority": "P1",
+   "prompt": "cozy raising-sim daily life theme in the spirit of Princess Maker: gentle 3/4 waltz, music box celesta lead, harpsichord and pizzicato strings, soft woodwind counter melody, warm chamber orchestra, storybook and homely, calm afternoon in a small seaside house, no drum kit, only light tambourine, unhurried, seamlessly loopable, recurring three-note motif D E F# on celesta",
+   "bpm": 92,
+   "key": "F Major",
+   "duration": 110,
+   "seed": 1513,
+   "loop": true
   }
  ]
 }

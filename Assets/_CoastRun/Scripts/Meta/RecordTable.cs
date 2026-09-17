@@ -61,6 +61,7 @@ namespace CoastRun
             (12, "Peek a boo", "Peek a boo"),
             (13, "하늘의 약속", "Promise in the Sky"),
             (14, "우산 (inst)", "Umbrella (inst)"),
+            (15, "오늘의 계획", "Today's Plan"),   // 104차: 육성 허브(프메풍 왈츠)
         };
 
         /// 48차: 곡 번호 → 제목(K-POP 한 곡 달리기 HUD·결과 카드).
