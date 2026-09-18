@@ -13,9 +13,6 @@ namespace CoastRun
         public static UpgradeConfig UpgradeConfig =>
             Load<UpgradeConfig>("UpgradeConfig") ?? CreateFallback<UpgradeConfig>("UpgradeConfig (runtime)");
 
-        public static StoryConfig StoryConfig =>
-            Load<StoryConfig>("StoryConfig") ?? CreateFallback<StoryConfig>("StoryConfig (runtime)");
-
         public static CoastPaletteConfig CoastPaletteConfig =>
             Load<CoastPaletteConfig>("CoastPalette") ?? CreateFallback<CoastPaletteConfig>("CoastPalette (runtime)");
 
@@ -31,21 +28,6 @@ namespace CoastRun
                 }
 
                 return StageTable.CreateDefault();
-            }
-        }
-
-        public static CutsceneTable CutsceneTable
-        {
-            get
-            {
-                var loaded = Load<CutsceneTable>("CutsceneTable");
-                if (loaded != null)
-                {
-                    loaded.EnsurePopulated();
-                    return loaded;
-                }
-
-                return CutsceneTable.CreateDefault();
             }
         }
 

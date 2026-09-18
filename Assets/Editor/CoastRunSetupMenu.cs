@@ -17,7 +17,6 @@ public static class CoastRunSetupMenu
 
         CreateOrUpdate<RunConfig>(ConfigDir + "/RunConfig.asset", ResourcesDir + "/RunConfig.asset");
         CreateOrUpdate<UpgradeConfig>(ConfigDir + "/UpgradeConfig.asset", ResourcesDir + "/UpgradeConfig.asset");
-        CreateOrUpdate<StoryConfig>(ConfigDir + "/StoryConfig.asset", ResourcesDir + "/StoryConfig.asset");
 
         AssetDatabase.SaveAssets();
         AssetDatabase.Refresh();

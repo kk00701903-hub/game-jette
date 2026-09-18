@@ -95,7 +95,7 @@ namespace CoastRun
             if (kind == PetKind.None && GameManager.I != null)
             {
                 var disk = GameManager.I.PeekSave();
-                if (disk != null) kind = disk.equippedPet != PetKind.None ? disk.equippedPet : PetShop.FirstOwned(disk);
+                if (disk != null) kind = disk.equippedPet;
             }
             if (kind == PetKind.None)
                 kind = Selected;

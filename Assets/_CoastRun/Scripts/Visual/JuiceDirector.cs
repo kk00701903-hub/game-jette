@@ -16,7 +16,6 @@ namespace CoastRun
         [SerializeField] private NearMissSystem nearMiss;
         [SerializeField] private CoinWallet wallet;
         [SerializeField] private UI_FeedbackController feedback;
-        [SerializeField] private UI_FinalDestinationController destinationUi;
         [SerializeField] private CoastAudioManager audio;
         [SerializeField] private RunnerCameraRig cameraRig;
         [SerializeField] private SpeedLineFx speedLines;
@@ -64,7 +63,6 @@ namespace CoastRun
             NearMissSystem nm,
             CoinWallet w,
             UI_FeedbackController ui,
-            UI_FinalDestinationController dest,
             CoastAudioManager audioMgr,
             RunnerCameraRig rig)
         {
@@ -75,7 +73,6 @@ namespace CoastRun
             nearMiss = nm;
             wallet = w;
             feedback = ui;
-            destinationUi = dest;
             audio = audioMgr;
             cameraRig = rig;
 

@@ -90,9 +90,6 @@ namespace CoastRun
                     if (PaintedProp.Available("Photocard")) PaintedProp.Attach(vis, "Photocard", 1.0f, replace: false, outline: true);
                     else BuildStar(vis);
                     radius = 0.75f;
-                    // 66차-2(사용자): 사진(포토카드) 대회 중엔 미션 대상 아이템 위에 느낌표 표식
-                    if (StoryContest.Active && StoryContest.Current != null && StoryContest.Current.goal == StoryContest.Goal.Photos)
-                        MissionMarker.Attach(vis, 1.35f);
                     break;
                 case PickupKind.Giant:
                     if (PaintedProp.Available("Star")) PaintedProp.Attach(vis, "Star", 1.35f, replace: false, outline: true,
@@ -423,15 +420,9 @@ namespace CoastRun
                 {
                     hud?.AddScore(80, pos, true);
                     hud?.Flash(new Color(1f, 0.8f, 0.95f, 0.3f));
-                    StoryContest.NotePhoto();   // 55차: 대회(사진 콘테스트) 진행
-                    int id = Collection.RollCardDrop(new System.Random(Mathf.RoundToInt(transform.position.z * 31f) ^ System.Environment.TickCount));
-                    if (id > 0)
-                    {
-                        var def = PhotocardTable.Get(id); var g = PhotocardTable.GradeOf(id);
-                        PickupFloat.Banner($"[{Collection.GradeName(g)}] {def.Name}", Collection.GradeColor(g), 1.6f);
-                        CoastToast.Show(Loc.T($"포토카드 획득 — [{Collection.GradeName(g)}] {def.Name}", $"Photocard — [{Collection.GradeName(g)}] {def.Name}"));
-                    }
-                    else { CoastToast.Show(Loc.T("포토카드 전부 모았어 — 코인 +50", "All photocards collected — +50 coins")); FindFirstObjectByType<CoinWallet>()?.Add(50); }
+                    // jette: 포토카드 컬렉션 없음 — 코인 +50 으로 갈음
+                    PickupFloat.Banner(Loc.T("포토카드 +50", "Photocard +50"), new Color(1f, 0.8f, 0.95f), 1.2f);
+                    FindFirstObjectByType<CoinWallet>()?.Add(50);
                     break;
                 }
                 case PickupKind.Giant:

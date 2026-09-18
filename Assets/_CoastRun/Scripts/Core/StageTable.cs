@@ -95,8 +95,7 @@ namespace CoastRun
                 timeLimit = limit,
                 newMechanic = mechanic,
                 lightingTStart = t0,
-                lightingTEnd = t1,
-                rewardFragmentId = StoryDatabase.RewardFragmentIdForStage(idx)
+                lightingTEnd = t1
             };
         }
     }

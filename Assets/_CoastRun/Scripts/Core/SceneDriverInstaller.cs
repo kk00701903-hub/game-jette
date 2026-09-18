@@ -35,9 +35,6 @@ namespace CoastRun
             // title so the handoff is seamless — a Single-only filter silently skipped it
             // and the run came up with no camera. The one scene that must not get a
             // driver is 03_Cutscene, which SceneFlowController drives by hand.
-            if (Matches(scene.name, scene.path, CoastScenes.Cutscene))
-                return;
-
             Install(scene);
         }
 
@@ -53,10 +50,6 @@ namespace CoastRun
                 Ensure<TitleSceneDriver>("TitleSceneDriver", scene);
             else if (Matches(name, path, CoastScenes.Run))
                 Ensure<CoastRunBootstrap>("CoastRunBootstrap", scene);
-            else if (Matches(name, path, CoastScenes.Ending))
-                Ensure<EndingSceneDriver>("EndingSceneDriver", scene);
-            else if (Matches(name, path, CoastScenes.Raising))
-                Ensure<RaisingSceneDriver>("RaisingSceneDriver", scene);
         }
 
         private static bool Matches(string sceneName, string scenePath, string target) =>

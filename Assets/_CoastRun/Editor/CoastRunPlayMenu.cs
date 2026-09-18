@@ -23,9 +23,6 @@ namespace CoastRun.Editor
 
             // A dev fast-path may have left this set; a run from Boot should show
             // everything a player sees, prologue included.
-            PlayerPrefs.SetInt(MainMenuController.SkipPrologueKey, 0);
-            PlayerPrefs.Save();
-
             EditorSceneManager.OpenScene(BootScene, OpenSceneMode.Single);
             // delayCall so -executeMethod / menu both enter Play reliably
             EditorApplication.delayCall += () => { EditorApplication.isPlaying = true; };
@@ -62,9 +59,6 @@ namespace CoastRun.Editor
             if (!EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo())
                 return;
 
-            PlayerPrefs.SetInt(MainMenuController.SkipPrologueKey, 1);
-            PlayerPrefs.Save();
-
             EditorSceneManager.OpenScene(RunScene, OpenSceneMode.Single);
             EditorApplication.delayCall += () => { EditorApplication.isPlaying = true; };
         }
@@ -89,7 +83,6 @@ namespace CoastRun.Editor
         public static void PrepareForHubTest()
         {
             SceneFlowSetupMenu.Setup();
-            StoryAssetsRebuildMenu.RebuildAll();
             // Portrait game view hint
             Debug.Log("[Coast Run] Ready. Use Coast Run → Play From Boot. Game View: 720×1280 portrait.");
             EditorUtility.DisplayDialog(

@@ -15,12 +15,9 @@ namespace CoastRun
         public const string Boot = "00_Boot";
         public const string Title = "01_Title";
         public const string Run = "02_Run";
-        public const string Cutscene = "03_Cutscene";
-        public const string Ending = "04_Ending";
-        public const string Raising = "05_Raising";
 
         public static string Path(string sceneName) => $"{Dir}/{sceneName}.unity";
 
-        public static readonly string[] BuildOrder = { Boot, Title, Run, Cutscene, Ending, Raising };
+        public static readonly string[] BuildOrder = { Boot, Title, Run };   // jette: 컷씬·엔딩·육성 씬 없음
     }
 }

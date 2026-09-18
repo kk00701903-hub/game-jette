@@ -24,9 +24,9 @@ namespace CoastRun
         private void Start()
         {
             GameDirector.EnsureExists();
-            // MainMenuController builds live TitleWorldBackdrop + splash + UI.
-            if (Object.FindAnyObjectByType<MainMenuController>() == null)
-                gameObject.AddComponent<MainMenuController>();
+            // jette: 타이틀은 JetteTitleController(시안 한 장 + START) — 스토리/더보기 없음.
+            if (Object.FindAnyObjectByType<JetteTitleController>() == null)
+                gameObject.AddComponent<JetteTitleController>();
         }
     }
 }

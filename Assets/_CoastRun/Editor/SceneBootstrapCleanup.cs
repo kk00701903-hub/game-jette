@@ -38,8 +38,6 @@ namespace CoastRun.Editor
             { CoastScenes.Run, typeof(CoastRunBootstrap) },
             { CoastScenes.Boot, null },
             { CoastScenes.Title, null },
-            { CoastScenes.Cutscene, null },
-            { CoastScenes.Ending, null },
         };
 
         [MenuItem("Coast Run/Fix Scene Bootstraps")]

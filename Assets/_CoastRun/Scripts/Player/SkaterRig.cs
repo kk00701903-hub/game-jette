@@ -8,7 +8,8 @@ namespace CoastRun
     /// when the rig exists; the painted billboard remains the fallback.
     public class SkaterRig : MonoBehaviour
     {
-        public const string ModelPath = ArtAssets.ResourceRoot + "Rig/Skater";
+        /// jette: 플레이어는 JETTE 곰(Tools/blender/jette_bear_rig.py → Rig/JetteBear.fbx, Humanoid). Mixamo 클립을 리타겟.
+        public const string ModelPath = ArtAssets.ResourceRoot + "Rig/JetteBear";
         public const string ControllerPath = ArtAssets.ResourceRoot + "Rig/SkaterAnimator";
         public const string RunnerControllerPath = ArtAssets.ResourceRoot + "Rig/RunnerAnimator";
 
@@ -97,13 +98,13 @@ namespace CoastRun
                     // The camera only ever sees her shadow side (sun ahead), so the
                     // default cool shade turned her muddy. A pale warm shade with a low
                     // threshold keeps hair and shirt at key-art brightness.
-                    CoastMaterials.SetShadow(toon, new Color(0.86f, 0.80f, 0.80f), 0.22f);   // 25차-1: 팔레트 갱신에도 유지
+                    CoastMaterials.SetShadow(toon, new Color(0.84f, 0.80f, 0.82f), 0.24f);   // jette: 비닐 토이 느낌 — 옅은 그늘
                     mats[i] = toon;
                 }
                 r.sharedMaterials = mats;
             }
 
-            AttachBackpack(go, anim, height, runner);
+            // jette: 곰에는 가방 없음(AttachBackpack 생략).
             // (14차-2 벙거지는 사용자 요청으로 뺌 — AttachBucketHat 는 남겨 둠, 필요하면 한 줄로 복구)
 
             var rig = go.AddComponent<SkaterRig>();

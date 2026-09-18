@@ -8,7 +8,6 @@ namespace CoastRun
         public const string DevStartStageKey = "CoastRun_DevStartStage";
 
         [SerializeField] private RunConfig config;
-        [SerializeField] private StoryConfig storyConfig;
         [SerializeField] private PlayerController player;
         [SerializeField] private CameraController cameraController;
         [SerializeField] private MapGenerator map;
@@ -25,16 +24,8 @@ namespace CoastRun
         [SerializeField] private DestinationGate destination;
         [SerializeField] private UI_FeedbackController feedback;
         [SerializeField] private StageManager stages;
-        [SerializeField] private StageClearUI stageClearUi;
 
-        [Header("Story — 우리의 송전탑")]
-        [SerializeField] private StoryManager story;
-        [SerializeField] private StoryProgressDirector storyProgress;
-        [SerializeField] private StoryEndingController storyEnding;
-        [SerializeField] private LandmarkManager landmarks;
         [SerializeField] private DynamicEnvironmentManager dayCycle;
-        [SerializeField] private UI_FinalDestinationController destinationUi;
-        [SerializeField] private UI_PhoneOverlay phoneOverlay;
         [SerializeField] private SeasonWeatherDirector seasonWeather;
         [SerializeField] private WeatherFx weatherFx;
         [SerializeField] private CoastAudioManager audio;
@@ -54,7 +45,6 @@ namespace CoastRun
 
         private bool _sessionBooted;
         private bool _suspendedForHandoff;
-        private UpgradeShopUI _shopUi;
 
         /// Called by CoastRunBootstrap after world build.
         public void InitializeFromBootstrap(PlayerController bootPlayer, Camera cam)
@@ -136,48 +126,24 @@ namespace CoastRun
                     stages = dir.Stages;
                 if (dayCycle == null)
                     dayCycle = dir.Environment;
-                if (story == null)
-                    story = dir.Story;
             }
 
             if (stages == null)
                 stages = gameObject.GetComponent<StageManager>() ?? gameObject.AddComponent<StageManager>();
-            if (stageClearUi == null)
-                stageClearUi = gameObject.GetComponent<StageClearUI>() ?? gameObject.AddComponent<StageClearUI>();
 
-            if (storyConfig == null)
-                storyConfig = CoastConfigRegistry.StoryConfig;
 
             if (config == null)
                 config = CoastConfigRegistry.RunConfig;
 
-            if (story == null)
-                story = gameObject.GetComponent<StoryManager>() ?? gameObject.AddComponent<StoryManager>();
-            if (storyProgress == null)
-                storyProgress = gameObject.GetComponent<StoryProgressDirector>() ??
-                                gameObject.AddComponent<StoryProgressDirector>();
-            if (storyEnding == null)
-                storyEnding = gameObject.GetComponent<StoryEndingController>() ??
-                              gameObject.AddComponent<StoryEndingController>();
-            if (landmarks == null)
-                landmarks = gameObject.GetComponent<LandmarkManager>() ?? gameObject.AddComponent<LandmarkManager>();
             if (dayCycle == null)
                 dayCycle = gameObject.GetComponent<DynamicEnvironmentManager>() ??
                            gameObject.AddComponent<DynamicEnvironmentManager>();
-            if (destinationUi == null)
-                destinationUi = gameObject.GetComponent<UI_FinalDestinationController>() ??
-                                gameObject.AddComponent<UI_FinalDestinationController>();
-            if (phoneOverlay == null)
-                phoneOverlay = gameObject.GetComponent<UI_PhoneOverlay>() ??
-                               gameObject.AddComponent<UI_PhoneOverlay>();
             if (seasonWeather == null)
                 seasonWeather = gameObject.GetComponent<SeasonWeatherDirector>() ??
                                 gameObject.AddComponent<SeasonWeatherDirector>();
             if (weatherFx == null)
                 weatherFx = gameObject.GetComponent<WeatherFx>() ?? gameObject.AddComponent<WeatherFx>();
 
-            var shop = gameObject.GetComponent<UpgradeShopHotkeys>() ?? gameObject.AddComponent<UpgradeShopHotkeys>();
-            _shopUi = gameObject.GetComponent<UpgradeShopUI>() ?? gameObject.AddComponent<UpgradeShopUI>();
 
             feedback.BuildRuntime(wallet);
             upgrades.Bind(CoastConfigRegistry.UpgradeConfig, wallet, feedback);
@@ -203,7 +169,7 @@ namespace CoastRun
             else if (Camera.main != null)
                 rig = Camera.main.GetComponent<RunnerCameraRig>() ??
                       Camera.main.gameObject.AddComponent<RunnerCameraRig>();
-            juice.Bind(player, nearMiss, wallet, feedback, destinationUi, audio, rig);
+            juice.Bind(player, nearMiss, wallet, feedback, audio, rig);
 
             obstacles.Bind(player, seasonWeather);
             coins.Bind(player, wallet, upgrades, feedback);
@@ -231,12 +197,8 @@ namespace CoastRun
             destination.enabled = false;
             destination.Bind(upgrades, player, this, feedback);
 
-            _shopUi.Bind(upgrades, wallet, feedback);
-            stageClearUi.Bind(upgrades, wallet, feedback, _shopUi);
-            shop.Bind(upgrades, feedback);
-            shop.SetEnabledWhen(() => stageClearUi != null && stageClearUi.IsVisible);
 
-            stages.Bind(CoastConfigRegistry.StageTable, player, dayCycle, stageClearUi, feedback);
+            stages.Bind(CoastConfigRegistry.StageTable, player, dayCycle, feedback);
             stages.OnStageStart -= HandleStageStart;
             stages.OnStageStart += HandleStageStart;
             stages.OnStageClear -= HandleStageClear;
@@ -246,17 +208,8 @@ namespace CoastRun
 
             // Prefer GameDirector memory services; rebind to this StageManager (run scene).
             var director = GameDirector.EnsureExists();
-            director.MemoryLog?.Bind(director.Progression);
-            director.Memory?.Bind(director.MemoryLog, stages);
 
-            story.Bind(storyConfig, this, player, cameraController);
-            storyProgress.Bind(storyConfig, story, player, upgrades, dayCycle, destinationUi);
-            storyEnding.Bind(storyConfig, storyProgress);
-            landmarks.Bind(storyConfig, player, upgrades, feedback, destinationUi);
-            dayCycle.Bind(storyConfig, player, upgrades);
-            phoneOverlay.Bind();
-            destinationUi.Bind(storyConfig, player, upgrades, nearMiss, dayCycle, stages, feedback, phoneOverlay);
-            destinationUi.AttachPhoneCanvasGroup(phoneOverlay.IconCanvasGroup);
+            dayCycle.Bind(player, upgrades);
 
             // Tower landmark near cumulative end of S20 (still one scene).
             float towerZ = 0f;
@@ -316,17 +269,12 @@ namespace CoastRun
                 () => stages?.RetryCurrent(),
                 () =>
                 {
-                    if (meta)
-                    {
-                        GameManager.I.ReturnToRaisingAfterFail();
-                        return;
-                    }
                     ArcadeRun.ClearSession();
                     var flow = GameDirector.Instance != null ? GameDirector.Instance.Flow : null;
                     if (flow != null)
                         _ = flow.GoTo(FlowState.Title, TransitionType.Fade);
                 },
-                meta ? "육성으로 돌아가기" : "메인으로");
+                "메인으로");
         }
 
         /// 아케이드(K-POP 포함) 런 종료: 점수 정산 + 결과창(다시/나가기). 사망·완주 공용.
@@ -367,8 +315,6 @@ namespace CoastRun
         {
             runStats?.BeginStage();
             // 55차(사용자): 스토리 러닝 = 대회(StoryContest) — 진행 HUD·제한시간. 아케이드·재도전 샌드박스는 해당 없음.
-            if (!ArcadeRun.Active && GameManager.Active && !GameManager.I.IsRetry) StoryContest.Begin(GameManager.I.Save.chapter);
-            else StoryContest.End();
             if (ArcadeRun.Active) ArcadeRun.OnStageBegin();
             _bonus?.ForceEnd();
             // 튜닝(최대 HP)을 먼저 맞춘 뒤 채운다 — 예전엔 ResetFull이 옛 max로 채운 뒤 ApplyTuning만 해서
@@ -408,10 +354,7 @@ namespace CoastRun
             if (BossDirector.Instance != null) Destroy(BossDirector.Instance.gameObject);
             if (ArcadeRun.KpopMode && player != null)
                 BossDirector.Create(player, obstacles, ArcadeRun.StageIndex, ArcadeRun.BossRush, ArcadeRun.Seed * 31 + stage.stageIndex);
-            StoryContest.SpawnBoss(player, obstacles, stage);   // 55차: 보스 퇴치전이면 보스 배치(위의 Destroy 뒤에)
             // 66차-1(사용자): 육성 대회 러닝엔 꼬마 + 라이벌 2명이 같이 달린다(경쟁·순위)
-            if (StoryContest.Active && player != null) ContestRivals.Create(player, (GameManager.Active ? GameManager.I.Save.chapter : 1) * 131 + (stage != null ? stage.stageIndex : 0));
-            else ContestRivals.Clear();
             if (player != null)
             {
                 var rain = player.GetComponent<SkyHazards.RockRain>() ?? player.gameObject.AddComponent<SkyHazards.RockRain>();
@@ -446,9 +389,7 @@ namespace CoastRun
 
         private void HandleChapterComplete(int chapter)
         {
-            phoneOverlay?.SetChapter(chapter);
-            if (chapter >= 4)
-                phoneOverlay?.SetTwistStage(2);
+            // jette: 스토리 챕터 연출 없음
         }
 
         private void BeginWithStory()
@@ -480,9 +421,7 @@ namespace CoastRun
                 return;
             }
 
-            story.OnPrologueFinished -= StartSession;
-            story.OnPrologueFinished += StartSession;
-            story.BeginPrologue();
+            StartSession();
         }
 
         /// Run is loaded under the cinematic — cam/input/HUD off until P4 handoff.
@@ -646,8 +585,6 @@ namespace CoastRun
         public void EndRun()
         {
             IsRunning = false;
-            destinationUi?.ShowArrival();
-            storyEnding?.PlayArrivalEnding();
             wallet?.Persist();
             upgrades?.SaveAll();
             player?.FinishRun();

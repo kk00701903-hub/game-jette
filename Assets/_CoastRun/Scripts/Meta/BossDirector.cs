@@ -64,7 +64,7 @@ namespace CoastRun
         {
             _bossAt.Clear();
             // 55차: 스토리 대회(보스 퇴치전)에서도 쓴다 — 곡이 없으면 대회 제한시간의 70 % 창에 배치.
-            float L = ArcadeRun.KpopMode ? ArcadeRun.KpopTrack.length : StoryContest.Active ? StoryContest.Current.seconds * 0.7f : 150f;
+            float L = ArcadeRun.KpopMode ? ArcadeRun.KpopTrack.length : 150f;
             if (_rush)
             {
                 for (float t = 3f; t < L - 12f; t += 26f) _bossAt.Add(t);
@@ -188,7 +188,6 @@ namespace CoastRun
             PickupFloat.Banner(Loc.T("보스 퇴치!", "BOSS CLEARED!"), new Color(1f, 0.9f, 0.4f), 1.2f);
             CoastAudioManager.PlayAnywhere(CoastSfx.RankS, 0.7f);
             ArcadeRun.NoteBossCleared();
-            StoryContest.NoteBoss();   // 55차: 대회(보스 퇴치전) 진행
             // 52차(사용자): 보스 1마리 = 100코인
             var wallet = Object.FindAnyObjectByType<CoinWallet>();
             if (wallet != null) wallet.Add(BossCoins);

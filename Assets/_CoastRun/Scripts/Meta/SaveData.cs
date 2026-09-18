@@ -140,14 +140,12 @@ namespace CoastRun
         public bool trueEndingPending;       // 진엔딩 조건 충족(양쪽 엔딩을 본 뒤의 만남)
         public int clueMask;                 // 85차(대본 v4): 단서 6비트 — ClueSystem.Clue(이름·편지·하트·머리띠·돌·라디오). 엔딩 분기.
         public string pendingEndingId;       // 85차: ResolveEnding 이 고른 시네마 id(END_A/END_B/END_TRUE) — 엔딩 화면·갤러리 표기용
-        public PotState[] pots = new PotState[HomeData.PotCount];   // 30차: 베란다 화분
         public int treadmillStamp = -1;      // 30차: 러닝머신 마지막 사용 (week*4+phase)
         public int miniGameWeek, miniGamePlays;   // 30차: 미니게임 보상 횟수(주 3회)
         public int flowersSold;              // 30차: 판 꽃 수(통계)
         // ── 55차(사용자): 생존 생태계(다마고치) — 식료품·옷·허기·수면·컨디션·죽음 ──
         public int rice = 2;                 // 레거시 미러(LifeItems.SyncLegacy) — 재료+주식 합
         public int sideDish = 2;             // 레거시 미러 — 채소·고기·반찬 합
-        public LifeStack[] bag = new LifeStack[0]; // 생활 인벤(재료·요리·약·케어)
         public bool invMigrated;             // rice/sideDish → bag 이관 완료
         public bool ateThisWeek;             // 이번 주 「밥」으로 요리를 먹었는가
         public int hunger = 80;              // 배부름 0~100 (0 = 굶주림)
@@ -238,8 +236,6 @@ namespace CoastRun
         public int decoOwnedMask;                // 28차: 방 장식 보유 비트(RoomDeco.All 순서)
         public int decoNewMask;                  // 28차: 아직 안 본 새 장식 비트
         public int missionClearMask;             // 44차: 한 번이라도 깬 챕터 미션 비트 — 더보기 › 미니게임 다시하기 해금(회차를 넘어 남는다)
-        public string[] roomSlots = new string[RoomDeco.SlotCount];   // 28차: 슬롯별 배치된 장식 id(30차부터는 homeItems로 이관)
-        public HomeItem[] homeItems = new HomeItem[0];                  // 30차: 방 안 자유 배치(id, x, y)
         public bool homeCompleteRewarded;                                 // 31차: 방 완성 보상(300G) 지급 여부
         // ── 48차: K-POP 한 곡 달리기(데일리). 도장·스트릭은 dailyStamps/dailyStreak/lastDailyDate 를 그대로 쓴다 ──
         public int kpopMissionDoneMask;          // 오늘 미션 3비트(kpopMissionDate != 오늘이면 0)
@@ -270,7 +266,6 @@ namespace CoastRun
             if (bestNearMiss == null || bestNearMiss.Length < 20) bestNearMiss = Grow(bestNearMiss, 20);
             if (dailyStamps == null) dailyStamps = new int[0];
             if (kpopBestByChapter == null || kpopBestByChapter.Length < 20) kpopBestByChapter = Grow(kpopBestByChapter, 20);
-            RoomDeco.Ensure(this);
         }
         static int[] Grow(int[] a, int n) { var r = new int[n]; if (a != null) Array.Copy(a, r, Math.Min(a.Length, n)); return r; }
     }

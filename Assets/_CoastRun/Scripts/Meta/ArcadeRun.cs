@@ -64,7 +64,7 @@ namespace CoastRun
         public KpopTrackMeta(int num, float start, float length, float chorusStart, float chorusEnd, float chorus2Start = -1f, float chorus2End = -1f)
         { this.num = num; this.start = start; this.length = length; this.chorusStart = chorusStart; this.chorusEnd = chorusEnd; this.chorus2Start = chorus2Start; this.chorus2End = chorus2End; }
         public string Clip => "BGM_M" + num;
-        public string Title => RecordTable.TitleOf(num);
+        public string Title => KpopTitles.TitleOf(num);   // jette: RecordTable(레코드 화면) 제거 — 제목표만 남김
         /// 48차-5(사용자): 러닝 HUD 우하단 표기 — 「제목 — 우히&히시」(M1. 같은 번호 없이).
         public const string Artist = "우히&히시";
         public string Credit => Title + " — " + Artist;
@@ -187,7 +187,6 @@ namespace CoastRun
             var pool = new List<KpopTrackMeta>();
             foreach (var t in KpopTracks) if (t.num != last || KpopTracks.Length == 1) pool.Add(t);
             // 52차: 기부 선물 ① 히든 트랙(M9·M10)도 풀에
-            if (RecordTable.HiddenOpen) foreach (var t in HiddenTracks) if (t.num != last) pool.Add(t);
             var pick = pool[UnityEngine.Random.Range(0, pool.Count)];
             PlayerPrefs.SetInt(PrefLastTrack, pick.num);
             return pick;
@@ -360,8 +359,7 @@ namespace CoastRun
             RunTuning.BurnoutStart = false;
             RunTuning.HasSeason = true;
             RunTuning.Season = Season;
-            if (save != null) RunTuning.Mode = save.runMode;
-            if (RunTuning.Mode == RunMode.Skateboard) { RunTuning.SpeedMul = 1.3f; RunTuning.CoinMul = 1.3f; }
+            RunTuning.Mode = RunMode.Running;   // jette: 스케이트보드 없음 — 곰이 달린다
             RunTuning.CoinMul *= KpopCoinDecay(p);
             RunTuning.CoinMul *= LevelSystem.CoinMul(save);   // 53차: 레벨 코인 보너스
             RunTuning.Pet = save != null ? save.equippedPet : PetCompanion.Selected;
@@ -459,8 +457,6 @@ namespace CoastRun
                     p.lastDailyDate = Today;
                 }
             }
-            // 28차: 방 장식 드롭(800 m 이상 달렸을 때 25%)
-            if (Distance >= 800f) RoomDeco.TryDropFromRun(p, Seed * 7 + Mathf.RoundToInt(Distance) + LastScore, 0.25f);
             gm.WriteProfileNow();
             AchievementTable.CheckAndToast(gm);
         }
@@ -517,7 +513,6 @@ namespace CoastRun
                     p.kpopAllClearDate = Today;
                     LastAllClearCoins = KpopAllClearCoins;
                     wallet?.Add(KpopAllClearCoins);
-                    RoomDeco.TryDropFromRun(p, Seed * 13 + LastScore, 0.25f);   // 장식 상자 25%
                 }
             }
             wallet?.Persist();
@@ -558,14 +553,12 @@ namespace CoastRun
         /// 결과창 '나가기'.
         public static void Exit()
         {
-            bool toRaising = ReturnToRaising && GameManager.Active;
             ClearSession();
             RunTuning.Reset();
             Time.timeScale = 1f;
             AudioListener.pause = false;
             var flow = GameDirector.Instance != null ? GameDirector.Instance.Flow : null;
-            if (toRaising) GameManager.I.EnterRaising();
-            else if (flow != null) _ = flow.GoTo(FlowState.Title, TransitionType.Fade);
+            if (flow != null) _ = flow.GoTo(FlowState.Title, TransitionType.Fade);
         }
 
         public static string SeasonName(SeasonKind s)
@@ -577,6 +570,23 @@ namespace CoastRun
                 case SeasonKind.Autumn: return Loc.T("가을", "Autumn");
                 default: return Loc.T("겨울", "Winter");
             }
+        }
+    }
+
+    /// jette: 곡 번호 → 제목(본편 RecordTable.TitleOf 의 표만). K-POP 러닝 HUD·결과 카드.
+    public static class KpopTitles
+    {
+        private static readonly (int num, string ko, string en)[] All =
+        {
+            (1, "이별 예감", "Premonition of Goodbye"), (2, "솜사탕 둘이서", "Cotton Candy for Two"), (3, "별 (듀엣)", "Star (Duet)"),
+            (4, "Goodbye My First Love", "Goodbye My First Love"), (5, "돌아온 제주", "Back to Jeju"), (6, "남녀 사랑 이야기 (inst.)", "A Love Story (inst.)"),
+            (7, "보조개", "Dimple"), (8, "Sweet Dream", "Sweet Dream"), (9, "Game 1", "Game 1"), (10, "Game 2", "Game 2"),
+            (11, "오운완", "Workout Done"), (12, "Peek a boo", "Peek a boo"), (13, "하늘의 약속", "Promise in the Sky"), (14, "우산 (inst)", "Umbrella (inst)"),
+        };
+        public static string TitleOf(int num)
+        {
+            foreach (var t in All) if (t.num == num) return Loc.T(t.ko, t.en);
+            return "M" + num;
         }
     }
 }

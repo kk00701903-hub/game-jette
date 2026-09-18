@@ -8,10 +8,10 @@ using UnityEngine;
 
 namespace CoastRun.Editor
 {
-    /// Android APK 원클릭 빌드 — Builds/CoastRun.apk. 세로 고정, IL2CPP ARM64(+ARMv7), 디버그 키스토어.
+    /// jette: Android APK 원클릭 빌드 — Builds/JetteRun.apk (「빨리가자 제때 런」, com.jette.jetterun). 세로 고정, IL2CPP ARM64(+ARMv7), 디버그 키스토어.
     public static class BuildMenu
     {
-        private const string Bundle = "com.jette.coastrun";
+        private const string Bundle = "com.jette.jetterun";   // jette: 본편(com.jette.coastrun)과 다른 앱
 
         // 82차: GraphicsSettings Always Included — GUID 로 고정해 빌드마다 되돌아가는 회귀 방지.
         private static readonly string[] AlwaysIncludedGuids =
@@ -26,6 +26,17 @@ namespace CoastRun.Editor
             "7fc3f2d63771496b81faa4d6fbc284ce", // CoastRun/InkOutline
             "ce98457354cb3e543ba64bcbc39293e0", // CoastRun/UIDesaturate
         };
+
+        /// jette: 프로젝트 정체성(앱 이름·번들 ID) — 빌드 없이도 에디터 플레이의 persistentDataPath 가 본편과 갈라지게 한 번 적용.
+        [MenuItem("Coast Run/Build/Apply jette identity")]
+        public static void ApplyJetteIdentity()
+        {
+            PlayerSettings.productName = "빨리가자 제때 런";
+            PlayerSettings.companyName = "jette";
+            PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, Bundle);
+            AssetDatabase.SaveAssets();
+            Debug.LogWarning("[Build] jette identity: " + PlayerSettings.productName + " / " + Bundle);
+        }
 
         [MenuItem("Coast Run/Build/Android APK (IL2CPP, ARM64+ARMv7) %#&k")]
         public static void BuildAndroidApk() => Build(BuildKind.Release);
@@ -167,7 +178,7 @@ namespace CoastRun.Editor
 
             ApplyAlwaysIncludedShaders();
 
-            PlayerSettings.productName = "너와 나의 주파수";
+            PlayerSettings.productName = "빨리가자 제때 런";
             PlayerSettings.companyName = "jette";
             PlayerSettings.SetApplicationIdentifier(BuildTargetGroup.Android, Bundle);
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
@@ -195,7 +206,7 @@ namespace CoastRun.Editor
                 case BuildKind.Quick:
                     PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.Mono2x);
                     PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARMv7;
-                    apkName = "CoastRun_quick.apk";
+                    apkName = "JetteRun_quick.apk";
                     optsFlags = BuildOptions.Development;
                     kindLabel = "Mono/ARMv7/dev";
                     break;
@@ -208,14 +219,14 @@ namespace CoastRun.Editor
                         AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7;
                     Debug.Log("[Build] Emulator (=ARM for ARM AVD) targetArchitectures=" + PlayerSettings.Android.targetArchitectures);
                     PlayerSettings.SetIl2CppCompilerConfiguration(BuildTargetGroup.Android, Il2CppCompilerConfiguration.Release);
-                    apkName = "CoastRun_emu.apk";
+                    apkName = "JetteRun_emu.apk";
                     kindLabel = "IL2CPP/Emulator-ARM/" + PlayerSettings.Android.targetArchitectures;
                     break;
                 case BuildKind.Development:
                     PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
                     PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7;
                     PlayerSettings.SetIl2CppCompilerConfiguration(BuildTargetGroup.Android, Il2CppCompilerConfiguration.Debug);
-                    apkName = "CoastRun_dev.apk";
+                    apkName = "JetteRun_dev.apk";
                     optsFlags = BuildOptions.Development | BuildOptions.AllowDebugging;
                     kindLabel = "IL2CPP/ARM64+ARMv7/Development";
                     break;
@@ -223,7 +234,7 @@ namespace CoastRun.Editor
                     PlayerSettings.SetScriptingBackend(BuildTargetGroup.Android, ScriptingImplementation.IL2CPP);
                     PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64 | AndroidArchitecture.ARMv7;
                     PlayerSettings.SetIl2CppCompilerConfiguration(BuildTargetGroup.Android, Il2CppCompilerConfiguration.Release);
-                    apkName = "CoastRun.apk";
+                    apkName = "JetteRun.apk";
                     kindLabel = "IL2CPP/ARM64+ARMv7";
                     break;
             }

@@ -4,6 +4,9 @@ using UnityEngine.Rendering.Universal;
 
 namespace CoastRun
 {
+    /// jette: 스토리 설정(StoryConfig)에서 옮겨 온 하루 구간 — 조명 t 로만 정해진다.
+    public enum DayPhase { BrightNoon, GoldenHour, BlueHour }
+
     /// Day lighting driven by lightingT: 0 = 13:20 noon → 1 = 19:04 blue hour.
     /// t never decreases except via ResetLightingTo (stage retry → stage lightingTStart only).
     public class DynamicEnvironmentManager : MonoBehaviour
@@ -24,7 +27,6 @@ namespace CoastRun
         [SerializeField] private Light sun;
         [SerializeField] private Light towerBeacon;
         [SerializeField] private CoastSky coastSky;
-        [SerializeField] private StoryConfig config;
         [SerializeField] private PlayerController player;
         [SerializeField] private UpgradeManager upgrades;
         [SerializeField] private CoastFogSettings fog = new CoastFogSettings();
@@ -43,9 +45,8 @@ namespace CoastRun
         public float LightingT => _lightingT;
         public CoastFogSettings Fog => fog;
 
-        public void Bind(StoryConfig storyConfig, PlayerController playerController, UpgradeManager upgradeManager)
+        public void Bind(PlayerController playerController, UpgradeManager upgradeManager)
         {
-            config = storyConfig;
             player = playerController;
             upgrades = upgradeManager;
             EnsureDefaults();

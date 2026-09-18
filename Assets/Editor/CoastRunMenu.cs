@@ -24,9 +24,6 @@ public static class CoastRunMenu
     [MenuItem("Tools/Coast Run/Open/02 Run", false, 12)]
     public static void OpenRunScene() => Open(CoastScenes.Run);
 
-    [MenuItem("Tools/Coast Run/Open/04 Ending", false, 13)]
-    public static void OpenEndingScene() => Open(CoastScenes.Ending);
-
     private static void Open(string sceneName)
     {
         string path = CoastScenes.Path(sceneName);

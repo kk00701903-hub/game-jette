@@ -7,13 +7,8 @@ namespace CoastRun
     {
         Boot,
         Title,
-        Cutscene,
         Run,
-        StageClear,
-        Ending,
-        Credits,
-        Sting,
-        Raising     // v2: 육성 씬(05_Raising)
+        StageClear
     }
 
     public enum TransitionType
@@ -24,37 +19,24 @@ namespace CoastRun
         SlowMotion
     }
 
-    public enum CutsceneKind
-    {
-        Prologue,
-        ChapterOpening,
-        ChapterClosing
-    }
-
     /// Persistent root — Story / Stage / Environment / Progression / Flow / UI.
     [DefaultExecutionOrder(-1000)]
     public class GameDirector : MonoBehaviour
     {
         public static GameDirector Instance { get; private set; }
 
-        [SerializeField] private StoryManager story;
         [SerializeField] private StageManager stages;
         [SerializeField] private DynamicEnvironmentManager environment;
         [SerializeField] private ProgressionManager progression;
         [SerializeField] private SceneFlowController flow;
         [SerializeField] private UIRoot uiRoot;
-        [SerializeField] private MemoryFragmentLog memoryLog;
-        [SerializeField] private MemoryDirector memoryDirector;
         [SerializeField] private GameManager gameManager;
 
-        public StoryManager Story => story;
         public StageManager Stages => stages;
         public DynamicEnvironmentManager Environment => environment;
         public ProgressionManager Progression => progression;
         public SceneFlowController Flow => flow;
         public UIRoot UI => uiRoot;
-        public MemoryFragmentLog MemoryLog => memoryLog;
-        public MemoryDirector Memory => memoryDirector;
         public GameManager Game => gameManager;
 
         public bool CampaignCleared { get; set; }
@@ -124,20 +106,14 @@ namespace CoastRun
 
         private void BuildChildren()
         {
-            story = GetOrAdd<StoryManager>();
             stages = GetOrAdd<StageManager>();
             environment = GetOrAdd<DynamicEnvironmentManager>();
             progression = GetOrAdd<ProgressionManager>();
             flow = GetOrAdd<SceneFlowController>();
             uiRoot = GetOrAdd<UIRoot>();
-            memoryLog = GetOrAdd<MemoryFragmentLog>();
-            memoryDirector = GetOrAdd<MemoryDirector>();
             gameManager = GetOrAdd<GameManager>();
 
             progression.Load();
-            StoryDatabase.EnsureLoaded();
-            memoryLog.Bind(progression);
-            memoryDirector.Bind(memoryLog, stages);
             uiRoot.EnsureBuilt();
             flow.Bind(this);
         }

@@ -119,3 +119,7 @@ Tools/Telegram/outbox*
 # 구글 드라이브 동기화가 저장소 루트에 만드는 임시 폴더(수백 개 파일)
 .tmp.driveupload/
 .tmp.drivedownload/
+# jette: 곰 UI 렌더 산출물(Resources 로 복사해 쓴다)
+Tools/blender/out/
+Tools/blender/jette_bear_preview*.png
+*.blend1

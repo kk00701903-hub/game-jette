@@ -13,7 +13,6 @@ namespace CoastRun
         [SerializeField] private StageTable table;
         [SerializeField] private PlayerController player;
         [SerializeField] private DynamicEnvironmentManager environment;
-        [SerializeField] private StageClearUI clearUi;
         [SerializeField] private UI_FeedbackController feedback;
 
         private StageDef _current;
@@ -92,13 +91,12 @@ namespace CoastRun
         public event Action<int> OnChapterComplete;
 
         public void Bind(StageTable stageTable, PlayerController playerController,
-            DynamicEnvironmentManager env, StageClearUI ui, UI_FeedbackController feedbackUi)
+            DynamicEnvironmentManager env, UI_FeedbackController feedbackUi)
         {
             table = stageTable != null ? stageTable : CoastConfigRegistry.StageTable;
             table.EnsurePopulated();
             player = playerController;
             environment = env;
-            clearUi = ui;
             feedback = feedbackUi;
             Instance = this;
         }
@@ -150,7 +148,6 @@ namespace CoastRun
             }
 
             _awaitingContinue = false;
-            clearUi?.Hide();
 
             // Two managers can coexist for a frame or two during scene handoffs (the
             // bootstrap's and the run scene's). Whoever actually runs a stage is the one
@@ -161,7 +158,6 @@ namespace CoastRun
             def.lightingTStart = ChapterClock.StartT(def.stageIndex);
             def.lightingTEnd = Mathf.Max(def.lightingTEnd, Mathf.Min(1f, def.lightingTStart + 0.25f));
             // 52차(사용자): 스토리 러닝은 이벤트(52주에 8번) — 한 판 3분 이내로 거리를 씌운다(표의 1650~3300 m → ≤1500 m).
-            if (!ArcadeRun.Active && GameManager.Active && def.targetDistance > StoryProgress.MaxRunMeters) def.targetDistance = StoryProgress.MaxRunMeters;
             _current = def;
             StageIndex = def.stageIndex;
             ChapterIndex = def.chapterIndex;
@@ -231,7 +227,7 @@ namespace CoastRun
                 if (!ArcadeRun.Active && GameManager.Active) ch = Mathf.Clamp(GameManager.I.Save.chapter, 1, 20);
                 ch = Mathf.Clamp(ch, 1, 20);
                 string place = ChapterLocation.Get(ch).Name;
-                string story = ChapterScript.Title(ch);
+                string story = "";   // jette: 스토리 제목 없음
                 if (ArcadeRun.KpopMode)
                 {
                     // 48차: 한 곡 달리기 — 챕터 카드 대신 「♪ 곡 제목 / 오늘의 미션」
@@ -276,7 +272,6 @@ namespace CoastRun
                 return;
 
             _awaitingContinue = false;
-            clearUi?.Hide();
 
             player.SetPathDistance(_stageOriginDistance);
             player.ResetSoftState();
@@ -300,7 +295,6 @@ namespace CoastRun
                 return;
 
             _awaitingContinue = false;
-            clearUi?.Hide();
 
             int next = _current.stageIndex + 1;
             if (next > table.Count)
@@ -514,7 +508,7 @@ namespace CoastRun
                 flow.NotifyStageCleared(cleared, chapterEnd);
                 yield break;
             }
-            yield return LocalClearWithMemory(cleared, chapterEnd);
+            yield break;
         }
 
         private void ResetFinishPresentation()
@@ -524,18 +518,6 @@ namespace CoastRun
             PetCompanion.Instance?.SetHidden(false);   // 24차-3
             foreach (var o in FindObjectsByType<ObstacleSpawner>(FindObjectsSortMode.None)) o.SetSuppressed(false);
             if (_ribbon != null) { Destroy(_ribbon.gameObject); _ribbon = null; }
-        }
-
-        private System.Collections.IEnumerator LocalClearWithMemory(StageDef cleared, bool chapterEnd)
-        {
-            if (cleared.stageIndex >= 20)
-                clearUi?.ShowFinal(cleared, ContinueToNext, RetryCurrent);
-            else
-                clearUi?.Show(cleared, chapterEnd, ContinueToNext, RetryCurrent);
-
-            // 81차(사용자): 정산이 끝나도 옛 수채화 회상 팝업은 띄우지 않는다(시네마로 대체).
-            while (clearUi != null && clearUi.IsSettling)
-                yield return null;
         }
 
         private bool IsLastStageOfChapter(StageDef def)

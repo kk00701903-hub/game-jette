@@ -6,16 +6,13 @@ using UnityEngine.SceneManagement;
 
 namespace CoastRun
 {
-    /// App flow state machine — 5 scenes only (Boot / Title / Run / Cutscene / Ending).
+    /// jette: 앱 흐름 — Boot → Title → Run(K-POP 한 곡) → Title. 컷씬·엔딩·육성 씬은 이 빌드에 없다.
+    /// (본편의 SceneFlowController 에서 스토리 경로를 걷어낸 축약판. 러닝 씬 프리로드·장막 전환은 그대로.)
     public class SceneFlowController : MonoBehaviour
     {
         public const string BootScene = "00_Boot";
         public const string TitleScene = "01_Title";
         public const string RunScene = "02_Run";
-        public const string CutsceneScene = "03_Cutscene";
-        public const string EndingScene = "04_Ending";
-        public const string RaisingScene = "05_Raising";
-
 
         private GameDirector _director;
         private FlowState _state = FlowState.Boot;
@@ -23,28 +20,23 @@ namespace CoastRun
         private bool _runSceneReady;
         private int _pendingChapter = 1;
         private int _pendingStage = 1;
-        private CutsceneKind _cutsceneKind = CutsceneKind.Prologue;
-        private int _cutsceneChapter = 1;
         private bool _busy;
         private float _busySince;
         public bool IsBusy => _busy;
-        /// 11차: 워치독이 막힌 플로우를 강제로 푼다.
-        public void ForceIdle() { StopAllCoroutines(); _busy = false; _awaitingPrologueHandoff = false; _director?.UI?.SetLoader(false); }
-        /// 10차: 전환 코루틴이 예외 등으로 끝나지 못하면 _busy 가 영원히 true → 이후 모든 전환이 조용히 무시된다(컷씬만 나오고 런 진입 안 됨). 12초 넘게 바쁘면 풀어준다.
+        /// 워치독이 막힌 플로우를 강제로 푼다.
+        public void ForceIdle() { StopAllCoroutines(); _busy = false; _director?.UI?.SetLoader(false); }
+        /// 전환 코루틴이 예외로 끝나지 못하면 _busy 가 영원히 true → 12초 넘게 바쁘면 풀어준다.
         private bool BusyGuard()
         {
             if (_busy && Time.unscaledTime - _busySince > 12f) { Debug.LogWarning("[SceneFlow] busy for too long — releasing"); _busy = false; }
             return _busy;
         }
-        private bool _awaitingPrologueHandoff;
 
         public FlowState State => _state;
         public int PendingChapter => _pendingChapter;
         public int PendingStage => _pendingStage;
-        public CutsceneKind ActiveCutsceneKind => _cutsceneKind;
-        public int ActiveCutsceneChapter => _cutsceneChapter;
-        /// Run is preloaded under prologue; gameplay starts only after P4 camera snap.
-        public bool AwaitingPrologueHandoff => _awaitingPrologueHandoff;
+        /// 본편의 프롤로그 핸드오프 — jette 엔 없다(항상 false). GameSession 이 읽는다.
+        public bool AwaitingPrologueHandoff => false;
 
         public event Action<FlowState, FlowState> OnStateChanged;
 
@@ -85,15 +77,9 @@ namespace CoastRun
             switch (next)
             {
                 case FlowState.Title:
-                    yield return LoadSingle(ResolveTitleScene());
-                    // v2: 타이틀 다음은 육성 씬이라 런 프리로드를 걸지 않는다. 활성화를 미룬
-                    // 추가 로드가 남아 있으면 그 뒤의 Single 로드가 영원히 기다린다(검은 화면).
-                    if (GameManager.I == null)
-                        BeginPreloadRun();
-                    break;
-
-                case FlowState.Cutscene:
-                    yield return LoadCutsceneAdditive();
+                    Time.timeScale = 1f;
+                    yield return LoadSingle(TitleScene);
+                    BeginPreloadRun();
                     break;
 
                 case FlowState.Run:
@@ -103,32 +89,6 @@ namespace CoastRun
                 case FlowState.StageClear:
                     // Stays in Run scene — UI only.
                     Time.timeScale = 1f;
-                    break;
-
-                case FlowState.Ending:
-                    UnloadCutsceneIfAny();
-                    yield return LoadSingle(EndingScene);
-                    break;
-
-                case FlowState.Raising:
-                    UnloadCutsceneIfAny();
-                    Time.timeScale = 1f;
-                    _director?.UI?.SetLoader(true);
-                    if (_runPreload != null)
-                    {
-                        // 보류된 추가 로드는 먼저 흘려보내야 Single 로드가 진행된다.
-                        _runPreload.allowSceneActivation = true;
-                        while (!_runPreload.isDone)
-                            yield return null;
-                        _runPreload = null;
-                    }
-                    yield return LoadSingle(RaisingScene);
-                    _director?.UI?.SetLoader(false);
-                    break;
-
-                case FlowState.Credits:
-                case FlowState.Sting:
-                    // Handled inside Ending scene controller; state only.
                     break;
 
                 case FlowState.Boot:
@@ -157,400 +117,31 @@ namespace CoastRun
         private IEnumerator BootRoutine()
         {
             SetState(FlowState.Boot);
-            // Solid black cover only while Title loads — never UI_Loading_Mock (로딩중).
-            // TransitionType.None: as soon as Title is up, lift the veil so Title_Bus plays alone.
             _director?.UI?.Snap(1f, Color.black);
             yield return null;
             yield return null;
             yield return GoToRoutine(FlowState.Title, TransitionType.None);
         }
 
-        public void OnTitleStartPressed()
-        {
-            bool skip = PlayerPrefs.GetInt(MainMenuController.SkipPrologueKey, 0) == 1;
-            if (skip)
-            {
-                int cont = PlayerPrefs.GetInt("CoastRun_ContinueStage", 0);
-                if (cont > 0)
-                {
-                    _pendingStage = cont;
-                    PlayerPrefs.DeleteKey("CoastRun_ContinueStage");
-                }
-                else
-                {
-                    _pendingChapter = 1;
-                    _pendingStage = 1;
-                }
-
-                // Menu → CH1 BGM crossfade (no prologue).
-                TitleAudio.StopMenuGlobal();
-                StartCoroutine(GoToRoutine(FlowState.Run, TransitionType.Fade));
-            }
-            else
-            {
-                _cutsceneKind = CutsceneKind.Prologue;
-                _cutsceneChapter = 1;
-                _pendingChapter = 1;
-                _pendingStage = 1;
-                StartCoroutine(PlayPrologueSequence());
-            }
-        }
-
-        /// Title → Run suspended → Cutscene additive → Timeline. P4 handoff has no fade/cut/lerp.
-        private IEnumerator PlayPrologueSequence()
-        {
-            if (BusyGuard())
-                yield break;
-            _busy = true; _busySince = Time.unscaledTime;
-            var prev = _state;
-
-            yield return PlayTransitionOut(TransitionType.Fade, FlowState.Cutscene);
-
-            _awaitingPrologueHandoff = true;
-            // a. 02_Run first — game camera inactive.
-            yield return ActivateRunSuspendedForHandoff();
-            // b. 03_Cutscene additive + play Prologue.
-            yield return LoadAndPlayCutscene();
-
-            SetState(FlowState.Cutscene);
-            yield return PlayTransitionIn(TransitionType.Fade, prev, FlowState.Cutscene);
-            _busy = false;
-            // Completion → OnCutsceneControllerFinished → ExecutePrologueHandoff
-        }
-
-        /// v2: 육성 → 스토리 돌입. 챕터 N = 스테이지 N. 회차 첫 돌입만 프롤로그를 탄다.
+        /// 타이틀 START — K-POP 한 곡 달리기(ArcadeRun.StartKpop 이 부른다). 챕터 N = 스테이지 N.
         public void StartStoryRun(int stageIndex, bool withPrologue)
         {
             _pendingStage = Mathf.Clamp(stageIndex, 1, 20);
             _pendingChapter = Timeline.ArcOf(_pendingStage);
             TitleAudio.StopMenuGlobal();
-            if (withPrologue && _pendingStage == 1)
-            {
-                _cutsceneKind = CutsceneKind.Prologue;
-                _cutsceneChapter = 1;
-                StartCoroutine(PlayPrologueSequence());
-                return;
-            }
-
-            PlayerPrefs.SetInt(MainMenuController.SkipPrologueKey, 1);
             StartCoroutine(GoToRoutine(FlowState.Run, TransitionType.Fade));
         }
 
-        /// Continue from save — always skips prologue.
-        public void OnContinuePressed(int stageIndex)
-        {
-            PlayerPrefs.SetInt(MainMenuController.SkipPrologueKey, 1);
-            _pendingStage = Mathf.Clamp(stageIndex, 1, 20);
-            _pendingChapter = ((_pendingStage - 1) / 4) + 1;
-            TitleAudio.StopMenuGlobal();
-            StartCoroutine(GoToRoutine(FlowState.Run, TransitionType.Fade));
-        }
-
-        /// Legacy entry — prefer OnCutsceneControllerFinished for prologue.
-        public void OnPrologueHandoffToRun()
-        {
-            var ctrl = UnityEngine.Object.FindAnyObjectByType<CutsceneController>();
-            StartCoroutine(ExecutePrologueHandoff(ctrl));
-        }
-
+        /// 스테이지(곡) 완주 — K-POP 은 StageManager.KpopFinishCo → GameSession.EndKpopRun 이 결과창을 띄우므로
+        /// 여기선 진행만 기록하고 아무 화면도 열지 않는다.
         public void NotifyStageCleared(StageDef stage, bool chapterComplete)
         {
             if (stage == null)
                 return;
-
             _pendingChapter = stage.chapterIndex;
             _pendingStage = stage.stageIndex;
             _director?.Progression?.SaveCheckpoint(stage.chapterIndex, stage.stageIndex);
-
-            // v2: 챕터 정산(하트·S급)은 GameManager가, 화면은 StageClearUI가. S20도 정산을 거친다.
-            // v5: 정산 전에 챕터 클로징 컷씬(VN, 한 컷)을 먼저. 재도전 중엔 생략.
-            if (GameManager.Active)
-            {
-                // 55차(사용자): 러닝 = 대회. 결승선을 넘어도 조건(코인·사진·보스)을 못 채웠으면 정산 없이 미달 화면 → 주차 유지.
-                if (StoryContest.Active && !GameManager.I.IsRetry && !StoryContest.Succeeded)
-                {
-                    ContestResultUI.ShowFail(false);
-                    return;
-                }
-                GameManager.I.OnRunCleared(StageRunStats.Instance);
-                int ch = stage.stageIndex;
-                // 52차: 챕터 엔딩 대본은 리더(StoryReaderUI)에서 오프닝과 한 편으로 이미 읽었다 → 런 뒤 VN 재생 생략
-                if (!GameManager.I.IsRetry && ChapterVN.HasClosing(ch) && !StoryProgress.ChapterRead(ch))
-                {
-                    Time.timeScale = 0f;
-                    ChapterVN.PlayChapterClosing(ch, () =>
-                    {
-                        Time.timeScale = 1f;
-                        if (this != null) StartCoroutine(EnterStageClear(stage, chapterComplete));
-                    });
-                    return;
-                }
-                StartCoroutine(EnterStageClear(stage, chapterComplete));
-                return;
-            }
-
-            // S20 → Ending, no fade (BGM drone continues).
-            if (stage.stageIndex >= 20)
-            {
-                StartCoroutine(GoToRoutine(FlowState.Ending, TransitionType.None));
-                return;
-            }
-
-            StartCoroutine(EnterStageClear(stage, chapterComplete));
         }
-
-        private IEnumerator EnterStageClear(StageDef stage, bool chapterComplete)
-        {
-            // SlowMotion 0.3s then UI. (K-POP LastClear 는 SettleKpop 만 — 스토리 클리어가 K-POP 진행을 건드리지 않음)
-            yield return GoToRoutine(FlowState.StageClear, TransitionType.SlowMotion);
-            var clear = UnityEngine.Object.FindAnyObjectByType<StageClearUI>();
-            if (clear != null)
-            {
-                clear.Show(stage, chapterComplete,
-                    () => OnStageClearContinue(stage, chapterComplete),
-                    () => OnStageClearRetry());
-                // 정산 칩이 끝난 뒤에 회상 — 클리어 화면을 그림이 바로 덮지 않게
-                while (clear != null && clear.IsSettling)
-                    yield return null;
-            }
-
-            // 81차(사용자): 스테이지 클리어 뒤에 뜨던 옛 수채화 회상(기억 조각) 팝업 제거 — 이야기는 시네마(CinematicPlayer)로만 본다.
-            if (clear == null)
-                OnStageClearContinue(stage, chapterComplete);
-        }
-
-        private void OnStageClearRetry()
-        {
-            Time.timeScale = 1f;
-            UnityEngine.Object.FindAnyObjectByType<StageClearUI>()?.Hide();
-            SetState(FlowState.Run);
-            StageManager.Instance?.RetryCurrent();
-        }
-
-        private void OnStageClearContinue(StageDef stage, bool chapterComplete)
-        {
-            Time.timeScale = 1f;
-            FindFirstObjectByType<StageClearUI>()?.Hide();
-#if UNITY_EDITOR
-            Debug.LogWarning($"[Flow] StageClearContinue stage={stage.stageIndex} gmActive={GameManager.Active} retry={(GameManager.Active && GameManager.I.IsRetry)} pending={(GameManager.Active && ChapterMission.Pending(GameManager.I, stage.stageIndex))}");
-#endif
-
-            if (GameManager.Active)
-            {
-                // 44차: 롱컷(CH4·7·10·13·15 오프닝) 직전 챕터(3·6·9·12·14)는 정산 뒤 **미션 미니게임**을 이겨야 넘어간다.
-                //       지면 그 자리에서 다시하기. 재도전 샌드박스·이번 회차에서 이미 깬 미션은 건너뜀.
-                if (!GameManager.I.IsRetry && ChapterMission.Pending(GameManager.I, stage.stageIndex)
-                    && ChapterMission.TryGetForChapter(stage.stageIndex, out var mission))
-                {
-                    ChapterMissionUI.Play(mission.kind, false, _ => { if (this != null) OnStageClearContinue(stage, chapterComplete); });
-                    return;
-                }
-                // 47차: CH10·CH15 뒤에 틀던 옛 시네마틱(CutsceneController CH1_Close·CH2_Close — 옛 원고 "작년에도/16:40") 제거.
-                //       클로징은 이미 ChapterVN(새 대본 CHxx_Close)이 정산 전에 튼다.
-                GameManager.I.AfterChapterContinue();
-                return;
-            }
-
-            if (chapterComplete)
-            {
-                // CH5 has no closing — should not happen before S20 (S20 goes Ending).
-                if (stage.chapterIndex >= 5)
-                {
-                    StartCoroutine(GoToRoutine(FlowState.Ending, TransitionType.None));
-                    return;
-                }
-                // 47차: 옛 타임라인 컷씬(ChapterCutsceneBridge → CutsceneController 옛 원고) 안 탄다 — 바로 다음 스테이지.
-            }
-
-            _pendingChapter = stage.chapterIndex;
-            _pendingStage = stage.stageIndex + 1;
-            StartCoroutine(ResumeNextStage());
-        }
-
-        private IEnumerator ResumeNextStage()
-        {
-            yield return GoToRoutine(FlowState.Run, TransitionType.Fade);
-            StageManager.Instance?.LoadStage(_pendingStage);
-        }
-
-        private IEnumerator ChapterCutsceneBridge(int completedChapter)
-        {
-            // Closing for completed chapter. CH5 never closes here (S20 → Ending).
-            _cutsceneKind = CutsceneKind.ChapterClosing;
-            _cutsceneChapter = completedChapter;
-            var table = CoastConfigRegistry.CutsceneTable;
-            table.EnsurePopulated();
-            var def = table.Resolve(CutsceneKind.ChapterClosing, completedChapter);
-            var closingTransition = (def != null && def.isTwistCut) ||
-                                    completedChapter == 3 || completedChapter == 4
-                ? TransitionType.WhiteFlash
-                : TransitionType.Fade;
-            yield return GoToRoutine(FlowState.Cutscene, closingTransition);
-        }
-
-        public void OnCutsceneFinished()
-        {
-            StartCoroutine(AfterCutscene());
-        }
-
-        public void OnCutsceneControllerFinished(CutsceneController ctrl)
-        {
-            if (_cutsceneKind == CutsceneKind.Prologue)
-            {
-                StartCoroutine(ExecutePrologueHandoff(ctrl));
-                return;
-            }
-
-            OnCutsceneFinished();
-        }
-
-        /// P4 zero-load handoff: copy cine cam → game cam same frame; no fade/cut/lerp/loader.
-        private IEnumerator ExecutePrologueHandoff(CutsceneController ctrl)
-        {
-            PlayerPrefs.SetInt(MainMenuController.SkipPrologueKey, 1);
-            _pendingChapter = 1;
-            _pendingStage = 1;
-
-            Camera cine = ctrl != null ? ctrl.CineCamera : null;
-            var session = UnityEngine.Object.FindAnyObjectByType<GameSession>();
-
-            // c–d. Capture + snap + swap entirely before any yield.
-            if (session != null && cine != null)
-                session.ApplyPrologueCameraSnap(cine);
-            else if (cine != null)
-                cine.enabled = false;
-
-            // e. Unload cutscene → input → HUD fade-in 0.5s
-            UnloadCutsceneIfAny();
-            _awaitingPrologueHandoff = false;
-
-            string runName = ResolveRunScene();
-            var runScene = SceneManager.GetSceneByName(runName);
-            if (runScene.IsValid() && runScene.isLoaded)
-                SceneManager.SetActiveScene(runScene);
-
-            SetState(FlowState.Run);
-            _director?.UI?.Snap(0f);
-
-            if (session != null)
-                yield return session.ReleaseAfterPrologueHandoff();
-            else
-            {
-                StageManager.Instance?.BeginCampaign(1);
-            }
-
-            UnityEngine.Object.FindAnyObjectByType<CoastAudioManager>()?.SetBedMuted(false);
-        }
-
-        private IEnumerator AfterCutscene()
-        {
-            UnloadCutsceneIfAny();
-
-            if (_cutsceneKind == CutsceneKind.Prologue)
-            {
-                yield return ExecutePrologueHandoff(UnityEngine.Object.FindAnyObjectByType<CutsceneController>());
-                yield break;
-            }
-
-            if (_cutsceneKind == CutsceneKind.ChapterClosing)
-            {
-                if (GameManager.Active)
-                {
-                    // v5: 옛 막 클로징 뒤에는 오프닝을 잇지 않고 바로 육성으로.
-                    GameManager.I.AfterChapterContinue();
-                    yield break;
-                }
-                int nextChapter = _cutsceneChapter + 1;
-                if (nextChapter > 5)
-                {
-                    yield return GoToRoutine(FlowState.Ending, TransitionType.None);
-                    yield break;
-                }
-
-                // Opening for next chapter (CH1 has no opening).
-                _cutsceneKind = CutsceneKind.ChapterOpening;
-                _cutsceneChapter = nextChapter;
-                yield return GoToRoutine(FlowState.Cutscene, TransitionType.Fade);
-                yield break;
-            }
-
-            if (_cutsceneKind == CutsceneKind.ChapterOpening)
-            {
-                if (GameManager.Active)
-                {
-                    GameManager.I.AfterChapterContinue();
-                    yield break;
-                }
-                _pendingChapter = _cutsceneChapter;
-                _pendingStage = FirstStageOfChapter(_cutsceneChapter);
-                yield return GoToRoutine(FlowState.Run, TransitionType.Fade);
-                StageManager.Instance?.LoadStage(_pendingStage);
-            }
-        }
-
-        public void NotifyEndingFinished()
-        {
-            // Legacy — full sequence now lives in EndingController.
-            StartCoroutine(EndingTail());
-        }
-
-        /// Called when EndingController finishes stinger (tap → title).
-        public void CompleteEndingReturnToTitle()
-        {
-            // 75차(사용자): 엔딩 뒤 M1 OST 30초 뮤직비디오(「Our frequency」) → 그 다음 타이틀/육성. 한 번 보면 레코드 맨 끝에서 다시 볼 수 있다.
-            if (!CinematicPlayer.IsPlaying && CinematicTable.Get("MV") != null && !_mvShown)
-            {
-                _mvShown = true;
-                CinematicPlayer.Play("MV", CompleteEndingReturnToTitle);
-                return;
-            }
-            if (GameManager.Active)
-            {
-                if (_director != null)
-                {
-                    _director.CampaignCleared = true;
-                    _director.Progression?.MarkCampaignCleared();
-                }
-                GameManager.I.OnEndingFinished();
-                return;
-            }
-            CampaignFlagAndTitle();
-        }
-
-        private bool _mvShown;
-        private void CampaignFlagAndTitle()
-        {
-            if (_director != null)
-            {
-                _director.CampaignCleared = true;
-                _director.Progression?.MarkCampaignCleared();
-            }
-            else
-            {
-                PlayerPrefs.SetInt(ProgressionManager.ClearedKey, 1);
-                PlayerPrefs.Save();
-            }
-
-            StartCoroutine(GoToRoutine(FlowState.Title, TransitionType.None));
-        }
-
-        private IEnumerator EndingTail()
-        {
-            // Fallback if EndingController didn't own credits/stinger.
-            yield return GoToRoutine(FlowState.Credits, TransitionType.None);
-            yield return new WaitForSecondsRealtime(1f);
-            yield return GoToRoutine(FlowState.Sting, TransitionType.None);
-            float t = 0f;
-            while (t < 2f)
-            {
-                t += Time.unscaledDeltaTime;
-                yield return null;
-            }
-
-            CampaignFlagAndTitle();
-        }
-
-        // ── Scene helpers ──────────────────────────────────────────────────
 
         private IEnumerator PlayTransitionOut(TransitionType t, FlowState next)
         {
@@ -567,10 +158,6 @@ namespace CoastRun
                     float dur = 0.8f;
                     if (_state == FlowState.StageClear && next == FlowState.Run)
                         dur = 0.4f;
-                    else if (next == FlowState.Ending)
-                        dur = 0f;
-                    if (dur <= 0f)
-                        yield break;
                     yield return ui.Fade(0f, 1f, dur, Color.black);
                     break;
                 }
@@ -587,7 +174,6 @@ namespace CoastRun
                         Time.timeScale = Mathf.Lerp(start, 0.35f, elapsed / 0.3f);
                         yield return null;
                     }
-
                     Time.timeScale = 0.35f;
                     break;
             }
@@ -599,35 +185,22 @@ namespace CoastRun
             if (ui == null)
                 yield break;
 
-            // Tune durations per design table.
             float fadeIn = 0.4f;
-            if (prev == FlowState.Title && next == FlowState.Cutscene)
-                fadeIn = 0.8f;
-            else if (next == FlowState.Cutscene)
-                fadeIn = 1.0f;
-            else if (prev == FlowState.StageClear && next == FlowState.Run)
-                fadeIn = 0.4f;
-            else if (next == FlowState.Credits)
-                fadeIn = 2.0f;
-            else if (t == TransitionType.None)
+            if (t == TransitionType.None)
             {
                 ui.Snap(0f);
                 yield break;
             }
-
             if (t == TransitionType.SlowMotion)
             {
                 Time.timeScale = 1f;
                 yield break;
             }
-
             if (t == TransitionType.WhiteFlash)
             {
-                // Already faded during out; lift black.
                 yield return ui.Fade(1f, 0f, 0.4f, Color.black);
                 yield break;
             }
-
             if (t == TransitionType.Fade)
                 yield return ui.Fade(1f, 0f, fadeIn, Color.black);
         }
@@ -636,23 +209,16 @@ namespace CoastRun
         {
             if (_runPreload != null || _runSceneReady)
                 return;
-
-            string run = ResolveRunScene();
-            if (!Application.CanStreamedLevelBeLoaded(run))
+            if (!Application.CanStreamedLevelBeLoaded(RunScene))
                 return;
-
-            _runPreload = SceneManager.LoadSceneAsync(run, LoadSceneMode.Additive);
+            _runPreload = SceneManager.LoadSceneAsync(RunScene, LoadSceneMode.Additive);
             if (_runPreload != null)
                 _runPreload.allowSceneActivation = false;
         }
 
         private IEnumerator ActivateOrLoadRun()
         {
-            string run = ResolveRunScene();
-            // Prologue handoff path must never show a loader.
-            bool showLoader = !_awaitingPrologueHandoff;
-            if (showLoader)
-                _director?.UI?.SetLoader(true);
+            _director?.UI?.SetLoader(true);
 
             if (_runPreload != null)
             {
@@ -661,93 +227,15 @@ namespace CoastRun
                     yield return null;
                 _runPreload = null;
                 _runSceneReady = true;
-
-                yield return UnloadIfLoaded(ResolveTitleScene());
-                yield return UnloadIfLoaded(RaisingScene);
+                yield return UnloadIfLoaded(TitleScene);
             }
-            else if (!_runSceneReady || !IsSceneLoaded(run))
+            else if (!_runSceneReady || !IsSceneLoaded(RunScene))
             {
-                if (_awaitingPrologueHandoff)
-                {
-                    // Additive keep-alive under cutscene (do not Single-load).
-                    var op = SceneManager.LoadSceneAsync(run, LoadSceneMode.Additive);
-                    while (op != null && !op.isDone)
-                        yield return null;
-                    yield return UnloadIfLoaded(ResolveTitleScene());
-                    yield return UnloadIfLoaded(RaisingScene);
-                    _runSceneReady = true;
-                }
-                else
-                {
-                    yield return LoadSingle(run);
-                    _runSceneReady = true;
-                }
+                yield return LoadSingle(RunScene);
+                _runSceneReady = true;
             }
 
-            if (showLoader)
-                _director?.UI?.SetLoader(false);
-
-            if (!_awaitingPrologueHandoff)
-                UnloadCutsceneIfAny();
-        }
-
-        private IEnumerator ActivateRunSuspendedForHandoff()
-        {
-            yield return ActivateOrLoadRun();
-            var session = UnityEngine.Object.FindAnyObjectByType<GameSession>();
-            session?.SuspendForPrologueHandoff();
-            // Extra frame so Awake/Start settle under suspend flag.
-            yield return null;
-            session?.SuspendForPrologueHandoff();
-        }
-
-        private IEnumerator LoadCutsceneAdditive()
-        {
-            yield return LoadAndPlayCutscene();
-        }
-
-        private IEnumerator LoadAndPlayCutscene()
-        {
-            if (!Application.CanStreamedLevelBeLoaded(CutsceneScene))
-            {
-                var ctrl = CutsceneController.Ensure();
-                ctrl.PlayKind(_cutsceneKind, _cutsceneChapter, OnCutsceneControllerFinished);
-                yield break;
-            }
-
-            if (!IsSceneLoaded(CutsceneScene))
-            {
-                var op = SceneManager.LoadSceneAsync(CutsceneScene, LoadSceneMode.Additive);
-                while (op != null && !op.isDone)
-                    yield return null;
-            }
-
-            var cut = UnityEngine.Object.FindAnyObjectByType<CutsceneController>();
-            if (cut == null)
-            {
-                var go = new GameObject("CutsceneController");
-                cut = go.AddComponent<CutsceneController>();
-                var cutScene = SceneManager.GetSceneByName(CutsceneScene);
-                if (cutScene.IsValid())
-                    SceneManager.MoveGameObjectToScene(go, cutScene);
-            }
-
-            cut.PlayKind(_cutsceneKind, _cutsceneChapter, OnCutsceneControllerFinished);
-        }
-
-        private void UnloadCutsceneIfAny()
-        {
-            var stub = UnityEngine.Object.FindAnyObjectByType<CutsceneController>();
-            // Destroy DDOL/stub host when not in cutscene scene.
-            if (stub != null && stub.gameObject.scene.name != CutsceneScene)
-            {
-                // Keep scene-hosted; stub without scene unload is fine to destroy after prologue.
-                if (!IsSceneLoaded(CutsceneScene))
-                    UnityEngine.Object.Destroy(stub.gameObject);
-            }
-
-            if (IsSceneLoaded(CutsceneScene))
-                SceneManager.UnloadSceneAsync(CutsceneScene);
+            _director?.UI?.SetLoader(false);
         }
 
         private IEnumerator LoadSingle(string sceneName)
@@ -758,7 +246,7 @@ namespace CoastRun
                 yield break;
             }
 
-            _runSceneReady = sceneName == ResolveRunScene();
+            _runSceneReady = sceneName == RunScene;
             var op = SceneManager.LoadSceneAsync(sceneName, LoadSceneMode.Single);
             while (op != null && !op.isDone)
                 yield return null;
@@ -776,28 +264,12 @@ namespace CoastRun
         private static bool IsSceneLoaded(string sceneName)
         {
             for (int i = 0; i < SceneManager.sceneCount; i++)
-            {
                 if (SceneManager.GetSceneAt(i).name == sceneName)
                     return true;
-            }
-
             return false;
         }
 
         public static string ResolveRunScene() => RunScene;
-
         public static string ResolveTitleScene() => TitleScene;
-
-        private static int FirstStageOfChapter(int chapter)
-        {
-            switch (Mathf.Clamp(chapter, 1, 5))
-            {
-                case 1: return 1;
-                case 2: return 5;
-                case 3: return 9;
-                case 4: return 13;
-                default: return 17;
-            }
-        }
     }
 }
