@@ -255,6 +255,7 @@ namespace CoastRun
             if (_bag != null) _bagRest = _bag.localRotation;
             _head = _anim != null ? _anim.GetBoneTransform(HumanBodyBones.Head) : null;
             if (_head != null) _headRestScale = _head.localScale;
+            if (_head != null) _headRestLocalRot = _head.localRotation;   // jette: 큰 머리 — 클립의 고개 회전을 절반만
             if (_health != null) _health.OnDamaged += HandleDamaged;
             if (_wallet != null) _wallet.OnCoinsChanged += HandleCoins;
             _pushClock = 0.6f;
@@ -285,6 +286,7 @@ namespace CoastRun
         private float _laneKick, _laneKickVel;
         private Vector3 _rootScale = Vector3.one;
         private Transform _bag, _head;
+        private Quaternion _headRestLocalRot = Quaternion.identity;
         private Quaternion _bagRest = Quaternion.identity;
         private Vector3 _headRestScale = Vector3.one;
         private float _bagPitch, _bagPitchVel, _bagRoll, _bagRollVel;
@@ -441,6 +443,8 @@ namespace CoastRun
                 // 머리는 몸보다 덜 찌그러지고(치비 비율 유지) 반 박자 늦게: 스케일 역보정 + 가방 롤의 절반
                 float hs = Mathf.Lerp(1f, 1f / s, 0.5f);
                 _head.localScale = new Vector3(_headRestScale.x * hs * (1f / xz), _headRestScale.y * hs, _headRestScale.z * hs * (1f / xz));
+                // jette: Mixamo 러닝 클립의 고개 숙임·흔들림은 사람 머리 기준 — 치비 곰의 큰 머리(안전모)에선 과하다 → 45% 만 남긴다
+                _head.localRotation = Quaternion.Slerp(_headRestLocalRot, _head.localRotation, 0.45f);
             }
         }
         private void HandleHit()

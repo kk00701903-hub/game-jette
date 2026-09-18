@@ -59,3 +59,11 @@ Boot → 타이틀(시안 한 장 + START) → START = K-POP 한 곡 달리기(`
 - `Icon_Star`·`Icon_Heart` 는 `CoastUiArt.Icon("Star")` 처럼 접두어 결합으로 쓰여서 1차 정리 때 잘못 지웠다 → 되살림. (문자열 결합 로드는 grep 으로 안 잡힌다 — 리소스 지울 때 `Icon("` 패턴도 볼 것.)
 - 곰 안전모 「JETTE」: 앞(0.125) + **양옆(0.10) + 뒤(0.115)** 네 곳에 새겼다 — 러닝은 뒤에서 보므로 달릴 때도 글자가 보인다. 실패 카드 렌더는 정면 조금 위 카메라 + 고개 9° 숙임으로 앞글자와 얼굴이 같이 보이게.
 - 폰트에 없는 글리프 주의: 💜·✦·▶ 는 안 그려져서 ♥·★·♪ 로 썼다(🌱 도 안 나옴 — 117차 메모와 같다).
+
+## 3차 (같은 날) — 고개 감쇠 + 릴리스 APK
+
+- `SkaterRig.ApplyJuiceLate`: Mixamo 러닝 클립의 고개 회전을 **45% 만** 남긴다(`_headRestLocalRot` 과 Slerp). 큰 안전모 머리가 앞으로 푹 숙여지던 것이 서고, 달릴 때 뒤통수의 JETTE 가 읽힌다.
+- 릴리스 빌드 `Coast Run/Build/Android APK (IL2CPP, ARM64+ARMv7)` → `Builds/JetteRun.apk` (아래 결과 참조). 빌드 중엔 브릿지가 멈춘다(10~20분).
+- 첫 푸시(`git push -u jette jette:main`)는 세션 정책상 에이전트가 못 한다 — 사용자가 직접.
+- 1차 릴리스 빌드(`JetteRun_v1_withGirlAssets.apk`, 207 MB, 22.5분)에 옛 소녀 모델(Rig/Skater.fbx + Ch46 텍스처)·GirlSkater 스프라이트/프리팹이 그대로 들어 있어 삭제(약 22 MB 비압축). CoastPlayerVisual 의 GirlSkater 폴백 코드는 남았지만 리소스가 없어 곰 경로만 탄다. 그 뒤 `JetteRun.apk` 재빌드.
+- 남은 용량은 러닝 월드 텍스처(하늘 16 MB×4, 원경, 파사드…) — 사용자 지시대로 그대로 둠. 줄이려면 Sky_/Far_ 계절 변형 정리가 첫 후보.
