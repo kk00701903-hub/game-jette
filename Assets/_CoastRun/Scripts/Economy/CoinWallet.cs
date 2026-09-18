@@ -71,6 +71,20 @@ namespace CoastRun
         {
             get { var w = FindAnyObjectByType<CoinWallet>(); return w != null ? w.TotalCoins : PlayerPrefs.GetInt(PrefsKey, 0); }
         }
+        /// 109차(코인·돈 일원화): 스토리 모드에서 번/쓴 돈을 지갑에 그대로 반영(음수 허용, 0 아래로는 안 내려감).
+        public static void AddStatic(int delta)
+        {
+            if (delta == 0) return;
+            var w = FindAnyObjectByType<CoinWallet>();
+            if (w != null)
+            {
+                if (delta > 0) w.Add(delta);
+                else { w.TotalCoins = Mathf.Max(0, w.TotalCoins + delta); w._dirty = true; w.Persist(); w.OnCoinsChanged?.Invoke(w.TotalCoins, delta); }
+                return;
+            }
+            int t = PlayerPrefs.GetInt(PrefsKey, 0);
+            PlayerPrefs.SetInt(PrefsKey, Mathf.Max(0, t + delta)); PlayerPrefs.Save();
+        }
         public static bool TrySpendStatic(int amount)
         {
             var w = FindAnyObjectByType<CoinWallet>();

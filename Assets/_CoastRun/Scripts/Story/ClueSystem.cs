@@ -154,6 +154,7 @@ namespace CoastRun
             Close();
             save.cluePendingMask |= (int)c; GameManager.I?.Persist();
             var card = EventCardKit.Card("ClueCard", 340, new Vector2(560f, 470f), out _canvas, 20f);
+            EventCardKit.Kid(card, Loc.T("누나, 아직인가 봐", "Not yet, I guess"), true);   // 109차: 꼬마 동행
             EventCardKit.JellyTitle(card, Loc.T("단서?", "CLUE?"), new Color(0.80f, 0.82f, 0.90f), new Color(0.25f, 0.22f, 0.35f), 26f, 70f, 46);
             EventCardKit.Divider(card, 104f);
             EventCardKit.IconRow(card, Icon(c), new Color(0.75f, 0.75f, 0.80f), Name(c), 132f, 56f, 26, Loc.T("보류", "later"), new Color(0.60f, 0.55f, 0.70f));
@@ -235,7 +236,9 @@ namespace CoastRun
         private static void Show(SaveData save, Clue c, bool choice, Action onDone)
         {
             Close();
+            CoastPrefs.VibrateEvent();   // 109차: 단서 획득 — 특정 이벤트 진동
             var card = EventCardKit.Card("ClueCard", 340, new Vector2(560f, choice ? 520f : 440f), out _canvas, 20f);
+            EventCardKit.Kid(card, choice ? Loc.T("누나, 어떡할래?", "What'll you do?") : Loc.T("누나, 이거 봐!", "Look at this!"), true);   // 109차: 꼬마 동행
             EventCardKit.JellyTitle(card, Loc.T("단서", "CLUE"), new Color(1f, 0.85f, 0.30f), new Color(0.35f, 0.16f, 0.02f), 26f, 70f, 46);
             EventCardKit.Divider(card, 104f);
             var prof = GameManager.I != null ? GameManager.I.Profile : null;

@@ -11,8 +11,13 @@ namespace CoastRun
     /// 103차(사용자 시안): **주차 타임라인** — 왼쪽 주차 알약 + 점선 + 오른쪽 카드. 「컷씬」은 **「메인스토리」**로 부른다.
     ///   메인스토리(펼침 카드: 표지·제목·보기·✓) / 짧은 이야기(EV)는 접힌 한 줄(▼ 펼치기 → 카드) / 잠긴 것은 회색 「다음 콘텐츠 · 예정」.
     ///   위에 「전체 펼치기 / 전체 접기」, 아래에 「팁: 이야기는 접혀있어요」 상자.
+    /// 109차(사용자): **4계절 탭**(봄·여름·가을·겨울) — 1주차 계절 탭에서 시작, 각 편은 시작 주차의 계절 탭에 들어간다. 엔딩은 마지막 계절(겨울) 탭 맨 끝.
+    ///   주차 줄 간격을 위아래 1cm 쯤 더 벌리고(gap 14 → 110), EV 는 「서브스토리」— 번호 없이 제목만.
     public static class CinemaSelect
     {
+        /// 109차: 지금 보는 계절 탭(0 봄 … 3 겨울). Open 마다 1주차의 계절로 시작.
+        private static int _season; private static bool _keepSeason;
+        private static int SeasonOfEntry(Entry e) => e.Opening ? (int)Timeline.SeasonOf(1) : !string.IsNullOrEmpty(e.EndingId) ? 3 : (int)Timeline.SeasonOf(Timeline.WeekStart(e.Chapter));
         /// 79차(사용자): 엔딩 다시보기를 일단 전부 열어 둔다. 실제 해금(깬 엔딩만)으로 되돌리려면 false.
         public const bool OpenAllEndings = true;
 
@@ -58,6 +63,8 @@ namespace CoastRun
         {
             Close();
             _onClose = onClose; _onPlayStart = onPlayStart; _gm = gm;
+            if (!_keepSeason) _season = (int)Timeline.SeasonOf(1);   // 109차: 1주차 계절 탭부터(감상 뒤 돌아올 땐 보던 탭 유지)
+            _keepSeason = false;
             TitleAudio.PlayRaising();   // 시네마 목록 = 스토리 모드 BGM(컷씬 재생 시 onPlayStart 가 정지)
             var entries = BuildEntries(gm);
             _entries = entries;
@@ -101,12 +108,27 @@ namespace CoastRun
             var subBox = CoastUiArt.GlossyPill(root, "SubBox", new Color(1f, 0.96f, 0.86f), 16, 4); subBox.raycastTarget = false;
             var srt = subBox.rectTransform; srt.anchorMin = new Vector2(0f, 1f); srt.anchorMax = new Vector2(1f, 1f); srt.pivot = new Vector2(0.5f, 1f);
             srt.offsetMin = new Vector2(20f, -150f); srt.offsetMax = new Vector2(-20f, -106f);
-            var sub = CoastHudLayout.MakeText(srt, "Sub", Loc.T($"메인스토리 {StoryProgress.CutsceneCount}편 + 이야기 {StoryProgress.EventCount}편 · 본 메인스토리 {read}{clueLine}", $"{StoryProgress.CutsceneCount} main stories + {StoryProgress.EventCount} stories · {read} seen{clueLine}"), 14, TextAnchor.MiddleCenter,
+            var sub = CoastHudLayout.MakeText(srt, "Sub", Loc.T($"메인스토리 {StoryProgress.CutsceneCount}편 + 서브스토리 {StoryProgress.EventCount}편 · 본 메인스토리 {read}{clueLine}", $"{StoryProgress.CutsceneCount} main stories + {StoryProgress.EventCount} side stories · {read} seen{clueLine}"), 14, TextAnchor.MiddleCenter,
                 Vector2.zero, Vector2.one, new Vector2(12f, 0f), new Vector2(-12f, 0f));
             sub.color = new Color(0.45f, 0.25f, 0.10f); sub.fontStyle = FontStyle.Bold;
             sub.resizeTextForBestFit = true; sub.resizeTextMinSize = 9; sub.resizeTextMaxSize = CoastHudLayout.Scaled(14);
 
-            // 103차: 전체 펼치기 / 전체 접기
+            // 109차: 4계절 탭 — 봄·여름·가을·겨울(1주차 계절부터). 탭을 누르면 그 계절의 편만 목록에.
+            _tabs = new Image[4];
+            for (int si = 0; si < 4; si++)
+            {
+                int pick = si;
+                var tb = CoastUiArt.GlossyPill(root, "Season" + si, SeasonFill[si], 20, 6); tb.raycastTarget = true;
+                var trt0 = tb.rectTransform; trt0.anchorMin = trt0.anchorMax = new Vector2(0.5f, 1f); trt0.pivot = new Vector2(0.5f, 1f);
+                trt0.anchoredPosition = new Vector2(-243f + 162f * si, -160f); trt0.sizeDelta = new Vector2(152f, 52f);
+                string nm = Timeline.SeasonName((SeasonKind)si);
+                var tt = CoastHudLayout.MakeText(trt0, "T", nm, 22, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(0f, 2f), Vector2.zero);
+                tt.color = new Color(0.30f, 0.16f, 0.06f); tt.fontStyle = FontStyle.Bold;
+                var tbb = tb.gameObject.AddComponent<Button>(); tbb.transition = Selectable.Transition.None;
+                tbb.onClick.AddListener(() => { if (_season == pick) return; CoastAudioManager.PlayAnywhere(CoastSfx.Coin); _season = pick; Rebuild(); });
+                _tabs[si] = tb;
+            }
+            // 103차: 전체 펼치기 / 전체 접기(109차: 탭 아래로, 작게)
             MakeTopButton(root, "ExpandAll", Loc.T("전체 펼치기", "Expand all"), new Color(1f, 0.86f, 0.30f), new Color(0.45f, 0.25f, 0.05f), -92f, () =>
             {
                 foreach (var e in _entries) if (e.Unlocked) _expanded.Add(e.Key);
@@ -123,7 +145,7 @@ namespace CoastRun
             viewGo.transform.SetParent(root, false);
             var vrt = viewGo.GetComponent<RectTransform>();
             vrt.anchorMin = new Vector2(0f, 0f); vrt.anchorMax = new Vector2(1f, 1f);
-            vrt.offsetMin = new Vector2(20f, 40f); vrt.offsetMax = new Vector2(-20f, -216f);
+            vrt.offsetMin = new Vector2(20f, 40f); vrt.offsetMax = new Vector2(-20f, -270f);   // 109차: 계절 탭 한 줄만큼 아래로
             var vimg = viewGo.GetComponent<Image>(); vimg.color = new Color(0f, 0f, 0f, 0.001f); vimg.raycastTarget = true;
             var content = new GameObject("Content", typeof(RectTransform)).GetComponent<RectTransform>();
             content.SetParent(vrt, false);
@@ -140,7 +162,7 @@ namespace CoastRun
         {
             var b = CoastUiArt.GlossyPill(root, name, fill, 20, 6); b.raycastTarget = true;
             var rt = b.rectTransform; rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 1f); rt.pivot = new Vector2(0.5f, 1f);
-            rt.anchoredPosition = new Vector2(x, -160f); rt.sizeDelta = new Vector2(172f, 48f);
+            rt.anchoredPosition = new Vector2(x, -220f); rt.sizeDelta = new Vector2(172f, 42f);   // 109차: 계절 탭 아래
             var t = CoastHudLayout.MakeText(rt, "T", label, 19, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(0f, 2f), Vector2.zero);
             t.color = textCol; t.fontStyle = FontStyle.Bold;
             t.resizeTextForBestFit = true; t.resizeTextMinSize = 11; t.resizeTextMaxSize = CoastHudLayout.Scaled(19);
@@ -149,21 +171,31 @@ namespace CoastRun
         }
 
         /// 103차: 목록만 다시 그린다(펼침/접힘 바뀔 때).
+        private static Image[] _tabs;
         private static void Rebuild()
         {
             if (_content == null) return;
             for (int i = _content.childCount - 1; i >= 0; i--) UnityEngine.Object.Destroy(_content.GetChild(i).gameObject);
-            const float pillW = 122f, lineX = 152f, cardX = 178f, gap = 14f;
+            // 109차: 계절 탭 색 — 고른 탭만 진하게, 나머지는 반투명
+            if (_tabs != null) for (int si = 0; si < _tabs.Length; si++) if (_tabs[si] != null) { var c = SeasonFill[si]; c.a = si == _season ? 1f : 0.45f; _tabs[si].color = c; _tabs[si].transform.localScale = Vector3.one * (si == _season ? 1.06f : 1f); }
+            const float pillW = 122f, lineX = 152f, cardX = 178f, gap = 110f;   // 109차(사용자): 주차 사이를 위아래 1cm 쯤 더(14 → 110)
             float w = 664f - 40f;
             float cardW = w - cardX;
             float y = 0f;
-            for (int i = 0; i < _entries.Count; i++)
+            var shown = new List<Entry>();
+            foreach (var e0 in _entries) if (SeasonOfEntry(e0) == _season) shown.Add(e0);
+            if (shown.Count == 0)
             {
-                var e = _entries[i];
+                var none = CoastHudLayout.MakeText(_content, "None", Loc.T("이 계절엔 아직 이야기가 없어요", "No stories in this season yet"), 18, TextAnchor.MiddleCenter, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -80f), new Vector2(0f, -20f));
+                none.color = new Color(1f, 0.95f, 0.85f); _content.sizeDelta = new Vector2(0f, 120f); return;
+            }
+            for (int i = 0; i < shown.Count; i++)
+            {
+                var e = shown[i];
                 bool open = e.Unlocked && _expanded.Contains(e.Key);
                 float h = !e.Unlocked ? 52f : open ? (e.Event > 0 ? 138f : 150f) : 52f;
                 // 점선(줄 높이 + 간격만큼)
-                float segTop = y, segBot = y + h + (i < _entries.Count - 1 ? gap : 0f);
+                float segTop = y, segBot = y + h + (i < shown.Count - 1 ? gap : 0f);
                 for (float sy = segTop + 4f; sy < segBot; sy += 16f)
                 {
                     var d = CoastHudLayout.MakeImage(_content, "Dash", new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(lineX - 2f, -(sy + 9f)), new Vector2(lineX + 2f, -sy), LineCol);
@@ -193,7 +225,7 @@ namespace CoastRun
             var tip = CoastUiArt.GlossyPill(_content, "Tip", new Color(1f, 0.84f, 0.88f), 18, 5); tip.raycastTarget = false;
             var trt = tip.rectTransform; trt.anchorMin = trt.anchorMax = new Vector2(0.5f, 1f); trt.pivot = new Vector2(0.5f, 1f);
             trt.anchoredPosition = new Vector2(0f, -y); trt.sizeDelta = new Vector2(w * 0.92f, 78f);
-            var t1 = CoastHudLayout.MakeText(trt, "T1", Loc.T("팁: 이야기는 접혀있어요", "Tip: stories are folded"), 20, TextAnchor.MiddleCenter, new Vector2(0f, 0.5f), new Vector2(1f, 1f), new Vector2(0f, 0f), new Vector2(0f, -6f));
+            var t1 = CoastHudLayout.MakeText(trt, "T1", Loc.T("팁: 서브스토리는 접혀있어요", "Tip: side stories are folded"), 20, TextAnchor.MiddleCenter, new Vector2(0f, 0.5f), new Vector2(1f, 1f), new Vector2(0f, 0f), new Vector2(0f, -6f));
             t1.color = new Color(0.55f, 0.20f, 0.30f); t1.fontStyle = FontStyle.Bold;
             var t2 = CoastHudLayout.MakeText(trt, "T2", Loc.T("전체 펼치기 버튼으로 한 번에 확인할 수 있어요", "Use Expand all to open them at once"), 13, TextAnchor.MiddleCenter, new Vector2(0f, 0f), new Vector2(1f, 0.5f), new Vector2(0f, 6f), new Vector2(0f, 0f));
             t2.color = new Color(0.45f, 0.25f, 0.30f);
@@ -207,7 +239,7 @@ namespace CoastRun
             if (e.Opening) return Loc.T($"프롤로그 · 너와 나의 주파수 : 오프닝 ({e.Week})", $"Prologue · Our Frequency : Opening ({e.Week})");
             if (!string.IsNullOrEmpty(e.EndingId)) return Loc.T($"{e.Label} · {e.Title}", $"{e.Label} · {e.Title}");
             string place = ChapterLocation.Get(e.Chapter).Name;
-            if (e.Event > 0) return Loc.T($"짧은 이야기 제{e.Chapter}화-1 {e.Title} : {place} ({e.Week})", $"Short story Ch.{e.Chapter}-1 {e.Title} : {place} ({e.Week})");
+            if (e.Event > 0) return Loc.T($"서브스토리 · {e.Title} : {place} ({e.Week})", $"Side story · {e.Title} : {place} ({e.Week})");   // 109차(사용자): 번호 없이 제목만
             return Loc.T($"제{e.Chapter}화 {e.Title} : {place} ({e.Week})", $"Ch.{e.Chapter} {e.Title} : {place} ({e.Week})");
         }
 
@@ -288,12 +320,12 @@ namespace CoastRun
                 textLeft = coverW + 20f;
             }
             // 103차(사용자): 「컷씬 N」 → 「메인스토리 N」
-            string label = e.Opening ? Loc.T("프롤로그 · 너와 나의 주파수", "Prologue · Our Frequency") : ending ? e.Label : isEv ? Loc.T($"이야기 · 제 {e.Chapter}화", $"Story · Ch. {e.Chapter}") : Loc.T($"메인스토리 {e.Index} · {e.Title}", $"Main story {e.Index} · {e.Title}");
+            string label = e.Opening ? Loc.T("프롤로그 · 너와 나의 주파수", "Prologue · Our Frequency") : ending ? e.Label : isEv ? Loc.T($"서브스토리 · {e.Title}", $"Side story · {e.Title}") : Loc.T($"메인스토리 {e.Index} · {e.Title}", $"Main story {e.Index} · {e.Title}");   // 109차: 서브스토리는 번호 없이 제목만
             var t = CoastHudLayout.MakeText(card.rectTransform, "T", label, 21, TextAnchor.MiddleLeft,
                 new Vector2(0f, 0.40f), new Vector2(1f, 1f), new Vector2(textLeft, 0f), new Vector2(-16f, -top));
             t.color = Navy; t.fontStyle = FontStyle.Bold;
             t.resizeTextForBestFit = true; t.resizeTextMinSize = 11; t.resizeTextMaxSize = CoastHudLayout.Scaled(21);
-            string subLine = e.Opening || ending ? e.Sub : isEv ? e.Title + " · " + e.Sub : e.Sub;
+            string subLine = e.Sub;   // 109차: 서브스토리 제목은 위 줄에만
             var s = CoastHudLayout.MakeText(card.rectTransform, "S", subLine, 12, TextAnchor.UpperLeft,
                 new Vector2(0f, 0f), new Vector2(1f, 0.40f), new Vector2(textLeft, 10f), new Vector2(-84f, 0f));
             s.color = Color.Lerp(fill, Color.black, 0.5f);
@@ -427,7 +459,7 @@ namespace CoastRun
         private static Action Reopener()
         {
             var gm = _gm; var ps = _onPlayStart; var oc = _onClose;
-            return () => Open(gm, ps, oc);
+            return () => { _keepSeason = true; Open(gm, ps, oc); };
         }
 
         private static List<Entry> BuildEntries(GameManager gm)
@@ -461,7 +493,7 @@ namespace CoastRun
                     var def = CinematicTable.Event(ev);
                     list.Add(new Entry
                     {
-                        Label = Loc.T($"이야기 · 제 {ch}화", $"Story · Ch. {ch}"), Title = def.title,
+                        Label = Loc.T("서브스토리", "Side story"), Title = def.title,   // 109차: 번호 없음
                         Sub = Loc.T($"{def.cuts.Length}컷 · {Mathf.RoundToInt(def.Length)}초 · {ChapterLocation.Get(ch).Name}", $"{def.cuts.Length} cuts · {Mathf.RoundToInt(def.Length)}s · {ChapterLocation.Get(ch).Name}"),
                         Event = ev, Chapter = ch, Unlocked = all || reached >= ch || StoryProgress.EventSeen(ev),
                         Cover = def.cuts.Length > 0 ? ArtAssets.LoadTexture(def.cuts[0].still) ?? ArtAssets.LoadTexture(def.cuts[0].fallback) : null,

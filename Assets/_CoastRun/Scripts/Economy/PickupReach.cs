@@ -20,8 +20,14 @@ namespace CoastRun
             if (Mathf.Abs(dx) > Lateral) return false;
             // 14차-10: 높이도 본다 — 하늘 코인은 점프해야 먹는다(주인공 transform 은 몸 중간 ≈ 0.8 m).
             float dy = itemPos.y - player.position.y;
-            return dy > -1.1f && dy < 1.6f;   // 33차: 활공 중 하늘 코인(줄 위 0.35~0.6 m)도 먹히게 1.25→1.6
+            if (dy > -1.1f && dy < 1.6f) return true;   // 33차: 활공 중 하늘 코인(줄 위 0.35~0.6 m)도 먹히게 1.25→1.6
+            // 109차(사용자): 스케이트보드는 점프해도 길 위를 계속 굴러가므로, 보드 높이(바닥)의 코인·하트·젤리도 먹는다.
+            if (BoardActive && BoardDrop > 0.05f) { float dyb = dy + BoardDrop; return dyb > -1.1f && dyb < 0.6f; }
+            return false;
         }
+
+        /// 109차: 스케이트보드가 바닥에 남아 있는가 / 지금 주인공이 보드보다 얼마나 떠 있는가(m). CoastPlayerVisual 이 매 프레임 갱신.
+        public static bool BoardActive; public static float BoardDrop;
 
         /// 자석에 끌리는 아이템은 몸속이 아니라 몸 앞(가슴 높이)으로 온다.
         public static Vector3 MagnetTarget(Transform player)

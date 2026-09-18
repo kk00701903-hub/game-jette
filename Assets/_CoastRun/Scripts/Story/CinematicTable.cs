@@ -60,19 +60,17 @@ namespace CoastRun
         /// 77차: 엔딩 시네마 id — ClueSystem.EndingId(clueMask) → "END_A" | "END_B" | "END_TRUE"
         public static readonly string[] EndingIds = { "END_A", "END_B", "END_TRUE" };
 
-        // ── 오프닝 「그 약속」 · BGM_M5 · 7컷 ──
+        // ── 오프닝 「그 약속」 · BGM_M5 · 5컷 ──
         private static readonly Def Opening = new Def
         {
             id = "OPEN", title = "그 약속", bgm = "BGM_M5", sat = 1.00f, holdToSeconds = 12f, gameTitleCard = true, cardMain = "너와 나의 주파수", cardSub = "우리의 송전탑  ·  COAST RUN",
             cuts = new[]
             {
-                new Cut(null, "Cut_T_V7_OP_01", "운동장 구석. 아이들이 내 도시락을 개수대에 부었다. 계란말이가 하수구로 갔다. 나는 그걸 보고만 있었다.", 6.5f, false, null, "Cut_T_N3_02", 0),
-                new Cut(null, "Cut_T_N3_03", "「벙어리 딸.」 아이들이 입만 뻐끔거리며 엄마 흉내를 냈다. 나는 입술을 깨물었다. 울면 더 웃을 테니까.", 6.5f, false, null, "Cut_S_N3_03", 1),
-                new Cut(null, "Cut_T_V7_OP_03", "가방이 도랑에 던져졌다. 진흙 속에 반쯤 잠긴 가방. 나는 그걸 건지러 들어갈 힘이 없었다. 대신 울고 있었다.", 6.5f, false, null, "Cut_T_N3_04", 2),
-                new Cut(null, "Cut_T_N3_04", "흰 셔츠가 도랑에 들어갔다. 진흙이 무릎까지 올라왔다. 남자애가 가방을 건져 내 앞에 내밀었다.", 6.5f, false, null, "Cut_S_N3_10", 3),
-                new Cut(null, "Cut_T_N3_04", "셔츠가 다 더러워져 있었다. 나는 수줍은 듯 가방을 받았다.", 6.5f, false, null, "Cut_S_N3_10", 1),
-                new Cut(null, "Cut_T_N6_02", "검은 차 유리창. 그 남자애가 창을 내리고 소리쳤다. 「스무 살 네 생일에 송전탑 아래서 보자! 꼭!」", 6.5f, false, null, "Cut_S_N6_03", 0),
-                new Cut(null, "Cut_T_V7_OP_07", "차가 멀어졌다. 나는 달리다가 넘어졌다. 거기서 기억이 끊긴다.", 6.5f, false, null, "Cut_T_N6_02", 3),
+                new Cut(null, "Cut_T_V7_OPB_01", "검은 차가 출발했다. 나는 뒷유리를 손바닥으로 두드렸다. 창이 내려갔다.", 6.5f, false, null, "Cut_T_N6_02", 0),
+                new Cut(null, "Cut_T_V7_E2_08", "「스무 살 네 생일에 송전탑 아래서 보자! 꼭!」 차가 흙먼지 속으로 멀어졌다.", 6.5f, false, null, "Cut_T_V7_OP_07", 1),
+                new Cut(null, "Cut_T_V7_OPB_03", "그날 밤. 달력의 내 생일에 동그라미를 치고 썼다. 「송전탑 아래.」 연필이 종이를 팼다.", 6.5f, false, null, "Cut_T_N1_02", 2),
+                new Cut(null, "Cut_T_V7_OPB_04", "달력이 일곱 번 바뀌었다. 동그라미는 해마다 같은 날에 있었다.", 6.5f, false, null, "Cut_T_V7_OPB_03", 3),
+                new Cut(null, "Cut_T_V7_N1_01", "일곱 번째 봄. 담요 끝이 바람에 들썩였다. 머리 위에서 쇠가 웅웅 울었다.", 6.5f, false, null, "Cut_T_N1_02", 1),
             }
         };
 
@@ -118,8 +116,8 @@ namespace CoastRun
                 new Cut(null, "Cut_T_V7_E1_03", "돌담 사이 굽은 길에서 넘어졌다. 둘 다 무릎이 까졌다.", 6.0f, false, null, "Cut_T_E4_02", 2),
                 new Cut(null, "Cut_T_V7_E1_03", "꼬마가 내 무릎에 침을 발랐다. 「이러면 안 아파.」 안 아프진 않았다. 그래도 웃었다.", 6.0f, false, null, null, 3),
                 new Cut(null, "Cut_T_V7_E1_05", "탑 아래 우유 두 병이 놓여 있었다.", 6.0f, false, null, "Cut_T_N1_14", 1),
-                new Cut(null, "Cut_T_E4_03", "탑 아래 납작한 돌을 주웠다. 꼬마가 빨간 크레파스로 그 위에 하트를 그렸다. 삐뚤었다.", 6.0f, false, null, null, 0),
-                new Cut(null, "Cut_T_E4_03", "꼬마가 그 돌을 내 손에 쥐여 줬다. 「잃어버리지 마.」", 6.0f, false, null, null, 3),
+                new Cut(null, "Cut_T_V7_E1_06", "꼬마가 주머니에서 분홍빛 조개껍데기를 꺼냈다. 빨간 크레파스로 그 위에 하트를 그렸다. 삐뚤었다.", 6.0f, false, null, "Cut_T_E4_03", 0),
+                new Cut(null, "Cut_T_V7_E1_06", "꼬마가 그 조개껍데기를 내 손에 쥐여 줬다. 「잃어버리지 마.」", 6.0f, false, null, "Cut_T_E4_03", 3),
                 new Cut(null, "Cut_T_N1_13", "돌아오는 길, 꼬마가 내 손을 잡았다. 작고 차가운 손. 「내일도 가자.」 「응. 내일도.」", 6.0f, false, null, "Cut_S_N7_09", 2),
             }
         };
@@ -222,8 +220,8 @@ namespace CoastRun
                 new Cut(null, "Cut_T_V7_N4_06", "이건 파, 이건 상추. 나는 따라 했다. 손에 흙이 묻었다.", 6.5f, false, null, null, 3),
                 new Cut(null, "Cut_T_V7_N4_08", "비 오는 날 마루에서 둘이 나란히 앉아 있었다.", 6.5f, false, null, "Cut_T_E7_03", 2),
                 new Cut(null, "Cut_T_V7_N4_08", "아줌마가 내 어깨에 담요를 덮어 줬다. 아무 말도 없었다. 빗소리만으로 충분했다.", 6.5f, false, null, null, 0),
-                new Cut(null, "Cut_T_OP_14", "부엌 벽 달력에 동그라미가 하나 있었다. 내년 봄 어느 날. 손가락으로 가리키며 물었다.", 6.5f, false, null, "Cut_S_OP_11", 1),
-                new Cut(null, "Cut_T_OP_14", "아줌마가 종이에 썼다. 「딸 생일.」 그리고 「미역국 끓여야지」 하고 썼다. 나는 그 동그라미를 오래 봤다.", 6.5f, false, null, "Cut_S_OP_11", 2),
+                new Cut(null, "Cut_T_V7_N4_10", "부엌 벽 달력에 동그라미가 하나 있었다. 내년 봄 어느 날. 손가락으로 가리키며 물었다.", 6.5f, false, null, "Cut_T_V7_N4_01", 1),
+                new Cut(null, "Cut_T_V7_N4_10", "아줌마가 종이에 썼다. 「딸 생일.」 그리고 「미역국 끓여야지」 하고 썼다. 나는 그 동그라미를 오래 봤다.", 6.5f, false, null, "Cut_T_V7_N4_01", 2),
                 new Cut(null, "Cut_T_N6_08", "그날 밤 처음으로 담요가 아닌 데서 잤다. 그 집 작은 방. 벽에 낡은 주황 우비가 걸려 있었다. 어른 것이었다.", 6.5f, false, null, "Cut_S_N6_08", 3),
                 new Cut(null, "Cut_T_V7_N3_13", "창밖에서 꼬마가 우비를 올려다보고 있었다. 나와 눈이 마주쳤다. 꼬마가 얼른 고개를 돌렸다. 어깨가 조금 흔들렸다.", 6.5f, false, null, null, 1),
                 new Cut(null, "Cut_T_V7_N4_14", "아침에 언덕길에서 그 남자와 마주쳤다. 남자가 언덕 위 집을 올려다봤다.", 6.5f, false, null, "Cut_T_E6_01", 0),
@@ -279,9 +277,9 @@ namespace CoastRun
                 new Cut(null, "Cut_T_N2_05", "엄마 얼굴만 안 보였다. 손과 해녀복과 숨소리만 돌아왔다.", 6.5f, false, null, null, 3),
                 new Cut(null, "Cut_T_OP_01", "처음 가 본 시내 백화점. 유리 안에 파란 보석 머리띠가 있었다. 나는 오래 봤다. 갖고 싶다는 말은 안 했다.", 6.5f, true, "— 회상 · 열한 살 —", null, 1),
                 new Cut(null, "Cut_T_OP_01", "그 말이 사치라는 건 열한 살도 알았다. 유리에 손자국만 남기고 돌아섰는데, 아빠가 그 손자국을 보고 있었다.", 6.5f, true, "— 회상 —", null, 0),
-                new Cut(null, "Cut_T_N2_06", "그을린 얼굴, 낡은 점퍼. 아빠가 웃었다. 왼쪽 눈이 접혔다. 「하늘이 생일 선물이 정해졌주.」", 6.5f, true, "— 회상 —", "Cut_S_N2_07", 3),
-                new Cut(null, "Cut_T_N2_07", "아빠는 내 물건마다 빨간 페인트로 하트를 그려 줬다. 가방에도, 신발에도. 삐뚤었다.", 6.5f, true, "— 회상 —", null, 2),
-                new Cut(null, "Cut_T_N2_07", "「잃어버리지 말라.」 아빠 주황 우비 소매에도 같은 하트가 있었다.", 6.5f, true, "— 회상 —", null, 0),
+                new Cut(null, "Cut_T_V7_N5_07", "그을린 얼굴, 낡은 점퍼. 아빠가 웃었다. 왼쪽 눈이 접혔다. 「하늘이 생일 선물이 정해졌주.」", 6.5f, true, "— 회상 —", "Cut_T_N2_06", 3),
+                new Cut(null, "Cut_T_V7_N5_08", "아빠는 내 물건마다 빨간 페인트로 하트를 그려 줬다. 가방에도, 신발에도. 삐뚤었다.", 6.5f, true, "— 회상 —", "Cut_T_N2_07", 2),
+                new Cut(null, "Cut_T_V7_N5_08", "「잃어버리지 말라.」 아빠 주황 우비 소매에도 같은 하트가 있었다.", 6.5f, true, "— 회상 —", "Cut_T_N2_07", 0),
                 new Cut(null, "Cut_T_OP_02", "해녀 엄마, 배 한 척뿐인 아빠. 머리띠 값은 아빠 한 달 벌이였다.", 6.5f, true, "— 회상 —", null, 1),
                 new Cut(null, "Cut_T_OP_03", "아빠는 이웃에게 돈을 빌려 머리띠를 사 왔고, 빌린 돈을 갚으려면 풍랑주의보가 내린 밤에도 바다에 나가야 했다.", 6.5f, true, "— 회상 —", null, 2),
                 new Cut(null, "Cut_T_OP_04", "아빠가 장화를 신었다. 엄마가 아빠 우비를 낚아챘다. 소리는 없었다. 엄마 손이 빠르게 허공을 갈랐다.", 6.5f, true, "— 회상 —", null, 3),
@@ -345,10 +343,10 @@ namespace CoastRun
             }
         };
 
-        // ── 보조 컷씬 EV8 「태풍」 · BGM_M4 · CH13 · 10컷 ──
+        // ── 보조 컷씬 EV8 「태풍」 · BGM_M3 · CH13 · 10컷 ──
         private static readonly Def EV8 = new Def
         {
-            id = "EV8", title = "태풍", bgm = "BGM_M4", sat = 0.42f, cardMain = "태풍", cardSub = "이야기 · 제 13화",
+            id = "EV8", title = "태풍", bgm = "BGM_M3", sat = 0.42f, cardMain = "태풍", cardSub = "이야기 · 제 13화",
             cuts = new[]
             {
                 new Cut(null, "Cut_T_V7_E8_01", "그 뒤로 도윤이와 나는 말을 하지 않았다. 학교 복도에서 도윤이가 먼저 다가왔다. 「하늘아, 그날……」", 6.0f, true, "— 회상 · 여름 끝 —", "Cut_T_N4_07", 0),
@@ -364,10 +362,10 @@ namespace CoastRun
             }
         };
 
-        // ── 보조 컷씬 EV9 「리어카」 · BGM_M4 · CH14 · 9컷 ──
+        // ── 보조 컷씬 EV9 「리어카」 · BGM_M3 · CH14 · 9컷 ──
         private static readonly Def EV9 = new Def
         {
-            id = "EV9", title = "리어카", bgm = "BGM_M4", sat = 0.32f, cardMain = "리어카", cardSub = "이야기 · 제 14화",
+            id = "EV9", title = "리어카", bgm = "BGM_M3", sat = 0.32f, cardMain = "리어카", cardSub = "이야기 · 제 14화",
             cuts = new[]
             {
                 new Cut(null, "Cut_T_V7_E9_01", "빗속에서 손전등 불빛이 올라왔다. 도윤이였다. 우비도 없이 흠뻑 젖어서. 「너 걱정돼서.」", 6.0f, true, "— 회상 —", "Cut_T_N5_04", 0),
@@ -395,7 +393,7 @@ namespace CoastRun
                 new Cut(null, "Cut_T_V7_E2_04", "숨이 찼다. 그래도 달렸다. 차가 이미 출발하고 있었다. 도윤이가 뒷유리에 붙어서 나를 봤다.", 6.0f, true, "— 회상 —", null, 1),
                 new Cut(null, "Cut_T_N6_02", "창을 내렸다. 「하늘아! 스무 살 네 생일에 송전탑 아래서 보자! 꼭!」", 6.0f, true, "— 회상 —", "Cut_S_N6_03", 0),
                 new Cut(null, "Cut_T_N6_03", "「우유 두 병 들고 기다릴게! 하나는 오늘, 하나는 내일!」", 6.0f, true, "— 회상 —", "Cut_S_N6_04", 3),
-                new Cut(null, "Cut_T_V7_OP_07", "「알았어! 안 늦을게!」 나는 차를 따라 달리다 넘어졌다. 무릎에서 피가 났다. 안 아팠다.", 6.0f, true, "— 회상 —", null, 2),
+                new Cut(null, "Cut_T_V7_E2_08", "「알았어! 안 늦을게!」 나는 차를 따라 달리다 넘어졌다. 무릎에서 피가 났다. 안 아팠다.", 6.0f, true, "— 회상 —", "Cut_T_V7_OP_07", 2),
                 new Cut(null, "Cut_T_N6_04", "그날 밤 달력에 처음으로 글씨를 썼다. 「스무 살 생일, 송전탑 아래, 도윤이.」", 6.0f, true, "— 회상 —", "Cut_S_N6_06", 0),
                 new Cut(null, "Cut_T_N6_04", "연필을 꾹 눌러서 종이가 팼다. 나는 그 약속 하나로 여덟 해를 살았다.", 6.0f, true, "— 회상 —", "Cut_S_N6_06", 1),
             }
@@ -417,7 +415,7 @@ namespace CoastRun
                 new Cut(null, "Cut_T_V7_N7_07", "매일 「안녕하세요」 하던 사람.", 6.5f, false, null, null, 2),
                 new Cut(null, "Cut_T_V7_N7_07", "「도윤아!」 불렀다. 바람이 소리를 삼켰다. 도윤이는 돌아보지 않았다. 흰 셔츠가 점점 작아졌다.", 6.5f, false, null, null, 0),
                 new Cut(null, "Cut_T_N8_11", "꼬마가 뒤에 서 있었다. 주황 우비. 소매 끝에 빨간 하트가 삐뚤게 그려져 있었다.", 6.5f, false, null, null, 1),
-                new Cut(null, "Cut_T_E4_03", "주머니 속 돌을 꺼냈다. 같은 하트였다.", 6.5f, false, null, null, 2),
+                new Cut(null, "Cut_T_E4_03", "주머니 속 조개껍데기를 꺼냈다. 같은 하트였다.", 6.5f, false, null, null, 2),
                 new Cut(null, "Cut_T_N8_12", "꼬마가 후드를 벗었다. 웃었다. 왼쪽 눈이 접혔다.", 6.5f, false, null, null, 3),
                 new Cut(null, "Cut_T_N8_12", "「……아빠?」 「한 마리만 더 잡으민 뒈어, 하늘아.」", 6.5f, false, null, null, 1),
                 new Cut(null, "Cut_T_N8_13", "나는 주저앉았다. 「늦게 와서 미안.」", 6.5f, false, null, null, 0),
@@ -434,14 +432,14 @@ namespace CoastRun
             }
         };
 
-        // ── 보조 컷씬 EV10 「안을 수 없는」 · BGM_M1 · CH19 · 11컷 ──
+        // ── 보조 컷씬 EV10 「안을 수 없는」 · BGM_M3 · CH19 · 11컷 ──
         private static readonly Def EV10 = new Def
         {
-            id = "EV10", title = "안을 수 없는", bgm = "BGM_M1", sat = 0.25f, cardMain = "안을 수 없는", cardSub = "이야기 · 제 19화",
+            id = "EV10", title = "안을 수 없는", bgm = "BGM_M3", sat = 0.25f, cardMain = "안을 수 없는", cardSub = "이야기 · 제 19화",
             cuts = new[]
             {
                 new Cut(null, "Cut_T_V7_E10_01", "언덕 위 집으로 달렸다. 엄마가 부엌에서 미역국을 끓이고 있었다.", 6.0f, false, null, "Cut_T_V6_N8_06", 0),
-                new Cut(null, "Cut_T_OP_14", "벽에 걸린 달력의 동그라미가 내일이었다. 딸 생일. 내 생일.", 6.0f, false, null, "Cut_S_OP_11", 1),
+                new Cut(null, "Cut_T_V7_N4_10", "벽에 걸린 달력의 동그라미가 내일이었다. 딸 생일. 내 생일.", 6.0f, false, null, "Cut_T_OP_14", 1),
                 new Cut(null, "Cut_T_V7_E10_03", "「엄마.」 엄마는 못 듣는다. 나는 엄마 앞에 서서 입 모양으로 말했다.", 6.0f, false, null, "Cut_T_N8_06", 2),
                 new Cut(null, "Cut_T_V7_E10_03", "「엄마, 나야. 하늘이.」 엄마는 국자만 저었다. 내 쪽으로 고개를 들지 않았다.", 6.0f, false, null, null, 3),
                 new Cut(null, "Cut_T_V7_E10_05", "엄마를 안았다. 두 팔이 엄마 어깨를 통과했다.", 6.0f, false, null, "Cut_T_N8_06", 1),

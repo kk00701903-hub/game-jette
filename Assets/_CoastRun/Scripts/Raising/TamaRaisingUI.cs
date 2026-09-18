@@ -136,6 +136,14 @@ namespace CoastRun
             if (ev == null) return;
             StartCoroutine(EventChoiceRoutine(ev));
         }
+        /// 109차: Dev 메뉴용 — 카드 고르기 오버레이(idx 0 쉼 / 1 놀기 / 2 알바)를 바로 연다.
+        public void DevOpenPick(int idx)
+        {
+            if (Save == null || _busy) return;
+            var list = BuildChoices(idx, Timeline.SeasonOf(Save.week));
+            if (list.Count == 0) return;
+            StartCoroutine(CardPickRoutine(idx, list));
+        }
 
         /// Legacy: already-applied result (toast only). Prefer ShowEvent(RandomEventDef).
         public void ShowEvent(RandomEventResult ev)
@@ -238,13 +246,14 @@ namespace CoastRun
             _goalRibbonBg = CoastUiArt.CutePill(_root, "GoalRibbon", new Color(0.18f, 0.22f, 0.48f, 0.94f), 14, 3);
             var grt = _goalRibbonBg.rectTransform;
             grt.anchorMin = new Vector2(0f, 1f); grt.anchorMax = new Vector2(1f, 1f); grt.pivot = new Vector2(0.5f, 1f);
-            grt.offsetMin = new Vector2(160f, -108f); grt.offsetMax = new Vector2(-160f, -70f);
+            // 109차(사용자: 「2주 뒤 대회 글자가 상자보다 튀어나왔다」): 상자를 가로 400 → 680, 세로 38 → 48 로 키우고 글자는 상자 안에서 줄바꿈(넘치지 않게).
+            grt.offsetMin = new Vector2(20f, -116f); grt.offsetMax = new Vector2(-20f, -68f);
             _goalRibbonBg.raycastTarget = true;
-            _goalRibbon = CoastHudLayout.MakeText(_goalRibbonBg.rectTransform, "T", "", 20, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(8f, 0f), new Vector2(-8f, 0f));
+            _goalRibbon = CoastHudLayout.MakeText(_goalRibbonBg.rectTransform, "T", "", 20, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(12f, 2f), new Vector2(-12f, -2f));
             _goalRibbon.color = new Color(1f, 0.96f, 0.82f); _goalRibbon.fontStyle = FontStyle.Bold;
             CoastUiArt.OutlineText(_goalRibbon, new Color(0f, 0f, 0f, 0.55f), 1.6f);
-            _goalRibbon.resizeTextForBestFit = true; _goalRibbon.resizeTextMinSize = 14; _goalRibbon.resizeTextMaxSize = CoastHudLayout.Scaled(22);
-            _goalRibbon.horizontalOverflow = HorizontalWrapMode.Overflow;
+            _goalRibbon.resizeTextForBestFit = true; _goalRibbon.resizeTextMinSize = 13; _goalRibbon.resizeTextMaxSize = CoastHudLayout.Scaled(22);
+            _goalRibbon.horizontalOverflow = HorizontalWrapMode.Wrap;
             _goalRibbon.verticalOverflow = VerticalWrapMode.Truncate;
             _goalRibbon.raycastTarget = false;
             var grb = _goalRibbonBg.gameObject.AddComponent<Button>(); grb.transition = Selectable.Transition.None;
@@ -468,6 +477,7 @@ namespace CoastRun
         public void Refresh()
         {
             if (Save == null) return;
+            _gm?.SyncWallet();   // 109차: 코인·돈 일원화 — 러닝에서 모은 코인이 바로 보이게
             LifeItems.Ensure(Save);
             var s = Save.stats;
             var season = Timeline.SeasonOf(Save.week);
@@ -843,82 +853,128 @@ namespace CoastRun
             _cardPickOverlay = new GameObject("CardPick", typeof(RectTransform), typeof(Image));
             _cardPickOverlay.transform.SetParent(_root, false);
             var dim = _cardPickOverlay.GetComponent<Image>();
-            // 94차 시안 「어디 알바?」: 어두운 딤 대신 라벤더·분홍 파스텔 바탕 + 반짝이
-            dim.color = new Color(0.90f, 0.84f, 0.96f, 0.94f); dim.raycastTarget = true;
-            // 74차: Fit 상자는 폭 664 고정이라 9:16보다 짧은(=상대적으로 넓은) 화면에선 좌우가 남는다 → 딤은 넉넉히 넘겨 덮는다(화면 밖은 자동으로 잘림).
+            // 112차 시안: 라벤더 바탕 + 꽃·나비
+            dim.color = new Color(0.91f, 0.86f, 0.97f, 0.97f); dim.raycastTarget = true;
             var drt = dim.rectTransform; drt.anchorMin = Vector2.zero; drt.anchorMax = Vector2.one; drt.offsetMin = new Vector2(-400f, -400f); drt.offsetMax = new Vector2(400f, 400f);
-            var pinkWash = CoastHudLayout.MakeImage(drt, "Wash", new Vector2(0f, 0.45f), new Vector2(1f, 1f), Vector2.zero, Vector2.zero, new Color(0.99f, 0.86f, 0.90f, 0.55f));
-            pinkWash.raycastTarget = false;
-            Color[] sparkCols = { new Color(1f, 1f, 1f, 0.8f), new Color(1f, 0.85f, 0.95f, 0.8f), new Color(0.85f, 0.80f, 1f, 0.8f) };
-            for (int si = 0; si < 10; si++)
+
+            // 콘텐츠는 Fit(세이프존) 안에만 — 딤만 화면 밖까지 덮는다
+            var content = new GameObject("Content", typeof(RectTransform)).GetComponent<RectTransform>();
+            content.SetParent(_root, false); // will reparent under overlay
+            content.SetParent(drt, false);
+            content.anchorMin = new Vector2(0.5f, 0.5f); content.anchorMax = new Vector2(0.5f, 0.5f);
+            content.pivot = new Vector2(0.5f, 0.5f);
+            // Fit 안쪽 크기(HudInset 기준 ≈ 세이프존). 오버레이가 -400 확장돼 있으므로 실제 보이는 박스로 맞춤.
+            float cw = 664f, ch = 1180f;
+            content.sizeDelta = new Vector2(cw, ch); content.anchoredPosition = Vector2.zero;
+            EventCardKit.DecoratePickBg(content);
+
+            // 상단 상태 알약
+            string moneyStr = LevelSystem.FormatK(Save.stats.money);
+            string heartStr = Save.chapterHearts.ToString();
+            int energy = Mathf.Clamp(100 - Save.stats.stress, 0, 100);
+            string clockStr = $"{Save.stats.stamina}:{energy:D2}";
+            EventCardKit.PickStatusPills(content, moneyStr, heartStr, clockStr);
+
+            string banner = idx == 0
+                ? Loc.T($"이번 주말 휴식  |  치유 시간 {Save.stats.stamina}:{energy:D2}", $"Weekend rest  |  Heal {Save.stats.stamina}:{energy:D2}")
+                : idx == 1 ? Loc.T("이번 주말, 뭐 할까?", "What to do this weekend?")
+                : Loc.T("이번 주말, 어디 알바?", "Which job this weekend?");
+            var title = CoastHudLayout.MakeText(content, "Banner", "✦  " + banner + "  ✦", 20, TextAnchor.MiddleCenter,
+                new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(16f, -100f), new Vector2(-16f, -64f));
+            title.color = EventCardKit.BrownInk; title.fontStyle = FontStyle.Bold; title.raycastTarget = false;
+            title.resizeTextForBestFit = true; title.resizeTextMinSize = 12; title.resizeTextMaxSize = CoastHudLayout.Scaled(20);
+
+            // 시안: 세로 2장 스택 (노랑=집밥 / 라벤더=낮잠 순으로 맞춤)
+            if (idx == 0 && cards.Count >= 2)
             {
-                float sx = (si * 37 % 100) / 100f, sy = 0.12f + (si * 53 % 80) / 100f;
-                EventCardKit.Sparkle(drt, new Vector2(sx, sy), Vector2.zero, si % 3 == 0 ? 22 : 14, sparkCols[si % 3]);
+                int hi = cards.FindIndex(c => c != null && c.id == "rest_home");
+                int ni = cards.FindIndex(c => c != null && c.id == "rest_nap");
+                if (hi >= 0 && ni >= 0 && hi > ni)
+                {
+                    var tmp = cards[hi]; cards[hi] = cards[ni]; cards[ni] = tmp;
+                }
+                else if (hi > 0) { var tmp = cards[0]; cards[0] = cards[hi]; cards[hi] = tmp; }
             }
 
-            string banner = idx == 0 ? Loc.T("어디 쉴까?", "Where to rest?")
-                : idx == 1 ? Loc.T("뭐 할까?", "What to do?")
-                : Loc.T("어디 알바?", "Which job?");
-            Color bannerFill = idx == 0 ? new Color(0.45f, 0.78f, 0.95f)
-                : idx == 1 ? new Color(0.55f, 0.85f, 0.55f)
-                : new Color(0.98f, 0.55f, 0.35f);
-            Color bannerEdge = idx == 2 ? new Color(0.35f, 0.18f, 0.55f) : new Color(0.10f, 0.18f, 0.40f);
-            EventCardKit.PickBanner(_cardPickOverlay.GetComponent<RectTransform>(), banner, bannerFill, bannerEdge, 150f);
+            Color[] fills = {
+                new Color(1f, 0.95f, 0.78f),
+                new Color(0.90f, 0.86f, 0.98f),
+                new Color(0.82f, 0.93f, 0.98f)
+            };
+            Color[] tabs = {
+                new Color(0.98f, 0.78f, 0.28f),
+                new Color(0.62f, 0.48f, 0.90f),
+                new Color(0.35f, 0.65f, 0.95f)
+            };
+            string[] badgeRest = { Loc.T("☀️ 힐링", "☀ Heal"), Loc.T("🌙 힐링", "☾ Heal") };
+            string[] badgePlay = { Loc.T("🎮 놀기", "Play"), Loc.T("✨ 놀기", "Play") };
+            string[] badgeJob = { Loc.T("💼 알바", "Job"), Loc.T("🏃 알바", "Job") };
 
-            string tabLabel = idx == 0 ? Loc.T("쉼", "Rest") : idx == 1 ? Loc.T("놀기", "Play") : Loc.T("알바", "Job");
-            Color[] fills = { EventCardKit.GoldJob, EventCardKit.LavenderJob, new Color(0.55f, 0.82f, 0.95f) };
-            Color[] tabs = { new Color(0.95f, 0.70f, 0.20f), new Color(0.55f, 0.42f, 0.85f), new Color(0.30f, 0.62f, 0.90f) };
+            float cardW = 560f, cardH = 340f, gap = 14f;
+            float stackH = cards.Count * cardH + (cards.Count - 1) * gap;
+            float y0 = 40f + stackH * 0.5f - cardH * 0.5f;
 
-            float cardW = 300f, cardH = 420f, gap = 20f;   // 108차: 그림(4:3) 자리를 위에 두느라 300 → 420
-            float total = cards.Count * cardW + (cards.Count - 1) * gap;
-            float x0 = -total * 0.5f;
             for (int i = 0; i < cards.Count; i++)
             {
                 var def = cards[i];
-                string tab = def.category == ScheduleCategory.Lesson ? Loc.T("교육", "Lesson") : tabLabel;
-                int npcOf = Affinity.NpcOf(def.id);   // 105차(P1-2): 이 카드에서 만나는 사람 + 하트
+                string tab = idx == 0 ? badgeRest[Mathf.Min(i, badgeRest.Length - 1)]
+                    : idx == 1 ? badgePlay[Mathf.Min(i, badgePlay.Length - 1)]
+                    : badgeJob[Mathf.Min(i, badgeJob.Length - 1)];
+                int npcOf = Affinity.NpcOf(def.id);
                 if (npcOf >= 0) tab = "♥" + Affinity.Get(Save, npcOf) + " " + Affinity.ShortName(npcOf);
-                var captured = def;
-                // 105차(재미요소): 이름 옆 숙련 ★, 카드 아래 미리보기(오를 수치·실패율) — 실패 30% 이상이면 빨강
+
                 int mlv = RaisingFun.MasteryLevel(Save, def.id);
-                string title = mlv > 1 ? def.Name + " " + RaisingFun.Stars(mlv) : def.Name;
-                var cbtn = EventCardKit.ThemedPickCard(
-                    _cardPickOverlay.GetComponent<RectTransform>(), "C" + i, tab, title,
+                string emoji = PickEmoji(def);
+                string titleTxt = emoji + " " + (mlv > 1 ? def.Name + " " + RaisingFun.Stars(mlv) : def.Name);
+                string pv = RaisingFun.Preview(def, Save, out bool warn);
+                if (string.IsNullOrEmpty(pv)) pv = Loc.T("♥ 쉬기", "♥ Rest");
+                if (!pv.StartsWith("⚡") && !pv.StartsWith("💗") && !pv.StartsWith("♥"))
+                    pv = (warn ? "⚠ " : "⚡ ") + pv;
+
+                var captured = def;
+                float y = y0 - i * (cardH + gap);
+                var cbtn = EventCardKit.StoryPickCard(
+                    content, "C" + i, tab, titleTxt,
                     fills[Mathf.Clamp(i, 0, fills.Length - 1)],
                     tabs[Mathf.Clamp(i, 0, tabs.Length - 1)],
-                    new Vector2(x0 + cardW * 0.5f + i * (cardW + gap), -10f),
+                    new Vector2(0f, y),
                     new Vector2(cardW, cardH),
-                    () => { chosen = captured; });
+                    () => { chosen = captured; },
+                    pv);
                 var crt2 = cbtn.GetComponent<RectTransform>();
-                var tabRt = crt2.Find("Tab")?.GetComponent<RectTransform>();
-                if (tabRt != null && tab.Length > 4) tabRt.sizeDelta = new Vector2(150f, 28f);   // 108차: 「♥20 아줌마」가 88 알약을 넘침
-                // 108차(사용자): 글자만 있던 카드에 그림 — Sched_<id>(4:3 수채) 를 위쪽에, 이름은 그림 아래 띠, 미리보기는 맨 아래
+
                 var artTex = ArtAssets.LoadTexture("Sched_" + def.id);
-                if (artTex != null)
+                var artSlot = crt2.Find("ArtSlot") as RectTransform;
+                if (artSlot != null && artTex != null)
                 {
-                    var frame = CoastUiArt.CutePill(crt2, "ArtFrame", new Color(1f, 1f, 1f, 0.55f), 16, 0); frame.raycastTarget = false;
-                    var fr = frame.rectTransform; fr.anchorMin = new Vector2(0f, 1f); fr.anchorMax = new Vector2(1f, 1f); fr.pivot = new Vector2(0.5f, 1f);
-                    fr.anchoredPosition = new Vector2(0f, -26f); fr.sizeDelta = new Vector2(-24f, 212f);
-                    var art = CoastHudLayout.MakeImage(fr, "Art", Vector2.zero, Vector2.one, new Vector2(4f, 4f), new Vector2(-4f, -4f), Color.white);
-                    art.sprite = CoastUiArt.AsSprite(artTex); art.preserveAspect = true; art.raycastTarget = false;
+                    var frame = CoastUiArt.CutePill(artSlot, "ArtFrame", Color.white, 18, 0); frame.raycastTarget = false;
+                    var fr = frame.rectTransform; fr.anchorMin = Vector2.zero; fr.anchorMax = Vector2.one; fr.offsetMin = fr.offsetMax = Vector2.zero;
+                    // 마스크로 둥글게 자르고 그림은 꽉 채움(시안처럼 레터박스 없음)
+                    var mask = frame.gameObject.AddComponent<Mask>(); mask.showMaskGraphic = false;
+                    var art = CoastHudLayout.MakeImage(fr, "Art", Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero, Color.white);
+                    art.sprite = CoastUiArt.AsSprite(artTex); art.preserveAspect = false; art.raycastTarget = false;
+                    EventCardKit.Animate(art, 0.06f, 8f);
                 }
-                var nameT = crt2.Find("N")?.GetComponent<RectTransform>();
-                if (nameT != null) { nameT.offsetMin = new Vector2(18f, 90f); nameT.offsetMax = new Vector2(-18f, artTex != null ? -242f : -24f); }
-                string pv = RaisingFun.Preview(def, Save, out bool warn);
-                var pvBg = CoastUiArt.CutePill(crt2, "PvBg", warn ? new Color(0.55f, 0.08f, 0.14f, 0.85f) : new Color(0.10f, 0.12f, 0.30f, 0.72f), 12, 0);
-                var pr = pvBg.rectTransform; pr.anchorMin = new Vector2(0f, 0f); pr.anchorMax = new Vector2(1f, 0f); pr.pivot = new Vector2(0.5f, 0f);
-                pr.offsetMin = new Vector2(12f, 12f); pr.offsetMax = new Vector2(-12f, 80f); pvBg.raycastTarget = false;
-                var pvT = CoastHudLayout.MakeText(pr, "T", pv, 15, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(8f, 4f), new Vector2(-8f, -4f));
-                pvT.color = warn ? new Color(1f, 0.80f, 0.80f) : Color.white; pvT.raycastTarget = false;
-                pvT.horizontalOverflow = HorizontalWrapMode.Wrap; pvT.verticalOverflow = VerticalWrapMode.Truncate;
-                pvT.resizeTextForBestFit = true; pvT.resizeTextMinSize = 10; pvT.resizeTextMaxSize = CoastHudLayout.Scaled(16);
             }
 
-            // 하단 작은 취소(∨)
-            var cancel = CoastUiArt.CutePill(_cardPickOverlay.transform, "Cancel", new Color(1f, 1f, 1f, 0.92f), 22, 2);
-            var crt = cancel.rectTransform; crt.anchorMin = crt.anchorMax = new Vector2(0.5f, 0f); crt.pivot = new Vector2(0.5f, 0f);
-            crt.anchoredPosition = new Vector2(0f, 36f); crt.sizeDelta = new Vector2(52f, 52f); cancel.raycastTarget = true;
-            var ct = CoastHudLayout.MakeText(crt, "T", "∨", 28, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(0f, -2f), Vector2.zero);
+            // 꼬마 + 말풍선(시안: 하단)
+            {
+                string kidLine = idx == 0 ? Loc.T("나도 푹 쉬어!", "Rest well too!")
+                    : idx == 1 ? Loc.T("누나, 같이 놀자!", "Let's play!")
+                    : Loc.T("누나, 돈 벌어 오자!", "Let's earn!");
+                EventCardKit.KidAt(content, kidLine, new Vector2(0.5f, 0f), new Vector2(-100f, 52f), 160f, false, false);
+            }
+
+            var tip = CoastUiArt.CutePill(content, "Tip", new Color(0.18f, 0.16f, 0.28f, 0.78f), 16, 0);
+            var tipRt = tip.rectTransform; tipRt.anchorMin = tipRt.anchorMax = new Vector2(0.5f, 0f); tipRt.pivot = new Vector2(0.5f, 0f);
+            tipRt.anchoredPosition = new Vector2(0f, 10f); tipRt.sizeDelta = new Vector2(400f, 36f); tip.raycastTarget = false;
+            var tipT = CoastHudLayout.MakeText(tipRt, "T", Loc.T("⧉  비교하려면 길게 누르세요", "⧉  Long-press to compare"), 13, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(8f, 0f), new Vector2(-8f, 0f));
+            tipT.color = Color.white; tipT.raycastTarget = false;
+
+            var cancel = CoastUiArt.CutePill(content, "Cancel", new Color(1f, 1f, 1f, 0.92f), 22, 2);
+            var crt = cancel.rectTransform; crt.anchorMin = crt.anchorMax = new Vector2(1f, 1f); crt.pivot = new Vector2(1f, 1f);
+            crt.anchoredPosition = new Vector2(-8f, -8f); crt.sizeDelta = new Vector2(48f, 48f); cancel.raycastTarget = true;
+            var ct = CoastHudLayout.MakeText(crt, "T", "✕", 22, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(0f, 2f), Vector2.zero);
             ct.color = new Color(0.35f, 0.32f, 0.45f);
             var cb = cancel.gameObject.AddComponent<Button>(); cb.transition = Selectable.Transition.None;
             bool cancelled = false;
@@ -932,6 +988,25 @@ namespace CoastRun
                 yield break;
             }
             yield return ActionRoutine(idx, chosen);
+        }
+
+        private static string PickEmoji(ScheduleDef def)
+        {
+            if (def == null) return "✦";
+            switch (def.id)
+            {
+                case "rest_home": return "🍚";
+                case "rest_nap": return "🌙";
+                case "rest_sea": return "🌊";
+                case "dev_oreum": return "⛰";
+                case "dev_skate": return "🛹";
+                case "dev_dance": return "💃";
+                case "dev_radio": return "📻";
+                default:
+                    if (def.category == ScheduleCategory.Job) return "💼";
+                    if (def.category == ScheduleCategory.Lesson) return "📚";
+                    return "✦";
+            }
         }
 
         private IEnumerator EventChoiceRoutine(RandomEventDef ev)
@@ -952,7 +1027,7 @@ namespace CoastRun
 
             // 108차(사용자): 글자만 있던 선택 화면에 그림 — UI_Ev_<id>(16:9 수채) 를 태그 아래에. 없으면 옛 배치 그대로.
             var evTex = ArtAssets.LoadTexture("UI_Ev_" + ev.id);
-            float shift = evTex != null ? 340f : 0f;   // 그림 틀 296(−66~−362) 아래로 제목(−36 기준)이 오게
+            float shift = evTex != null ? 340f : 30f;   // 그림 틀 296(−66~−362) 아래로 제목(−36 기준)이 오게 · 109차: 그림 없어도 제목이 태그와 안 겹치게 30
             var panel = CoastUiArt.CutePill(_eventOverlay.transform, "Panel", new Color(1f, 0.98f, 0.95f), 28, 4);
             var prt = panel.rectTransform; prt.anchorMin = prt.anchorMax = new Vector2(0.5f, 0.5f); prt.pivot = new Vector2(0.5f, 0.5f);
             prt.anchoredPosition = Vector2.zero; prt.sizeDelta = new Vector2(560f, 620f + shift); panel.raycastTarget = true;
@@ -965,6 +1040,7 @@ namespace CoastRun
                 fr.anchoredPosition = new Vector2(0f, -66f); fr.sizeDelta = new Vector2(-48f, 296f);
                 var art = CoastHudLayout.MakeImage(fr, "Art", Vector2.zero, Vector2.one, new Vector2(4f, 4f), new Vector2(-4f, -4f), Color.white);
                 art.sprite = CoastUiArt.AsSprite(evTex); art.preserveAspect = true; art.raycastTarget = false;
+                EventCardKit.Animate(art);   // 109차: 그림이 천천히 움직인다(켄번즈)
             }
             var title = CoastHudLayout.MakeText(prt, "Title", Loc.Data("ev." + ev.id, ev.title), 28, TextAnchor.UpperCenter,
                 Vector2.zero, Vector2.one, new Vector2(24f, -78f - shift), new Vector2(-24f, -36f - shift));
@@ -984,6 +1060,8 @@ namespace CoastRun
             string labelA = ev.ChoiceALabel;
             if (ev.HasStatCheck) labelA += passA ? $"\n✓ {RaisingFun.StatName(ev.condStat)} {ev.condMin}" : Loc.T($"\n{RaisingFun.StatName(ev.condStat)} {ev.CheckShort(Save.stats)} 더", $"\nneed {RaisingFun.StatName(ev.condStat)} +{ev.CheckShort(Save.stats)}");
             var btnA = EventCardKit.SoftChoiceButton(prt, "A", "Icon_Him", labelA, true, new Vector2(-132f, 28f), new Vector2(236f, 64f), () => { if (passA) choice = 0; else CoastToast.Show(Loc.T($"{RaisingFun.StatName(ev.condStat)}이 {ev.CheckShort(Save.stats)} 모자라.", $"Need {ev.CheckShort(Save.stats)} more {RaisingFun.StatName(ev.condStat)}.")); });
+            // 109차(사용자): 꼬마가 옆에서 거든다 — 통과면 「누나, 나는 A!」, 모자라면 「B가 낫겠다」
+            EventCardKit.Kid(prt, passA ? Loc.T("누나, 나는 A!", "I'd pick A!") : Loc.T("누나, 이번엔 B가 낫겠다", "B this time, maybe"));
             if (!passA && btnA != null) { var ai = btnA.GetComponent<Image>(); if (ai != null) ai.color = new Color(0.62f, 0.60f, 0.66f); }
             EventCardKit.SoftChoiceButton(prt, "B", "Icon_Eye", ev.ChoiceBLabel, false, new Vector2(132f, 28f), new Vector2(236f, 64f), () => { choice = 1; });
 
@@ -1150,10 +1228,13 @@ namespace CoastRun
 
         private IEnumerator EndWeek()
         {
+            // 111차: 이번 주말에 놀이(축제·격주 미니게임)를 띄웠으면, 주가 넘어간 뒤에도 돌발을 이어서 안 띄운다.
+            bool playThisWeekend = false;
             // 105차(재미요소 P1-3): 계절 축제 주(6·14·21·42) — 안내 카드 → 미니게임 → 스탯 보너스로 등수 → 결과 카드. 이 주의 격주 미니게임은 대신한다.
             var fest = Festival.AtWeek(Save.week);
             if (fest != null && Festival.Place(Save, fest.index) == 0)
             {
+                playThisWeekend = true;
                 bool wasAutoF = _auto; _auto = false; RefreshAuto();
                 bool go = false;
                 FestivalUI.ShowIntro(fest, Save, () => go = true);
@@ -1174,6 +1255,7 @@ namespace CoastRun
             // 52차: 격주 주말 미니게임. 55차-2(사용자): **져도 다음으로 넘어간다** — 이기면 돈 보상(ChapterMissionUI 안에서 지급).
             if (StoryProgress.WeeklyMinigame(Save.week, out var miniKind) && Save.weekMiniDone < Save.week)
             {
+                playThisWeekend = true;
                 var md = ChapterMission.Get(miniKind);
                 bool wasAuto = _auto; _auto = false; RefreshAuto();
                 ShowBubble(Loc.T($"주말 미니게임 — {md.nameKo}! 이기면 {ChapterMission.Reward(_gm)}G.", $"Weekend mini-game — {md.nameEn}! Win for {ChapterMission.Reward(_gm)}G."), 2.5f);
@@ -1252,6 +1334,8 @@ namespace CoastRun
                 yield return new WaitForSecondsRealtime(_auto ? 0.5f : 1.5f);
             }
             if (forced) { ShowBubble(BoundaryHint(), 4f); yield break; }   // 67차-8: 바로 띄우지 않고 「다음 턴」을 기다린다(동그라미 3개 찬 상태)
+            // 111차: 놀이(축제·격주 미니게임)를 방금 띄웠으면 돌발은 다음 기회에 — 동시에 안 올라오게.
+            if (playThisWeekend) yield break;
             var ev = _gm.PeekRandomEvent();
             if (ev != null) yield return EventChoiceRoutine(ev);
         }

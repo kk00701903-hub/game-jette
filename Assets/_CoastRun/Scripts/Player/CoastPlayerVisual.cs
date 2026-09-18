@@ -46,6 +46,13 @@ namespace CoastRun
         private float _leanVel;
         private float _boardLeanZ;
         private float _boardLeanVel;
+        private Vector3 _boardBasePos;   // 보드가 땅에 있을 때의 기준 위치(발밑)
+        private bool _paintedBoard;     // PNG 데칼 보드
+        private Transform _footL, _footR;
+        private float _boardRestLocalY; // 착지 시 보드 로컬 Y — 점프해도 이 근처에서 살짝만 뜬다
+        private bool _boardRestReady;
+        /// 110차 검증용(프로브).
+        public static int BoardBumps;
 
         private void Awake()
         {
@@ -70,6 +77,8 @@ namespace CoastRun
         {
             ClearVisualChildren();
             _phase = Random.value * Mathf.PI * 2f;
+            _paintedBoard = false; _footL = null; _footR = null;
+            _boardRestReady = false; _boardRestLocalY = 0f;
 
             // Mixamo-animated skater (Resources/CoastRun/Rig) beats every other visual:
             // real ride / push / jump / hit / grab motion instead of a pose sheet.
@@ -86,12 +95,15 @@ namespace CoastRun
                 if (rig != null)
                 {
                     // Feet on the deck; the rig's origin is between the heels.
+                    bool painted = ArtAssets.LoadTexture("Prop_Skateboard") != null;
+                    bool meshBoard = !painted && JejuKit.Load("Prop_Skateboard") != null;
                     rig.transform.localPosition = running
                         ? new Vector3(0f, 0.02f, 0.06f)
-                        : new Vector3(0f, JejuKit.Load("Prop_Skateboard") != null ? 0.15f : 0.19f, 0.06f);
+                        : new Vector3(0f, painted ? PaintedBoardFootY() : meshBoard ? 0.15f : 0.19f, 0.06f);
                     _rootVisual = _visualRoot;
                     ApplyCharacterOutlines(rig.transform);
                     CacheBasePose();
+                    CacheFeet(rig);
                     return;
                 }
             }
@@ -200,6 +212,7 @@ namespace CoastRun
             _hair = FindDeep(root, "Hair");
             _backpack = FindDeep(root, "Backpack");
             _board = FindDeep(root, "Deck") ?? FindDeep(root, "Skateboard");
+            if (_board != null) _boardBasePos = _board.localPosition;
         }
 
         private static Transform FindDeep(Transform root, string name)
@@ -270,15 +283,23 @@ namespace CoastRun
         {
             _board = new GameObject("Skateboard").transform;
             _board.SetParent(_visualRoot != null ? _visualRoot : transform, false);
-            _board.localPosition = new Vector3(0f, 0.10f, 0.08f);
-            _board.localRotation = Quaternion.Euler(4f, 0f, 0f);
+            // 111차-2: 발바닥(y≈0) 바로 아래. 그림 보드는 평평하게 깔고, 3D/프리미티브는 예전 높이.
+            _board.localPosition = new Vector3(0f, 0f, BoardLocalZ);
+            _board.localRotation = Quaternion.Euler(0f, 0f, 0f);
+            _boardBasePos = _board.localPosition;
 
+            // 111차(사용자): 무지개 보드 그림(Prop_Skateboard.png). 있으면 3D 메시보다 이걸 쓴다.
+            if (TryBuildPaintedBoard())
+                return;
+
+            _board.localRotation = Quaternion.Euler(4f, 0f, 0f);
             // Blender popsicle deck (Tools/blender/jeju_kit.py → Prop_Skateboard): rounded
             // nose and tail, kicks, trucks, wheels — reads as a real board from the high
             // camera. The primitive board below only remains as a fallback.
             if (JejuKit.Load("Prop_Skateboard") != null)
             {
                 _board.localPosition = new Vector3(0f, 0.0f, 0.08f);
+                _boardBasePos = _board.localPosition;
                 var mesh = JejuKit.Spawn("Prop_Skateboard", _board, Vector3.zero, 0f, 1.0f);
                 if (mesh != null)
                 {
@@ -318,6 +339,60 @@ namespace CoastRun
                     wheel.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
                 }
             }
+        }
+
+        /// 113차(사용자: 「바퀴가 땅에서 굴러가게 · 인물과 보드가 붙어있게」)
+        ///   그림 보드는 **세워서** 카메라를 보게 둔다. 예전엔 바닥에 눕혀 놔서 이미 원근이 들어간
+        ///   그림에 원근이 한 번 더 먹었고(바퀴가 길바닥에 뭉개짐), 발과도 떨어져 보였다.
+        ///   텍스처(Prop_Skateboard.png)는 뒤에서 낮게 본 보드 —
+        ///     · 이미지 아래 BoardContactFrac 만큼이 여백, 그 위가 바퀴 접지선
+        ///     · BoardFootFrac 높이가 데크 윗면 = 주인공 발이 놓이는 선
+        private const float BoardWorldWidth = 0.42f;
+        private const float BoardContactFrac = 0.013f;
+        private const float BoardFootFrac = 0.693f;
+        private const float BoardLocalZ = 0.06f;   // 리그 z 와 같은 값 — 주인공 발밑
+
+        /// 보드를 쓸 때 주인공(리그)이 서야 하는 로컬 Y — 데크 윗면.
+        public static float PaintedBoardFootY()
+        {
+            var tex = ArtAssets.LoadTexture("Prop_Skateboard");
+            if (tex == null) return 0.06f;
+            float aspect = tex.width / (float)Mathf.Max(1, tex.height);
+            float hq = BoardWorldWidth / Mathf.Max(0.01f, aspect);
+            return (BoardFootFrac - BoardContactFrac) * hq;
+        }
+
+        /// 111차-2: 보드 그림을 **바닥에 평평하게** 깐다(예전엔 세워 둬서 발과 떨어져 보였다).
+        ///   바퀴가 발 뒤쪽, 코가 앞 — 발바닥이 데크 위에 올라탄다.
+        private bool TryBuildPaintedBoard()
+        {
+            var tex = ArtAssets.LoadTexture("Prop_Skateboard");
+            if (tex == null) return false;
+            _paintedBoard = true;
+
+            float aspect = tex.width / (float)Mathf.Max(1, tex.height);
+            float hq = BoardWorldWidth / Mathf.Max(0.01f, aspect);
+            var quad = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            quad.name = "PaintedBoard";
+            quad.transform.SetParent(_board, false);
+            CoastEditUtil.DestroyCollider(quad);
+            // 113차: 눕히지 않고 **세워서** 카메라(뒤)를 보게 한다. 텍스처 아래 끝이 바퀴 접지선이므로
+            //        그만큼만 위로 올리면 바퀴가 도로에 정확히 닿는다.
+            quad.transform.localScale = new Vector3(BoardWorldWidth, hq, 1f);
+            quad.transform.localRotation = Quaternion.Euler(0f, 180f, 0f);
+            quad.transform.localPosition = new Vector3(0f, hq * 0.5f - BoardContactFrac * hq, 0f);
+
+            var shader = CoastMaterials.Require("CoastRun/ChromaUnlit", "CoastRun/UnlitCurved", "Universal Render Pipeline/Unlit", "Sprites/Default");
+            var mat = CoastMaterials.NewMat(shader);
+            if (mat.HasProperty("_BaseMap")) mat.SetTexture("_BaseMap", tex); else mat.mainTexture = tex;
+            if (mat.HasProperty("_BaseColor")) mat.SetColor("_BaseColor", Color.white);
+            if (mat.HasProperty("_KeyColor")) mat.SetColor("_KeyColor", new Color(1f, 0f, 1f, 1f));
+            if (mat.HasProperty("_Shade")) mat.SetFloat("_Shade", 0f);   // 바닥에 깐 데칼 — 세로 명암 끄기
+            var mr = quad.GetComponent<Renderer>();
+            mr.sharedMaterial = mat;
+            mr.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            mr.receiveShadows = false;
+            return true;
         }
 
         /// The player transform rides at mid-body height (0.8 m) so the capsule can hit
@@ -393,9 +468,87 @@ namespace CoastRun
 
             if (_board != null)
             {
-                float bob = Mathf.Sin(t * 1.4f) * (1.5f + speed * 2f);
-                _board.localRotation = Quaternion.Euler(4f + bob, 0f, sway * 0.08f + _boardLeanZ);
+                // 111차-3: 위치·기울기는 LateUpdate UpdateBoardMotion 에서 처리(점프는 살짝만).
+                PickupReach.BoardActive = true;
             }
+            else { PickupReach.BoardActive = false; PickupReach.BoardDrop = 0f; }
+        }
+
+        private void CacheFeet(SkaterRig rig)
+        {
+            if (rig == null) return;
+            var anim = rig.GetComponent<Animator>();
+            if (anim == null || anim.avatar == null || !anim.avatar.isHuman) return;
+            _footL = anim.GetBoneTransform(HumanBodyBones.LeftFoot);
+            _footR = anim.GetBoneTransform(HumanBodyBones.RightFoot);
+        }
+
+        /// 111차-3(사용자: 「점프할 때 같이 뛰지 말고 살짝만」):
+        ///   보드는 땅에 가깝게 두고, 점프 높이의 일부(최대 9cm)만 따라 뜬다.
+        ///   달릴 때는 미세한 상하·좌우 흔들림만. XZ 는 발 아래에 유지해 착지 때 다시 발에 붙는다.
+        /// 112차: 페인트 보드는 Y를 발뼈가 아니라 도로 덱 높이(0.02)에 고정 — 공중 부유 방지.
+        private const float PaintedDeckY = 0f;   // 113차: 보드 루트는 도로면. 접지 보정은 quad 쪽에서.
+        private void UpdateBoardMotion()
+        {
+            if (_board == null || _visualRoot == null) return;
+
+            float clear = _player != null ? _player.GroundClearance : 0f;
+            float speed = _player != null ? _player.NormalizedSpeed : 0.5f;
+            float sc = Mathf.Max(0.01f, _visualRoot.lossyScale.y);
+            float t = Time.time;
+
+            // 발 중심 XZ (없으면 보드 기준 위치)
+            float x = _boardBasePos.x, z = _boardBasePos.z;
+            float footY = _boardRestReady ? _boardRestLocalY : _boardBasePos.y;
+            if (_footL == null || _footR == null)
+            {
+                var rig = _visualRoot.GetComponentInChildren<SkaterRig>();
+                CacheFeet(rig);
+            }
+            // 113차: XZ 는 발 사이(리그가 좌우로 움직여도 보드가 따라붙는다), Y 는 도로면 고정.
+            if (_footL != null && _footR != null)
+            {
+                Vector3 mid = (_footL.position + _footR.position) * 0.5f;
+                Vector3 local = _visualRoot.InverseTransformPoint(mid);
+                x = local.x;
+                z = _paintedBoard ? Mathf.Lerp(BoardLocalZ, local.z, 0.5f) : local.z;
+                footY = _paintedBoard ? PaintedDeckY : local.y - 0.028f;
+            }
+            else if (_paintedBoard)
+                footY = PaintedDeckY;
+
+            // 땅에 있을 때만 휴식 높이를 갱신(점프 중 발이 올라간 값을 기억하지 않음)
+            if (clear < 0.06f)
+            {
+                _boardRestLocalY = _paintedBoard ? PaintedDeckY : footY;
+                _boardRestReady = true;
+                _boardBasePos = new Vector3(x, _boardRestLocalY, z);
+            }
+            else if (!_boardRestReady)
+            {
+                _boardRestLocalY = _paintedBoard ? PaintedDeckY : _boardBasePos.y;
+                _boardRestReady = true;
+            }
+
+            // 점프: 캐릭터 clear 의 18%만, 최대 9cm — 같이 높이 뛰지 않음
+            float boardHop = Mathf.Min(clear * 0.18f, 0.09f);
+            // 이동 중 살짝 출렁
+            float moveBob = _paintedBoard ? 0f : Mathf.Sin(t * 9f) * (0.006f + speed * 0.012f);
+            float y = _boardRestLocalY - (clear - boardHop) / sc + moveBob;
+
+            _board.localPosition = new Vector3(x, y, z);
+
+            float tip = boardHop * 55f + Mathf.Sin(t * 1.4f) * (1.2f + speed * 1.5f);   // 점프 때 코만 살짝
+            float sway = Mathf.Sin(t * 6.5f) * (0.6f + speed * 1.1f);
+            if (_paintedBoard)
+                // 113차: 세운 보드는 pitch(코 들기)를 주면 바퀴가 도로에서 떨어진다 → 좌우 기울기만.
+                _board.localRotation = Quaternion.Euler(0f, 0f, _boardLeanZ * 0.6f + sway * 0.5f);
+            else
+                _board.localRotation = Quaternion.Euler(4f + tip * 0.25f, 0f, sway * 0.08f + _boardLeanZ);
+
+            // 캐릭터가 보드보다 위로 뜬 만큼 — 바닥 코인 줍기에 사용
+            PickupReach.BoardActive = true;
+            PickupReach.BoardDrop = Mathf.Max(0f, clear - boardHop);
         }
 
         private void UpdateLaneLean()
@@ -417,6 +570,7 @@ namespace CoastRun
 
             UpdatePose();
             ApplyCrouchBillboard();
+            UpdateBoardMotion();
 
             if (_billboard == null)
                 return;
@@ -541,7 +695,7 @@ namespace CoastRun
                     _body.localPosition = _bodyBasePos + new Vector3(0f, 0.08f, 0f);
                     _body.localRotation = Quaternion.Euler(-8f, 0f, 0f);
                     if (_board != null)
-                        _board.localRotation = Quaternion.Euler(-6f, 0f, 0f);
+                        _board.localRotation = Quaternion.Euler(8f, 0f, 0f);   // 111차: 보드도 같이 점프 — 살짝 코만 들어 올린다
                     break;
                 case SkateState.SoftHit:
                 {

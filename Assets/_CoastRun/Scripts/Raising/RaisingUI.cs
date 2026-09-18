@@ -1505,6 +1505,7 @@ namespace CoastRun
                     yield break;
                 }
                 Save.weekMiniDone = Save.week; _gm.Persist();
+                _gm.SuppressRandomEventOnce = true;   // 111차: 놀이 직후 돌발과 겹치지 않게
             }
 
             var endSnap = TakeSnap();

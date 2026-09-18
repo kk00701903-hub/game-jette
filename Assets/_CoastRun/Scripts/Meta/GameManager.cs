@@ -27,6 +27,8 @@ namespace CoastRun
         /// 엔딩 씬이 읽는 분기. Resolve 시점에 채워진다.
         public EndingKind PendingEnding { get; private set; } = EndingKind.None;
         public bool OpenTimelineOnRaising { get; set; }
+        /// 111차: 마을러닝(대회)·놀이 직후 육성으로 돌아올 때 돌발 이벤트를 한 번 건너뛴다.
+        public bool SuppressRandomEventOnce { get; set; }
         /// 10차: 챕터 선택에서 '다시 달리기' — 재도전 육성 화면이 뜨자마자 런으로 넘어간다.
         public bool RetryRunPending { get; set; }
         public bool FlowBusy => Flow != null && Flow.IsBusy;
@@ -103,6 +105,7 @@ namespace CoastRun
                 Save.inheritedShown = false;
             }
             if (DevUnlockAll) PetShop.UnlockAllPets(Save);
+            AdoptWallet(true);   // 109차: 코인 = 돈
             Profile.playthroughsStarted++;
             SaveSys.WriteProfile(Profile);
             WriteMain();
@@ -115,6 +118,7 @@ namespace CoastRun
             _mainSave = null;
             Save = SaveSys.Load();
             if (Save == null) { NewGame(RunMode.Running); return; }
+            AdoptWallet(false);   // 109차: 코인 = 돈
             EnterRaising();
         }
 
@@ -122,6 +126,7 @@ namespace CoastRun
 
         public void EnterRaising()
         {
+            SyncWallet();   // 109차: 러닝(대회·K-POP)에서 모은 코인을 스토리 돈으로
             ArcadeRun.ClearSession();   // K-POP/아케이드 플래그가 남아 스토리 대회가 오염되지 않게
             if (Save != null)
             {
@@ -137,12 +142,30 @@ namespace CoastRun
         }
 
         /// 육성 화면 돌발 이벤트 — 스탯은 적용하지 않음. UI에서 선택 후 CommitRandomEvent.
+        /// 111차(사용자): 놀이(격주 미니게임·축제)나 마을러닝(대회)이 우선 — 같은 타이밍에 돌발은 안 띄운다.
         public RandomEventDef PeekRandomEvent()
         {
             if (Save == null) return null;
+            if (SuppressRandomEventOnce) { SuppressRandomEventOnce = false; return null; }
+            if (BlocksRandomEvent(Save)) return null;
             if (SaveSys.NextDouble() >= RandomEventTable.Chance) return null;
             // 74차: 스트레스가 쌓였을 때만 뜨는 사건(새벽 세 시·아무 버스나)을 위해 현재 스트레스를 넘긴다.
             return RandomEventTable.Pick(Timeline.SeasonOf(Save.week), SaveSys.NextDouble(), Save.stats.stress);
+        }
+
+        /// 놀이·마을러닝이 이번 주에 있으면 돌발 이벤트를 막는다.
+        public static bool BlocksRandomEvent(SaveData s)
+        {
+            if (s == null) return true;
+            // 이야기·대회 직전(다음 턴에 경계 루틴)
+            if (s.boundaryPending) return true;
+            // 격주 놀이(주말 미니게임) 주
+            if (StoryProgress.WeeklyMinigame(s.week, out _)) return true;
+            // 계절 축제 주(놀이로 대체)
+            if (Festival.AtWeek(s.week) != null) return true;
+            // 마을러닝(대회)이 있는 챕터의 마지막 주 — 대회가 우선
+            if (StoryProgress.IsRunChapter(s.chapter) && s.week >= Timeline.WeekEnd(s.chapter)) return true;
+            return false;
         }
 
         public RandomEventResult CommitRandomEvent(RandomEventDef ev, int choice)
@@ -299,6 +322,7 @@ namespace CoastRun
             Save.boundaryPending = false;
             WriteMain();
             OnSaveChanged?.Invoke(Save);
+            SuppressRandomEventOnce = true;   // 111차: 마을러닝 직후 돌발과 겹치지 않게
             EnterRaising();
         }
 
@@ -415,6 +439,7 @@ namespace CoastRun
                 _mainSave = null;
                 WriteMain();
                 OpenTimelineOnRaising = true;
+                SuppressRandomEventOnce = true;
                 EnterRaising();
                 return;
             }
@@ -441,6 +466,7 @@ namespace CoastRun
             }
             WriteMain();
             OnSaveChanged?.Invoke(Save);
+            SuppressRandomEventOnce = true;   // 111차: 마을러닝(대회) 클리어 뒤 돌발과 겹치지 않게
             EnterRaising();
         }
 
@@ -479,7 +505,7 @@ namespace CoastRun
 
         // ── 엔딩 / 타임라인 ────────────────────────────────────────────────
 
-        private bool _epilogueShown;
+        private bool _epilogueShown, _creditsShown;
         public void ResolveEnding()
         {
             if (Save == null) return;
@@ -530,6 +556,13 @@ namespace CoastRun
         /// 엔딩 끝. 비극이면 타임라인으로, 해피면 타이틀로.
         public void OnEndingFinished()
         {
+            // 109차(사용자): 엔딩 시네마 끝 → **엔딩 크레딧**(지금까지 모은 컬렉션 사진 한 장씩) → 에필로그 카드 → 원래 흐름
+            if (Save != null && !_creditsShown)
+            {
+                _creditsShown = true;
+                EndingCreditsUI.Show(Profile, OnEndingFinished);
+                return;
+            }
             // 105차(재미요소 P2-2): 엔딩 시네마 뒤 「스무 살, 하늘」 에필로그 카드 한 장 → 그 다음 원래 흐름
             if (Save != null && !_epilogueShown)
             {
@@ -537,7 +570,7 @@ namespace CoastRun
                 EpilogueUI.Show(Save, OnEndingFinished);
                 return;
             }
-            _epilogueShown = false;
+            _epilogueShown = false; _creditsShown = false;
             if (Save != null && PendingEnding == EndingKind.Tragic)
             {
                 OpenTimelineOnRaising = true;
@@ -625,8 +658,30 @@ namespace CoastRun
 
         public void Persist()
         {
+            SyncWallet();
             WriteMain();
             OnSaveChanged?.Invoke(Save);
+        }
+
+        // ── 109차(사용자): 코인·돈 일원화 — 스토리 모드의 돈(stats.money)은 K-POP 러닝 코인 지갑(CoinWallet) 하나다. ──
+        //   스토리에서 번/쓴 만큼을 지갑에 흘리고, 러닝에서 모은 코인은 다음 동기화 때 스토리 돈으로 들어온다. 재도전 샌드박스는 건드리지 않는다.
+        private int _walletSynced = int.MinValue;
+        public const int StartCoins = 300;
+        public void SyncWallet()
+        {
+            if (Save == null || IsRetry) return;
+            int wallet = CoinWallet.TotalStatic;
+            if (_walletSynced == int.MinValue) { Save.stats.money = wallet; _walletSynced = wallet; return; }
+            int delta = Save.stats.money - _walletSynced;
+            if (delta != 0) CoinWallet.AddStatic(delta);
+            Save.stats.money = CoinWallet.TotalStatic; _walletSynced = Save.stats.money;
+        }
+        /// 새 회차/이어하기 직후 — 지갑을 그대로 스토리 돈으로. 첫 회차 시작 자금은 지갑이 StartCoins 보다 적을 때만 채워 준다.
+        private void AdoptWallet(bool newGame)
+        {
+            _walletSynced = int.MinValue;
+            if (newGame && CoinWallet.TotalStatic < StartCoins) CoinWallet.AddStatic(StartCoins - CoinWallet.TotalStatic);
+            SyncWallet();
         }
 
         /// 재도전 샌드박스는 파일에 쓰지 않는다 — 본 진행(_mainSave)만 저장. 챕터 배열은 공유되므로

@@ -83,6 +83,7 @@ namespace CoastRun
             if (d == null || s == null) { onGo?.Invoke(); return; }
             var crt = EventCardKit.Card("FestivalIntroCanvas", 466, new Vector2(640f, 760f), out _canvas, 20f);
             Banner(crt, d, 24f, 150f);
+            EventCardKit.Kid(crt, Loc.T("누나, 나가 보자!", "Let's enter!"), true);   // 109차: 꼬마 동행
             var kicker = CoastHudLayout.MakeText(crt, "K", Loc.T($"{Timeline.SeasonName(Timeline.SeasonOf(d.week))} 축제 · {d.week}주차", $"{Timeline.SeasonName(Timeline.SeasonOf(d.week))} festival · week {d.week}"), 18, TextAnchor.MiddleCenter, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -212f), new Vector2(0f, -180f));
             kicker.color = new Color(0.90f, 0.32f, 0.45f); kicker.fontStyle = FontStyle.Bold;
             EventCardKit.JellyTitle(crt, d.Name, new Color(0.98f, 0.60f, 0.20f), new Color(0.50f, 0.22f, 0.05f), 214f, 84f, 40);
@@ -102,8 +103,10 @@ namespace CoastRun
         {
             Close();
             if (d == null) { onDone?.Invoke(); return; }
+            CoastPrefs.VibrateEvent();   // 109차: 축제 결과 — 특정 이벤트 진동
             var crt = EventCardKit.Card("FestivalResultCanvas", 466, new Vector2(640f, 560f), out _canvas, 20f);
             Banner(crt, d, 24f, 130f);
+            EventCardKit.Kid(crt, place <= 3 ? Loc.T("누나 대단해!", "You did it!") : Loc.T("다음엔 더 잘할 거야", "Next time!"), true);   // 109차: 꼬마 동행
             Color fill = place == 1 ? new Color(1f, 0.80f, 0.20f) : place == 2 ? new Color(0.80f, 0.82f, 0.90f) : place == 3 ? new Color(0.85f, 0.60f, 0.40f) : new Color(0.60f, 0.72f, 0.95f);
             EventCardKit.JellyTitle(crt, place <= 3 ? Loc.T($"{Festival.PlaceName(place)}!", $"{Festival.PlaceName(place)}!") : Loc.T("참가상", "Participation"), fill, new Color(0.35f, 0.20f, 0.05f), 176f, 100f, 60);
             EventCardKit.IconRow(crt, "Icon_Coin", new Color(1f, 0.85f, 0.45f), Loc.T($"+{Festival.Money(place)}G" + (Festival.Hearts(place) > 0 ? $" · ♥+{Festival.Hearts(place)}" : ""), $"+{Festival.Money(place)}G" + (Festival.Hearts(place) > 0 ? $" · ♥+{Festival.Hearts(place)}" : "")), 296f, 60f, 24);
@@ -119,7 +122,7 @@ namespace CoastRun
             var im = CoastHudLayout.MakeImage(crt, "Art", new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(24f, -yTop - h), new Vector2(-24f, -yTop),
                 tex != null ? Color.white : (d.index == 0 ? new Color(0.98f, 0.85f, 0.30f) : d.index == 1 ? new Color(0.30f, 0.65f, 0.90f) : d.index == 2 ? new Color(0.98f, 0.60f, 0.20f) : new Color(0.55f, 0.60f, 0.85f)));
             im.raycastTarget = false;
-            if (tex != null) { im.sprite = CoastUiArt.AsSprite(tex); im.preserveAspect = true; }
+            if (tex != null) { im.sprite = CoastUiArt.AsSprite(tex); im.preserveAspect = true; EventCardKit.Animate(im); }   // 109차: 그림이 천천히 움직인다
             else
             {
                 var t = CoastHudLayout.MakeText(im.rectTransform, "T", d.Name, 30, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, Vector2.zero, Vector2.zero);

@@ -77,7 +77,7 @@ namespace CoastRun
 
             string walletTxt = _tab == 0
                 ? Loc.T($"★ {LevelSystem.FormatK(save.stats.money)}G  ·  Lv {Mathf.Max(1, save.level)} ★", $"★ {LevelSystem.FormatK(save.stats.money)}G  ·  Lv {Mathf.Max(1, save.level)} ★")
-                : Loc.T($"★ 포인트 {CoinWallet.TotalStatic:N0}  ·  Lv {Mathf.Max(1, save.level)} ★", $"★ Points {CoinWallet.TotalStatic:N0}  ·  Lv {Mathf.Max(1, save.level)} ★");
+                : Loc.T($"★ 코인 {CoinWallet.TotalStatic:N0}  ·  Lv {Mathf.Max(1, save.level)} ★", $"★ Coins {CoinWallet.TotalStatic:N0}  ·  Lv {Mathf.Max(1, save.level)} ★");   // 109차: 코인 = 돈
             var wpill = CoastUiArt.GlossyPill(crt, "WalletPill", new Color(0.52f, 0.40f, 0.82f), 22, 6); wpill.raycastTarget = false;
             var wrt = wpill.rectTransform; wrt.anchorMin = wrt.anchorMax = new Vector2(0.5f, 1f); wrt.pivot = new Vector2(0.5f, 1f);
             wrt.anchoredPosition = new Vector2(0f, -HeaderShift - 158f); wrt.sizeDelta = new Vector2(300f, 46f);

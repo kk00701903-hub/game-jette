@@ -61,7 +61,7 @@ namespace CoastRun
             var tex = ArtAssets.LoadTexture($"UI_Daily_{npc}_{level}");
             var im = CoastHudLayout.MakeImage(crt, "Art", new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(24f, -24f - 300f), new Vector2(-24f, -24f), tex != null ? Color.white : DailyScenes.NpcColor(npc));
             im.raycastTarget = false;
-            if (tex != null) { im.sprite = CoastUiArt.AsSprite(tex); im.preserveAspect = true; }
+            if (tex != null) { im.sprite = CoastUiArt.AsSprite(tex); im.preserveAspect = true; EventCardKit.Animate(im); }   // 109차: 그림이 천천히 움직인다
             string hearts = ""; for (int i = 0; i < level; i++) hearts += "♥";
             EventCardKit.JellyTitle(crt, Affinity.Name(npc), DailyScenes.NpcColor(npc), new Color(0.20f, 0.12f, 0.30f), 340f, 76f, 34);
             EventCardKit.IconRow(crt, "Icon_Star", new Color(1f, 0.75f, 0.80f), Loc.T($"하트 {hearts}", $"Hearts {hearts}"), 424f, 48f, 20);

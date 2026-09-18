@@ -86,7 +86,9 @@ namespace CoastRun
             var owned = LifeItems.ListOwned(save, _filter);
             if (_cookMode) owned = LifeItems.ListOwned(save, LifeItemCat.Ingredient);
             float y = 0f; const float rowH = 108f;
-            if (owned.Count == 0)
+            // 109차(사용자: K-POP 러닝 아이템은 스토리 모드로 이관): 러닝에서 먹은 젤리를 가방 맨 위에 — 하나 먹으면 스트레스 −3 · 체력 +1
+            if (!_cookMode && _filter == null) { JellyRow(content, -y); y += rowH + 8f; }
+            if (owned.Count == 0 && y == 0f)
             {
                 var empty = CoastHudLayout.MakeText(content, "Empty",
                     _cookMode ? Loc.T("재료가 없어. 상점에서 쌀·채소·고기를 사 와.", "No ingredients. Buy rice/veg/meat at the shop.")
@@ -108,6 +110,47 @@ namespace CoastRun
             var ct = CoastHudLayout.MakeText(cl, "T", Loc.T("닫기", "Close"), 22, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(0f, 3f), Vector2.zero);
             ct.color = Color.white; ct.fontStyle = FontStyle.Bold;
             close.gameObject.AddComponent<Button>().onClick.AddListener(Close);
+        }
+
+        /// 109차: 러닝 젤리 줄(JellyWallet) — 러닝 픽업이 스토리 가방으로 이어진다.
+        private static void JellyRow(RectTransform content, float y)
+        {
+            int n = JellyWallet.Total;
+            var row = CoastUiArt.Panel(content, "R_jelly", Color.white, 16); row.raycastTarget = false;
+            var rt = row.rectTransform; rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 1f); rt.pivot = new Vector2(0.5f, 1f);
+            rt.anchoredPosition = new Vector2(0f, y); rt.sizeDelta = new Vector2(600f, 108f);
+            var fin = CoastUiArt.Panel(row.transform, "F", new Color(0.86f, 0.96f, 0.98f), 14); fin.raycastTarget = false;
+            fin.rectTransform.anchorMin = Vector2.zero; fin.rectTransform.anchorMax = Vector2.one;
+            fin.rectTransform.offsetMin = new Vector2(3f, 3f); fin.rectTransform.offsetMax = new Vector2(-3f, -3f);
+            var frame = CoastUiArt.Panel(row.transform, "Art", Color.white, 12); frame.raycastTarget = false;
+            var frt = frame.rectTransform; frt.anchorMin = frt.anchorMax = new Vector2(0f, 0.5f); frt.pivot = new Vector2(0f, 0.5f);
+            frt.anchoredPosition = new Vector2(10f, 0f); frt.sizeDelta = new Vector2(78f, 78f);
+            var tex = ArtAssets.LoadTexture("Obs_Jelly_Strawberry") ?? ArtAssets.LoadTexture("Icon_Heart");
+            if (tex != null)
+            {
+                var im = new GameObject("I", typeof(RectTransform), typeof(Image)).GetComponent<Image>();
+                im.transform.SetParent(frame.transform, false); im.sprite = CoastUiArt.AsSprite(tex); im.preserveAspect = true; im.raycastTarget = false;
+                var irt = im.rectTransform; irt.anchorMin = Vector2.zero; irt.anchorMax = Vector2.one; irt.offsetMin = new Vector2(4f, 4f); irt.offsetMax = new Vector2(-4f, -4f);
+            }
+            var nm = CoastHudLayout.MakeText(row.transform, "N", Loc.T($"러닝 젤리 ×{n}", $"Run jelly ×{n}"), 22, TextAnchor.MiddleLeft, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(100f, -48f), new Vector2(-150f, -8f));
+            nm.color = Navy; nm.fontStyle = FontStyle.Bold;
+            var bl = CoastHudLayout.MakeText(row.transform, "B", Loc.T("K-POP 러닝에서 먹은 젤리. 하나 먹으면 스트레스 −3 · 체력 +1 (펫 상점에서도 씀)", "Jelly from K-POP runs. Eat one: stress −3 · stamina +1 (also spent at the pet shop)"), 13, TextAnchor.UpperLeft, new Vector2(0f, 0f), new Vector2(1f, 1f), new Vector2(100f, 8f), new Vector2(-150f, -50f));
+            bl.color = new Color(0.28f, 0.24f, 0.36f); bl.horizontalOverflow = HorizontalWrapMode.Wrap;
+            bl.resizeTextForBestFit = true; bl.resizeTextMinSize = 10; bl.resizeTextMaxSize = 13;
+            var btn = CoastUiArt.GlossyPill(row.transform, "Act", n > 0 ? new Color(0.35f, 0.70f, 0.55f) : new Color(0.62f, 0.62f, 0.66f), 16, 5);
+            var brt = btn.rectTransform; brt.anchorMin = brt.anchorMax = new Vector2(1f, 0.5f); brt.pivot = new Vector2(1f, 0.5f);
+            brt.anchoredPosition = new Vector2(-12f, 0f); brt.sizeDelta = new Vector2(120f, 48f); btn.raycastTarget = true;
+            var lt = CoastHudLayout.MakeText(brt, "T", Loc.T("먹기", "Eat"), 18, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(0f, 3f), Vector2.zero);
+            lt.color = Color.white; lt.fontStyle = FontStyle.Bold;
+            var b = btn.gameObject.AddComponent<Button>(); b.transition = Selectable.Transition.None;
+            b.onClick.AddListener(() =>
+            {
+                CoastPrefs.Vibrate();
+                if (!JellyWallet.TrySpend(1)) { CoastToast.Show(Loc.T("젤리가 없어 — K-POP 러닝에서 먹어 와.", "No jelly — grab some in a K-POP run.")); return; }
+                var s = _gm.Save; s.stats.stress = Mathf.Max(0, s.stats.stress - 3); s.stats.stamina += 1; s.stats.Clamp();
+                CoastToast.Show(Loc.T("젤리 냠 — 스트레스 −3 · 체력 +1", "Jelly! stress −3 · stamina +1"));
+                CoastAudioManager.PlayAnywhere(CoastSfx.Coin, 0.45f); _gm.Persist(); Build();
+            });
         }
 
         private static void Row(RectTransform content, LifeItemDef def, int n, float y)

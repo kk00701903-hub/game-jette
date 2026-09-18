@@ -62,7 +62,7 @@ namespace CoastRun
             var tex = ArtAssets.LoadTexture("UI_Epi_" + line.key);
             var im = CoastHudLayout.MakeImage(crt, "Art", new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(24f, -24f - 380f), new Vector2(-24f, -24f), tex != null ? Color.white : new Color(0.55f, 0.62f, 0.85f));
             im.raycastTarget = false;
-            if (tex != null) { im.sprite = CoastUiArt.AsSprite(tex); im.preserveAspect = true; }
+            if (tex != null) { im.sprite = CoastUiArt.AsSprite(tex); im.preserveAspect = true; EventCardKit.Animate(im); }   // 109차: 그림이 천천히 움직인다
             EventCardKit.JellyTitle(crt, Loc.T("스무 살, 하늘", "Haneul, Twenty"), new Color(0.45f, 0.35f, 0.95f), new Color(0.20f, 0.12f, 0.45f), 420f, 80f, 40);
             var box = EventCardKit.InfoBox(crt, 510f, 150f);
             var body = CoastHudLayout.MakeText(box, "Body", Loc.T(line.ko, line.en), 20, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(18f, 10f), new Vector2(-18f, -10f));

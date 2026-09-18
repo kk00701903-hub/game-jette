@@ -160,7 +160,7 @@ namespace CoastRun
                 var mp = CoastUiArt.Panel(page, "MoneyPill", new Color(0.49f, 0.42f, 0.89f), 26); Place(mp.rectTransform, 50f, 911f, 678f, 961f);
                 var lip = CoastUiArt.Panel(mp.transform, "Lip", new Color(0.36f, 0.30f, 0.72f), 22); lip.raycastTarget = false;
                 lip.rectTransform.anchorMin = Vector2.zero; lip.rectTransform.anchorMax = new Vector2(1f, 0.3f); lip.rectTransform.offsetMin = new Vector2(3f, 3f); lip.rectTransform.offsetMax = new Vector2(-3f, 0f);
-                string money = Loc.T($"돈 {LevelSystem.FormatK(stt.money)}G   ·   코인 {LevelSystem.FormatK(CoinWallet.TotalStatic)}", $"Money {LevelSystem.FormatK(stt.money)}G   ·   Coins {LevelSystem.FormatK(CoinWallet.TotalStatic)}");
+                string money = Loc.T($"코인 {LevelSystem.FormatK(stt.money)}   ·   젤리 {JellyWallet.Total}", $"Coins {LevelSystem.FormatK(stt.money)}   ·   Jelly {JellyWallet.Total}");   // 109차: 코인·돈 일원화(러닝 코인 = 스토리 돈)
                 var mt = CoastHudLayout.MakeText(mp.transform, "T", money, 22, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(8f, 4f), new Vector2(-8f, 0f));
                 mt.color = new Color(1f, 0.93f, 0.55f); mt.fontStyle = FontStyle.Bold; CoastUiArt.OutlineText(mt, new Color(0.18f, 0.12f, 0.40f, 0.9f), 1.6f);
             }

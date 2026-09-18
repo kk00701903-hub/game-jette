@@ -40,13 +40,21 @@ namespace CoastRun
 #endif
         }
 
-        /// 버튼 탭 진동 — 설정에서 끄면 무시. 에디터/데스크톱은 항상 무시.
-        public static void Vibrate()
+        /// 버튼 탭 진동 — 109차(사용자: 「스토리 모드의 진동을 너무 남발한다」): 버튼 탭은 더 이상 진동하지 않는다(호출부는 그대로 두고 여기서 무시).
+        ///   진동은 `VibrateEvent()` 를 부르는 특정 이벤트에서만 — 단서 획득 · 대회/축제 결과 · 돌발 이벤트 결과 · 회상 번쩍임 · 러닝 부활/충돌.
+        public static void Vibrate() { }
+
+        /// 109차: 특정 이벤트 진동(설정에서 끄면 무시, 에디터/데스크톱은 항상 무시). 0.6초 안에 두 번 울리지 않는다.
+        public static void VibrateEvent()
         {
 #if (UNITY_ANDROID || UNITY_IOS) && !UNITY_EDITOR
-            if (Haptic) Handheld.Vibrate();
+            if (!Haptic) return;
+            if (Time.unscaledTime - _lastEvent < 0.6f) return;
+            _lastEvent = Time.unscaledTime;
+            Handheld.Vibrate();
 #endif
         }
+        private static float _lastEvent = -10f;
     }
 
 #if UNITY_EDITOR

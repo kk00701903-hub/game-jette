@@ -29,6 +29,13 @@ namespace CoastRun
         private float _magnetBend;
         private Transform _visualRoot;
 
+        public static readonly System.Collections.Generic.List<CoinPickup> Active = new();
+        private void OnEnable() { if (!Active.Contains(this)) Active.Add(this); }
+        private void OnDisable() { Active.Remove(this); }
+
+        /// 112차: 라이벌 코인 팡 쿨다운용 — 같은 코인에 반복 연출 방지.
+        public float RivalBurstStamp;
+
         private static readonly System.Collections.Generic.Stack<CoinPickup> _poolGold = new();
         private static readonly System.Collections.Generic.Stack<CoinPickup> _poolSilver = new();
         private static readonly System.Collections.Generic.Stack<CoinPickup> _poolBundle = new();
@@ -42,6 +49,7 @@ namespace CoastRun
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetPools()
         {
+            Active.Clear();
             _poolGold.Clear();
             _poolSilver.Clear();
             _poolBundle.Clear();
@@ -88,6 +96,7 @@ namespace CoastRun
                 rgo.transform.SetPositionAndRotation(worldPos, DownhillPath.Rotation);
                 reuse._wallet = wallet; reuse._upgrades = upgrades; reuse._feedback = feedback; reuse._player = player;
                 reuse._collected = false; reuse._magnetActive = false; reuse._magnetT = 0f;
+                reuse.RivalBurstStamp = -999f;
                 reuse._bobPhase = Random.value * Mathf.PI * 2f;
                 reuse._spin = Random.Range(0f, 360f);
                 var rc = rgo.GetComponent<Collider>(); if (rc != null) rc.enabled = true;

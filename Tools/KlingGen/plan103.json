@@ -54,7 +54,7 @@
 "keys": [
 "H19"
 ],
-"scene": "a 19-year-old young woman (Image1) kneeling on black volcanic rocks, looking down at her own face reflected in a rock pool, rain drops starting to ripple the surface, grey sky, her expression lost and confused"
+"scene": "a 19-year-old young woman (Image1) kneeling on wet black rocks under a rusty transmission pylon on a grey stormy day, leaning over a rock pool and staring at her own reflection with a blank, frightened, lost expression, lips parted, no smile, wind in her hair, wild grass"
 },
 {
 "id": "V7_N1_07",
@@ -261,7 +261,7 @@
 "D20",
 "H19"
 ],
-"scene": "morning on a hill path with black stone walls, a tall thin pale 20-year-old young man (Image1) in a WHITE SHIRT, white hospital bracelet, stopped and looking up at a lone stone house on the hilltop, a 19-year-old young woman (Image2) coming down the path toward him"
+"scene": "morning on a hill path between black stone walls, a tall thin pale 20-year-old young man in a white shirt (Image1) looking up toward an old stone house on the hill, a 19-year-old young woman (Image2) a few steps away looking at him, both faces calm, sea in the distance, absolutely no speech bubbles, no text"
 },
 {
 "id": "V7_E5_04",
@@ -357,7 +357,7 @@
 "H12",
 "MFB"
 ],
-"scene": "typhoon night in a muddy yard, a 12-year-old girl (Image1) holding a candle in the doorway finding her mother (Image2) collapsed face-down in the rain in a wet black haenyeo suit, one hand clutching her chest, the mother's face hidden, rain everywhere"
+"scene": "night in heavy typhoon rain outside an old stone house on a hill, a 12-year-old girl (Image1) with a frightened, tearful face kneeling in the mud beside her collapsed mother who is seen only from behind (Image2, black haenyeo suit, face hidden), the girl holding a small flashlight, rain streaks, wind, no smile at all"
 },
 {
 "id": "V7_E8_08",
@@ -386,7 +386,7 @@
 "keys": [
 "H12"
 ],
-"scene": "a 12-year-old girl (Image1) running at full speed down a narrow village lane between black stone walls, arms pumping, breathless, spring morning, her hairpin glinting, motion blur"
+"scene": "a 12-year-old girl (Image1) running at full speed down a narrow village lane between black stone walls, arms pumping, breathless, tight anxious face with her mouth open as if calling out, eyes wet, spring morning, her hairpin glinting, motion blur, no smile"
 },
 {
 "id": "V7_N7_01",
@@ -617,6 +617,62 @@
 "D20"
 ],
 "scene": "sunset at the foot of a rusty transmission pylon, a tall thin pale 20-year-old young man (Image1) in a white shirt with a hospital bracelet standing alone on the grass holding two glass milk bottles, a forced awkward smile as he talks to himself, eyes fixed on the empty hill path below, three stacked stones at his feet, orange sky over the sea, only one person, no text"
+},
+{
+"id": "V7_OPB_01",
+"keys": [
+"H12"
+],
+"scene": "seen from inside a black car through the dusty rear window: a 12-year-old girl (Image1) outside pressing and slapping her small palm against the glass, running alongside, her face close to the window, rural Jeju road, spring dust, dramatic close framing"
+},
+{
+"id": "V7_OPB_03",
+"keys": [],
+"bg": true,
+"scene": "night, a small desk lamp lighting a paper wall calendar in an old Korean house, one date circled hard in red pencil, a child's hand pressing the pencil so hard the paper is dented, no readable letters or numbers, soft shadow, close-up"
+},
+{
+"id": "V7_OPB_04",
+"keys": [],
+"bg": true,
+"scene": "an old wall in a small Korean room with seven paper calendars pinned on top of each other, each one with the same date circled in red, edges yellowed and curled, afternoon light through a window, dust in the air, no readable letters or numbers, no people"
+},
+{
+"id": "V7_E1_06",
+"keys": [
+"KID",
+"H19"
+],
+"scene": "close view: a 6-year-old boy in an orange raincoat (Image1) drawing a crooked red heart with a red crayon on a small pretty pink seashell held in his palm, a 19-year-old young woman (Image2) crouching beside him watching, wild grass under a steel transmission pylon, warm evening light, only two people"
+},
+{
+"id": "V7_E2_08",
+"keys": [
+"H12"
+],
+"scene": "a 12-year-old girl (Image1) who has just fallen on a dusty coastal road, seen from behind and slightly above: she is on her hands and knees with her body turned toward a black car driving away small in the distance, one arm reaching after it, her face not visible, spring dust, scraped knee, dramatic"
+},
+{
+"id": "V7_N4_10",
+"keys": [
+"M48",
+"H19"
+],
+"scene": "inside the kitchen of an old Jeju stone house, a normal-sized paper wall calendar hanging on the wall with one date circled in red pen, a 19-year-old young woman (Image2) pointing at the circle with her finger, a thin 48-year-old woman (Image1) in an apron beside her writing on a small piece of paper, warm evening lamp light, no readable letters or numbers"
+},
+{
+"id": "V7_N5_08",
+"keys": [
+"H12"
+],
+"scene": "memory: a weathered Korean fisherman in an orange raincoat, seen from the side and behind so his face is hidden, crouching on a harbor pier and painting a crooked red heart with a small brush onto a small canvas school backpack lying on the pier, an 11-year-old girl (Image1) standing beside him watching with clean skin and clean clothes, no paint on her body, a small blue-white fishing boat moored behind, golden afternoon light"
+},
+{
+"id": "V7_N5_07",
+"keys": [
+"DAD"
+],
+"scene": "memory: close portrait of the father standing on the deck of a small white-and-blue fishing boat in a Jeju harbor at golden hour, looking down toward the viewer with a warm crooked smile so wide that his LEFT eye creases shut, sun-tanned skin, worn jacket, ropes and an orange buoy behind him"
 }
 ]
 }

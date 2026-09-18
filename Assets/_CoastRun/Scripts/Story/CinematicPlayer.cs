@@ -256,7 +256,7 @@ namespace CoastRun
                 else _video.color = new Color(1f, 1f, 1f, 0f);
                 if (_fx != null) { _fx.SetAsLastSibling(); _fx.gameObject.SetActive(!useVideo); }
                 _grain.transform.SetAsLastSibling(); _barTop.transform.SetAsLastSibling(); _barBot.transform.SetAsLastSibling(); _flash.transform.SetAsLastSibling();
-                if (s.sepia && !_wasSepia) StartCoroutine(FlashCo());   // 회상으로 들어갈 때 하얗게 번쩍
+                if (s.sepia && !_wasSepia) { StartCoroutine(FlashCo()); CoastPrefs.VibrateEvent(); }   // 회상으로 들어갈 때 하얗게 번쩍(109차: 여기서만 진동)
                 _wasSepia = s.sepia;
                 _fader.transform.SetAsLastSibling();
                 _caption.transform.parent.SetAsLastSibling();
@@ -275,9 +275,11 @@ namespace CoastRun
                     if (!useVideo)
                     {
                         // 72차: 켄번즈를 더 크게(1.5배 폭) + 세로로도 살짝 흐르고 ±0.8° 천천히 돈다
-                        float sc = Mathf.Lerp(s.from.x, s.to.x, k); sc = 1f + (sc - 1f) * 1.5f;
-                        float px = Mathf.Lerp(s.from.y, s.to.y, k) * 720f * 1.4f;
-                        float py = Mathf.Sin((t / dur) * Mathf.PI) * (i % 2 == 0 ? 14f : -14f);
+                        // 109차(사용자: 「사진이 좀 움직였으면 — 동영상 말고」): 폭을 2배로, 확대만 하는 컷도 옆으로 흘러 어느 컷이든 움직임이 보이게
+                        float sc = Mathf.Lerp(s.from.x, s.to.x, k); sc = 1f + (sc - 1f) * 2.0f;
+                        float px = Mathf.Lerp(s.from.y, s.to.y, k) * 720f * 1.8f;
+                        if (Mathf.Approximately(s.from.y, s.to.y)) px += Mathf.Sin((t / dur) * Mathf.PI) * (i % 2 == 0 ? 26f : -26f);
+                        float py = Mathf.Sin((t / dur) * Mathf.PI) * (i % 2 == 0 ? 22f : -22f) + Mathf.Lerp(-12f, 12f, k) * (i % 3 == 0 ? 1f : -1f);
                         cur.rectTransform.localScale = Vector3.one * sc;
                         cur.rectTransform.anchoredPosition = new Vector2(px, py);
                         cur.rectTransform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(-0.8f, 0.8f, k) * (i % 2 == 0 ? 1f : -1f));

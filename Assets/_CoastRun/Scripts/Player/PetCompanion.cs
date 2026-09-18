@@ -34,7 +34,7 @@ namespace CoastRun
                 return false;
             Instance._reviveUsed = true;
             RunHudChrome.Instance?.ShowToast("흑돼지가 버텨줬어!");
-            CoastPrefs.Vibrate();
+            CoastPrefs.VibrateEvent();
             return true;
         }
         private bool _reviveUsed;
@@ -192,7 +192,7 @@ namespace CoastRun
                 Vector3 d = hz.transform.position - p; d.y = 0f;
                 if (d.sqrMagnitude > 0.8f * 0.8f) continue;
                 hz.Smash();
-                CoastPrefs.Vibrate();
+                CoastPrefs.VibrateEvent();
             }
         }
 

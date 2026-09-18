@@ -446,22 +446,36 @@ namespace CoastRun
         }
 
         /// 14차-14: 장애물 팡 — 파스텔 별·하트 흩뿌리기 + 흰 링 + 작은 흔들림. 가볍고 귀엽게(실패 연출이 아니라 장난감처럼).
-        public void PlayObstaclePop(Vector3 worldPos)
+        public void PlayObstaclePop(Vector3 worldPos) => PlayObstaclePop(worldPos, true);
+
+        /// <param name="fullImpact">false = 라이벌용 — 파티클·링·SFX만(주인공과 동일 비주얼), HitStop/강한 쉐이크/진동 생략.</param>
+        public void PlayObstaclePop(Vector3 worldPos, bool fullImpact)
         {
-            // 17차: 타격감 — 순간 정지 + 큰 흔들림 + 진동. SoftHit HitStop과 겹치면 Abort 후 새로 시작(배속 누수 방지).
-            AbortHitStop();
-            _hitStopRoutine = StartCoroutine(PlayerController.NoHitSlow ? HitStop(0.6f, 0.04f) : HitStop(0.04f, 0.07f));
-            cameraRig?.Shake(0.32f, 0.16f);
-            cameraRig?.FovKick(-5f, 0.15f);
-            CoastPrefs.Vibrate();
+            if (fullImpact)
+            {
+                // 17차: 타격감 — 순간 정지 + 큰 흔들림 + 진동. SoftHit HitStop과 겹치면 Abort 후 새로 시작(배속 누수 방지).
+                AbortHitStop();
+                _hitStopRoutine = StartCoroutine(PlayerController.NoHitSlow ? HitStop(0.6f, 0.04f) : HitStop(0.04f, 0.07f));
+                cameraRig?.Shake(0.32f, 0.16f);
+                cameraRig?.FovKick(-5f, 0.15f);
+                CoastPrefs.Vibrate();
+            }
             EnsurePopBursts();
             SpawnPop(_popStar, worldPos, new Color(1f, 0.93f, 0.45f), 9);
             SpawnPop(_popHeart, worldPos + Vector3.up * 0.15f, new Color(1f, 0.55f, 0.68f), 7);
             SpawnPop(_popPuff, worldPos, new Color(1f, 1f, 1f, 0.95f), 8);
             SpawnCoinBurst(worldPos, Color.white, 6);
             StartCoroutine(FlashRing(worldPos, new Color(1f, 0.8f, 0.85f, 0.9f), 1.7f));
-            speedLines?.Burst(6);
+            if (fullImpact) speedLines?.Burst(6);
             audio?.PlaySfx(CoastSfx.NearMiss);
+        }
+
+        /// 112차: 라이벌이 동전 옆을 지날 때 — PlayCoinCollect와 같은 버스트·링·SFX, 지갑/+N/HUD 없음.
+        public void PlayCoinBurstOnly(Vector3 worldPos, Color tint)
+        {
+            SpawnCoinBurst(worldPos, tint, 18);
+            StartCoroutine(FlashRing(worldPos, tint, 1.6f));
+            audio?.PlaySfx(CoastSfx.Coin);
         }
 
         // 14차-15: 팡 파편 — 큰 별·하트(회전하며 튀어 오름) + 흰 뭉게 퍼프(만화 '펑' 구름)

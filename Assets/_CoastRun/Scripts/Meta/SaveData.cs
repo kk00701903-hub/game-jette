@@ -119,6 +119,8 @@ namespace CoastRun
         public bool snackOn;                 // 간식비(주 15G, 스트레스 ×0.8)
         public bool forfeitPending;          // 잠수: 이번 챕터 노을을 놓쳐 자동 C급 처리 대기
         public PetKind equippedPet = PetKind.None;
+        /// 109차(마이룸 펫 명령): 이번 주에 펫 명령을 쓴 주차(주 1회). -1 = 아직.
+        public int petCmdWeek = -1;
         public int ownedPetMask;
         public int missionDoneMask;             // 44차: 이번 회차에서 깬 챕터 미션(ChapterMission.Kind 비트) — 롱컷 직전 게이트
         public int weekMiniDone;                 // 52차: 주말 미니게임을 깬 마지막 주차(격주 미니게임을 이겨야 그 주가 넘어간다)

@@ -172,6 +172,7 @@ namespace CoastRun
             Close();
             if (d == null) { onGo?.Invoke(); return; }
             var crt = EventCardKit.Card("ContestIntroCanvas", 466, new Vector2(640f, 720f), out _canvas, 20f);
+            EventCardKit.Kid(crt, Loc.T("누나, 달리자!", "Let's run!"), true);   // 109차: 꼬마 동행
             var kicker = CoastHudLayout.MakeText(crt, "K", Loc.T("이번 주 대회", "This week's contest"), 18, TextAnchor.MiddleCenter, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(0f, -56f), new Vector2(0f, -24f));
             kicker.color = new Color(0.90f, 0.32f, 0.45f); kicker.fontStyle = FontStyle.Bold;
             EventCardKit.JellyTitle(crt, d.Name, new Color(0.45f, 0.35f, 0.95f), new Color(0.20f, 0.12f, 0.45f), 56f, 84f, 44);
@@ -219,6 +220,7 @@ namespace CoastRun
             Close();
             var d = StoryContest.Current; if (d == null) return;
             Time.timeScale = 0f;
+            CoastPrefs.VibrateEvent();   // 109차: 대회 결과 — 특정 이벤트 진동
             var crt = EventCardKit.Card("ContestResultCanvas", 470, new Vector2(648f, 1040f), out _canvas, 0f);
             // 금테(카드 가장자리 금색 띠 + 안쪽 크림) — 카드 배경 바로 위, 스파클 아래
             var rim = CoastUiArt.Panel(crt, "Rim", Gold, 28); rim.raycastTarget = false;
@@ -230,6 +232,7 @@ namespace CoastRun
             EventCardKit.Sparkle(crt, new Vector2(0.5f, 1f), new Vector2(-150f, -70f), 18, Gold);
             EventCardKit.Sparkle(crt, new Vector2(0.5f, 1f), new Vector2(170f, -60f), 22, Gold);
             EventCardKit.Sparkle(crt, new Vector2(0.5f, 1f), new Vector2(230f, -150f), 12, Gold);
+            EventCardKit.Kid(crt, timeout ? Loc.T("누나, 노을이 졌어…", "The sun set…") : Loc.T("괜찮아, 다음에 또!", "It's okay, next time!"), true);   // 109차: 꼬마 동행
             EventCardKit.Sparkle(crt, new Vector2(0.5f, 0f), new Vector2(-260f, 150f), 14, Gold);
             EventCardKit.Sparkle(crt, new Vector2(0.5f, 0f), new Vector2(250f, 160f), 18, Gold);
             EventCardKit.JellyTitle(crt, Loc.T("대회 미달…", "Contest failed…"), new Color(0.98f, 0.22f, 0.22f), new Color(0.60f, 0.06f, 0.10f), 96f, 120f, 78);

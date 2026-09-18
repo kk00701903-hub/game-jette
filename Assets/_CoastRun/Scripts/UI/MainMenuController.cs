@@ -202,12 +202,14 @@ namespace CoastRun
             var root = CoastUiCanvas.Root(_canvas);
             var dim = CoastHudLayout.MakeImage(root, "AiNoticeDim", Vector2.zero, Vector2.one, new Vector2(-40f, -40f), new Vector2(40f, 40f), new Color(0f, 0f, 0f, 0.7f));
             dim.raycastTarget = true;
-            var panel = CoastOrnate.PanelSized(root, "AiNotice", CoastOrnate.Gold, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(600f, 420f), new Color(0.98f, 0.95f, 0.88f, 0.97f));
+            // 109차(사용자): 제작 고지 문구 갱신 — 목소리=AI, 그림·작곡·편곡=스튜디오 우히히시+AI, 가상 이야기·K-POP/제주 알리기 목적.
+            //   설치(프로필)당 1회: Profile.aiNoticeSeen — 「알겠어요」 누르면 저장되고 다시는 안 뜬다.
+            var panel = CoastOrnate.PanelSized(root, "AiNotice", CoastOrnate.Gold, new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(600f, 480f), new Color(0.98f, 0.95f, 0.88f, 0.97f));
             var t = CoastOrnate.Label(panel.transform, "T", Loc.T("『제주』는 AI로 만든 가상 듀오예요", "“JEJU” is an AI-produced virtual duo"), 22, new Color(0.16f, 0.12f, 0.10f));
             t.rectTransform.anchorMin = new Vector2(0f, 1f); t.rectTransform.anchorMax = new Vector2(1f, 1f); t.rectTransform.anchoredPosition = new Vector2(0f, -40f); t.rectTransform.sizeDelta = new Vector2(0f, 40f);
             var b = CoastOrnate.Label(panel.transform, "B", Loc.T(
-                "하늘과 도윤의 목소리·노래·그림은 AI로 제작했고, 이야기와 게임은 사람이 만들었습니다. 실존 인물이나 그룹을 흉내 내지 않습니다.\n\n광고도, 강제 결제도 없습니다. 커피 한 잔 값 기부는 자율이에요.",
-                "Haneul and Doyun's voices, songs and art are AI-produced; the story and the game are made by people. They do not imitate any real person or group.\n\nNo ads, no forced purchases. A coffee-sized donation is entirely optional."), 16, new Color(0.16f, 0.12f, 0.10f), TextAnchor.UpperLeft);
+                "하늘과 도윤의 목소리는 AI로 제작했고, 그림·작곡과 편곡은 스튜디오 우히히시와 AI가 함께 했습니다. 본 이야기의 사건 등은 가상의 이야기로 만들었습니다. K-POP에 대한 세계화와 제주도를 알리기 위한 순수한 목적으로 만든 게임입니다.\n\n광고도, 강제 결제도 없습니다. 커피 한 잔 값 기부는 자율이에요.",
+                "Haneul and Doyun's voices are AI-produced; art, composition and arrangement were made together by Studio Wooheeheeshi and AI. The events in this story are fiction. This game was made with the pure purpose of sharing K-POP worldwide and introducing Jeju Island.\n\nNo ads, no forced purchases. A coffee-sized donation is entirely optional."), 16, new Color(0.16f, 0.12f, 0.10f), TextAnchor.UpperLeft);
             b.rectTransform.anchorMin = new Vector2(0f, 0f); b.rectTransform.anchorMax = new Vector2(1f, 1f); b.rectTransform.offsetMin = new Vector2(30f, 90f); b.rectTransform.offsetMax = new Vector2(-30f, -80f);
             b.horizontalOverflow = HorizontalWrapMode.Wrap;
             _aiNoticeOk = () =>

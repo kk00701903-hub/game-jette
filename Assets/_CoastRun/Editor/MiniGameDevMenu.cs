@@ -109,6 +109,11 @@ namespace CoastRun.EditorTools
         [MenuItem("Coast Run/Dev/UI - Home (Room)")] public static void UiHomeRoom() { if (Application.isPlaying && GameManager.Active) HomeUI.Open(GameManager.I, null, null); }
         [MenuItem("Coast Run/Dev/UI - Shop")] public static void UiShop() { if (Application.isPlaying && GameManager.Active) ShopUI.Open(GameManager.I, 0); }
         [MenuItem("Coast Run/Dev/Life - Grocery")] public static void Grocery() { if (Application.isPlaying) GroceryUI.Open(GameManager.I); }
+        [MenuItem("Coast Run/Dev/Life - Meal pick")] public static void MealPick()
+        {
+            if (!Application.isPlaying) return;
+            MealPickUI.OpenDemo(() => Debug.LogWarning("[Dev] meal closed"));
+        }
         [MenuItem("Coast Run/Dev/Life - Game over")] public static void GameOver() { if (Application.isPlaying && GameManager.Active) GameOverUI.Show(GameManager.I, CoastUiArt.AsSprite(ArtAssets.LoadTexture("Raise_Girl_Pose_Cry")), () => Debug.LogWarning("[Dev] revived")); }
         [MenuItem("Coast Run/Dev/Life - Starve (rice 0, cond 5)")] public static void Starve() { if (Application.isPlaying && GameManager.Active) { var s = GameManager.I.Save; s.rice = 0; s.sideDish = 0; s.condition = 5; s.hunger = 10; GameManager.I.Persist(); } }
         // 105·108차(재미요소) 팝업 캡쳐용
@@ -118,7 +123,108 @@ namespace CoastRun.EditorTools
         [MenuItem("Coast Run/Dev/Fun - Daily scene (lady 3)")] public static void FunDaily2() { if (Application.isPlaying) DailySceneUI.Show(1, 3, () => Debug.LogWarning("[Dev] daily done")); }
         [MenuItem("Coast Run/Dev/Fun - Epilogue")] public static void FunEpilogue() { if (Application.isPlaying && GameManager.Active) EpilogueUI.Show(GameManager.I.Save, () => Debug.LogWarning("[Dev] epilogue done")); }
         [MenuItem("Coast Run/Dev/Fun - Clue not yet (radio)")] public static void FunClueNotYet() { if (Application.isPlaying && GameManager.Active) { var s = GameManager.I.Save; s.clueMask &= ~(int)ClueSystem.Clue.Radio; ClueSystem.ShowAfterScene(s, "CS3", () => Debug.LogWarning("[Dev] clue done")); } }
-        [MenuItem("Coast Run/Dev/Fun - Close all")] public static void FunClose() { FestivalUI.Close(); DailySceneUI.Close(); EpilogueUI.Close(); ClueSystem.Close(); CalendarUI.Close(); var ui = Object.FindAnyObjectByType<TamaRaisingUI>(); if (ui != null) ui.DevCloseOverlays(); }
+        [MenuItem("Coast Run/Dev/Fun - Close all")] public static void FunClose() { FestivalUI.Close(); DailySceneUI.Close(); EpilogueUI.Close(); ClueSystem.Close(); CalendarUI.Close(); EndingCreditsUI.Close(); CinemaSelect.Close(); ContestIntroUI.Close(); WeekPassUI.Close(); MealPickUI.Close(); var ui = Object.FindAnyObjectByType<TamaRaisingUI>(); if (ui != null) ui.DevCloseOverlays(); var home = Object.FindAnyObjectByType<HomeUI>(); if (home != null) Object.Destroy(home.gameObject); }
+        // 109차 캡쳐용
+        [MenuItem("Coast Run/Dev/109 - Ending credits")] public static void R109Credits() { if (Application.isPlaying && GameManager.Active) { var p = GameManager.I.Profile; if (p != null && p.cardMask == 0) { p.cardMask = 0b1011_0111; } EndingCreditsUI.Show(p, () => Debug.LogWarning("[Dev] credits done")); } }
+        [MenuItem("Coast Run/Dev/109 - Cinema (season tabs)")] public static void R109Cinema() { if (Application.isPlaying && GameManager.Active) CinemaSelect.Open(GameManager.I, null, () => Debug.LogWarning("[Dev] cinema closed")); }
+        [MenuItem("Coast Run/Dev/109 - My room (pet)")] public static void R109Room() { if (Application.isPlaying && GameManager.Active) { var s = GameManager.I.Save; if (s.equippedPet == PetKind.None) { s.ownedPetMask |= 1 << (int)PetKind.Sparrow; s.equippedPet = PetKind.Sparrow; } HomeUI.Open(GameManager.I, null, () => Debug.LogWarning("[Dev] room closed")); } }
+        // 110차: 아케이드 러닝을 보드 모드로 시작하게 하는 스위치(프로필 해금과 짝).
+        [MenuItem("Coast Run/Dev/110 - Board mode ON")]
+        public static void BoardModeOn() { PlayerPrefs.SetInt("CoastRun_ArcadeBoard", 1); PlayerPrefs.Save(); Debug.LogWarning("[110] arcade board = ON"); }
+
+        // 110차(사용자 3번): 「점프해도 보드는 장애물에 부딪히고, 점프 중엔 피해가 없다」를 자동으로 확인한다.
+        //   러닝 시작부터 프로브가 직접 몰아서, 주인공 앞에 콘을 놓고 점프시킨 뒤
+        //   HP 변화와 보드 충돌 횟수를 콘솔에 찍는다.
+        [MenuItem("Coast Run/Dev/110 - Board bump probe")]
+        public static void BoardBumpProbe()
+        {
+            if (!Application.isPlaying) { Debug.LogWarning("[110] play 중에만"); return; }
+            var host = new GameObject("BoardProbe");
+            Object.DontDestroyOnLoad(host);
+            host.AddComponent<BoardProbeRunner>();
+        }
+
+        private class BoardProbeRunner : MonoBehaviour
+        {
+            private System.Collections.IEnumerator Start()
+            {
+                PlayerPrefs.SetInt("CoastRun_ArcadeBoard", 1); PlayerPrefs.Save();
+                if (Object.FindAnyObjectByType<PlayerController>() == null && GameManager.Active)
+                {
+                    if (GameManager.I.Profile != null) GameManager.I.Profile.skateboardUnlocked = true;
+                    ArcadeRun.StartKpop(GameManager.I, 3);
+                    RunTuning.Mode = RunMode.Skateboard;
+                    RunTuning.SpeedMul = 1.3f; RunTuning.CoinMul = 1.3f;
+                    Debug.LogWarning($"[110] StartKpop(3) 호출 mode={RunTuning.Mode}");
+                }
+                PlayerController pc = null;
+                float w = 0f;
+                while (w < 70f)
+                {
+                    w += Time.unscaledDeltaTime;
+                    pc = Object.FindAnyObjectByType<PlayerController>();
+                    if (pc != null && HealthSystem.Instance != null && HealthSystem.Instance.IsActive
+                        && HealthSystem.Instance.Current > 0.5f && PickupReach.BoardActive) break;
+                    yield return null;
+                }
+                var vis = Object.FindAnyObjectByType<CoastPlayerVisual>();
+                Debug.LogWarning($"[110] ready t={w:F1} player={(pc != null)} visual={(vis != null)} mode={RunTuning.Mode} boardActive={PickupReach.BoardActive} hp={(HealthSystem.Instance != null ? HealthSystem.Instance.Current : -1f):F1}");
+                if (pc == null) { Destroy(gameObject); yield break; }
+                if (HealthSystem.Instance != null) HealthSystem.Instance.Heal(HealthSystem.Instance.Max);
+                yield return null;
+
+                // 실제 맵에 흘러오는 장애물을 기다렸다가, 내 레인으로 4~6 m 앞에 왔을 때 점프한다.
+                Vector3 fwd = DownhillPath.Rotation * Vector3.forward;
+                Vector3 right = DownhillPath.Rotation * Vector3.right;
+                ObstacleHazard target = null;
+                float t = 0f;
+                while (t < 45f)
+                {
+                    t += Time.deltaTime;
+                    float pz = DownhillPath.DistanceAlong(pc.transform.position);
+                    var list = ObstacleHazard.Active;
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        var hz = list[i]; if (hz == null) continue;
+                        float dz = DownhillPath.DistanceAlong(hz.transform.position) - pz;
+                        if (dz < 3.6f || dz > 5.6f) continue;
+                        if (Mathf.Abs(Vector3.Dot(hz.transform.position - pc.transform.position, right)) > 0.55f) continue;
+                        if (hz.transform.position.y - pc.transform.position.y > 1.2f) continue;
+                        target = hz; break;
+                    }
+                    if (target != null) break;
+                    yield return null;
+                }
+                if (target == null) { Debug.LogWarning("[110] 앞 레인 장애물을 못 찾음"); Destroy(gameObject); yield break; }
+
+                int bump0 = CoastPlayerVisual.BoardBumps;
+                float hp0 = HealthSystem.Instance.Current;
+                Debug.LogWarning($"[110] target 잡음 t={t:F1} hp={hp0:F1} bumps={bump0}");
+                var inp = Object.FindAnyObjectByType<MobileSwipeInput>();
+                if (inp != null) inp.Inject(0, true, false); else Debug.LogWarning("[110] MobileSwipeInput 없음");
+
+                // 점프해서 지나가는 동안의 최소 클리어런스와 HP·충돌을 지켜본다.
+                float watch = 0f, maxClear = 0f;
+                while (watch < 1.8f)
+                {
+                    watch += Time.deltaTime;
+                    maxClear = Mathf.Max(maxClear, PickupReach.BoardDrop);
+                    yield return null;
+                }
+                float hp1 = HealthSystem.Instance.Current;
+                int bump1 = CoastPlayerVisual.BoardBumps;
+                // 드레인(초당 max*1.6%)만큼은 원래 빠지는 값 — 그만큼 빼고 본다.
+                float drain = HealthSystem.Instance.Max * HealthSystem.DrainFracPerSec * watch;
+                Debug.LogWarning($"[110] RESULT bumps {bump0}->{bump1} (+{bump1 - bump0})  hp {hp0:F1}->{hp1:F1} (총 -{hp0 - hp1:F1}, 드레인 예상 -{drain:F1}, 피격분 -{Mathf.Max(0f, hp0 - hp1 - drain):F1})  점프높이 {maxClear:F2}");
+                Destroy(gameObject);
+            }
+        }
+
+        [MenuItem("Coast Run/Dev/109 - Week pass card")] public static void R109Week() { if (Application.isPlaying && GameManager.Active) { var s = GameManager.I.Save; var rep = new Survival.WeekReport { ateRice = true, ateSide = true, slept = true, clothesLeft = 3, riceLeft = 2 }; WeekPassUI.Show(s.week, s.week + 1, Timeline.SeasonOf(s.week), rep, null, () => Debug.LogWarning("[Dev] week done")); } }
+        [MenuItem("Coast Run/Dev/109 - Event choice (new: kite)")] public static void R109Event() { if (Application.isPlaying) { var ui = Object.FindAnyObjectByType<TamaRaisingUI>(); if (ui != null) foreach (var e in RandomEventTable.All) if (e.id == "ev_kite") { ui.ShowEvent(e); break; } } }
+        [MenuItem("Coast Run/Dev/109 - Card pick (job)")] public static void R109Pick() { if (Application.isPlaying) { var ui = Object.FindAnyObjectByType<TamaRaisingUI>(); if (ui != null) ui.DevOpenPick(2); } }
+        [MenuItem("Coast Run/Dev/109 - Card pick (rest)")] public static void R109PickRest() { if (Application.isPlaying) { var ui = Object.FindAnyObjectByType<TamaRaisingUI>(); if (ui != null) ui.DevOpenPick(0); } }
+        [MenuItem("Coast Run/Dev/109 - Card pick (play)")] public static void R109PickPlay() { if (Application.isPlaying) { var ui = Object.FindAnyObjectByType<TamaRaisingUI>(); if (ui != null) ui.DevOpenPick(1); } }
         [MenuItem("Coast Run/Dev/Fun - Calendar")] public static void FunCalendar() { if (Application.isPlaying && GameManager.Active) CalendarUI.Open(GameManager.I.Save); }
         [MenuItem("Coast Run/Dev/Fun - Event choice (radio)")] public static void FunEvent() { if (Application.isPlaying) { var ui = Object.FindAnyObjectByType<TamaRaisingUI>(); if (ui != null) ui.ShowEvent(RandomEventTable.All[1]); } }
         [MenuItem("Coast Run/Dev/Fun - Event choice (runaway)")] public static void FunEvent2() { if (Application.isPlaying) { var ui = Object.FindAnyObjectByType<TamaRaisingUI>(); if (ui != null) ui.ShowEvent(RandomEventTable.All[14]); } }

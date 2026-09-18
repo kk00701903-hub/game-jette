@@ -79,6 +79,20 @@ namespace CoastRun
             PopFrom(transform);
         }
 
+        /// 112차: 라이벌이 장애물에 닿을 때 — 주인공과 같은 ObstaclePopAnim + 팡, HitStop 없이.
+        public void PopForRival(Transform rivalRoot)
+        {
+            if (_popped) return;
+            _popped = true;
+            Transform root = transform;
+            while (root.parent != null && !root.parent.name.StartsWith("Obstacle") && root.parent.name != "Obstacles")
+                root = root.parent;
+            if (root.parent != null && root.parent.name.StartsWith("Obstacle_"))
+                root = root.parent;
+            if (root.GetComponent<ObstaclePopAnim>() != null) return;
+            PopAt(root, rivalRoot != null ? rivalRoot.position + Vector3.up * 0.45f : root.position + Vector3.up * 0.45f, rivalRoot);
+        }
+
         /// 18차: 어떤 장애물 부품에서든 루트(Obstacle_*)를 찾아 팡 터뜨린다 — 허들(DuckHazard)·기타 하자드 공용.
         public static void PopFrom(Transform any)
         {
@@ -102,8 +116,22 @@ namespace CoastRun
             var pc = FindAnyObjectByType<PlayerController>();
             Vector3 at = pc != null ? Vector3.Lerp(pc.transform.position, root.position, 0.45f) + Vector3.up * 0.35f
                                     : root.position + Vector3.up * 0.45f;
-            JuiceDirector.Instance?.PlayObstaclePop(at);
+            JuiceDirector.Instance?.PlayObstaclePop(at, true);
             if (pc != null) root.SetParent(pc.transform, true);
+            var pop = root.gameObject.AddComponent<ObstaclePopAnim>();
+            pop.Begin(root);
+        }
+
+        /// 112차: 라이벌용 팡 — 동일 애니·비주얼, fullImpact=false, 부모는 라이벌(없으면 월드).
+        public static void PopAt(Transform root, Vector3 burstAt, Transform attachTo)
+        {
+            if (root == null || root.GetComponent<ObstaclePopAnim>() != null) return;
+            foreach (var c in root.GetComponentsInChildren<Collider>(true)) c.enabled = false;
+            var w = root.GetComponent<ObstacleWarning>(); if (w != null) w.enabled = false;
+            var ring = root.GetComponentInChildren<HazardRing>(); if (ring != null) ring.enabled = false;
+            var ringQuad = root.Find("HazardRing"); if (ringQuad != null) ringQuad.gameObject.SetActive(false);
+            JuiceDirector.Instance?.PlayObstaclePop(burstAt, false);
+            if (attachTo != null) root.SetParent(attachTo, true);
             var pop = root.gameObject.AddComponent<ObstaclePopAnim>();
             pop.Begin(root);
         }

@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 namespace CoastRun
 {
-    /// 「밥」 직 먹을 요리 고르기 — 선택 시 1개 소진 후 onPicked.
+    /// 「밥」 직 먹을 요리 고르기 — 112차 시안(나무 액자·점선·새싹/꽃·취소/먹기 알약) 표준.
     public static class MealPickUI
     {
         private static Canvas _canvas;
@@ -18,56 +18,151 @@ namespace CoastRun
             var list = LifeItems.ListEdible(gm.Save);
             if (list.Count == 0) { onCancel?.Invoke(); return; }
 
-            _canvas = CoastUiCanvas.Create("MealPick", 466);
-            var root = CoastUiCanvas.Root(_canvas);
-            var pad = CoastUiCanvas.HudPad;
-            var dim = CoastHudLayout.MakeImage(root, "Dim", Vector2.zero, Vector2.one, new Vector2(-pad - 400f, -pad - 400f), new Vector2(pad + 400f, pad + 400f), new Color(0.05f, 0.04f, 0.10f, 0.75f));
-            dim.raycastTarget = true;
+            int sel = 0;
+            float listH = list.Count <= 1 ? 0f : Mathf.Min(360f, list.Count * 84f + 8f);
+            float h = list.Count <= 1 ? 420f : 280f + listH;
+            var crt = StoryPopupKit.Frame("MealPick", 466, new Vector2(620f, h), out _canvas, 40f);
 
-            var card = CoastUiArt.Panel(root, "Card", new Color(0.98f, 0.80f, 0.32f), 28); card.raycastTarget = true;
-            var crt = card.rectTransform; crt.anchorMin = crt.anchorMax = new Vector2(0.5f, 0.5f);
-            crt.sizeDelta = new Vector2(620f, Mathf.Min(820f, 160f + list.Count * 100f)); crt.anchoredPosition = new Vector2(0f, 40f);
-            var inner = CoastUiArt.Panel(crt, "In", new Color(0.996f, 0.96f, 0.88f), 24); inner.raycastTarget = false;
-            inner.rectTransform.anchorMin = Vector2.zero; inner.rectTransform.anchorMax = Vector2.one;
-            inner.rectTransform.offsetMin = new Vector2(5f, 5f); inner.rectTransform.offsetMax = new Vector2(-5f, -5f);
+            StoryPopupKit.TitleMeal(crt, Loc.T("오늘 뭐 먹을까?", "What shall we eat?"), 20f);
 
-            var head = CoastHudLayout.MakeText(crt, "H", Loc.T("🍽 오늘 뭐 먹을까?", "🍽 What to eat?"), 26, TextAnchor.MiddleCenter, new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(12f, -58f), new Vector2(-12f, -12f));
-            head.color = new Color(0.18f, 0.14f, 0.32f); head.fontStyle = FontStyle.Bold;
+            Text nameT = null; Text fxT = null; Text badgeT = null;
+            RectTransform badgeRt = null;
+            Image[] rowImgs = null;
 
-            float y = -70f;
-            for (int i = 0; i < list.Count; i++)
+            void ShowDish(int idx)
             {
-                var def = list[i].def; int n = list[i].n;
-                var row = CoastUiArt.GlossyPill(crt, "M" + i, def.cat == LifeItemCat.PremiumDish ? new Color(1f, 0.82f, 0.88f) : new Color(1f, 0.93f, 0.75f), 16, 5);
-                var rt = row.rectTransform; rt.anchorMin = rt.anchorMax = new Vector2(0.5f, 1f); rt.pivot = new Vector2(0.5f, 1f);
-                rt.anchoredPosition = new Vector2(0f, y); rt.sizeDelta = new Vector2(560f, 88f); row.raycastTarget = true;
-                var nm = CoastHudLayout.MakeText(rt, "N", $"{LifeItems.Name(def)} ×{n}", 22, TextAnchor.MiddleLeft, Vector2.zero, Vector2.one, new Vector2(18f, 4f), new Vector2(-140f, 0f));
-                nm.color = new Color(0.18f, 0.14f, 0.32f); nm.fontStyle = FontStyle.Bold;
-                var ef = CoastHudLayout.MakeText(rt, "E", LifeItems.EffectText(def), 13, TextAnchor.LowerLeft, Vector2.zero, Vector2.one, new Vector2(18f, 8f), new Vector2(-140f, 36f));
-                ef.color = new Color(0.35f, 0.30f, 0.40f);
-                var eat = CoastUiArt.GlossyPill(rt, "Eat", new Color(1f, 0.45f, 0.55f), 14, 4);
-                var ert = eat.rectTransform; ert.anchorMin = ert.anchorMax = new Vector2(1f, 0.5f); ert.pivot = new Vector2(1f, 0.5f);
-                ert.anchoredPosition = new Vector2(-12f, 0f); ert.sizeDelta = new Vector2(120f, 48f); eat.raycastTarget = true;
-                var et = CoastHudLayout.MakeText(ert, "T", Loc.T("먹기", "Eat"), 18, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(0f, 3f), Vector2.zero);
-                et.color = Color.white; et.fontStyle = FontStyle.Bold;
-                string id = def.id;
-                void Pick()
+                sel = idx;
+                var item = list[sel];
+                string nm = LifeItems.Name(item.def);
+                string fx = LifeItems.EffectText(item.def);
+                if (string.IsNullOrEmpty(fx)) fx = Loc.T("든든한 한 끼", "A good meal");
+                if (nameT != null) nameT.text = "✨ " + nm;
+                if (fxT != null) fxT.text = "🌱 " + fx;
+                if (badgeT != null) badgeT.text = "x" + item.n;
+                // 이름 길이에 맞춰 배지를 이름 오른쪽에
+                if (badgeRt != null && nameT != null)
                 {
-                    CoastPrefs.Vibrate();
-                    Close();
-                    onPicked?.Invoke(id);
+                    float approx = Mathf.Clamp(nm.Length * 18f + 40f, 80f, 220f);
+                    badgeRt.anchoredPosition = new Vector2(approx * 0.5f + 28f, badgeRt.anchoredPosition.y);
                 }
-                eat.gameObject.AddComponent<Button>().onClick.AddListener(Pick);
-                row.gameObject.AddComponent<Button>().onClick.AddListener(Pick);
-                y -= 96f;
+                if (rowImgs != null)
+                    for (int i = 0; i < rowImgs.Length; i++)
+                        if (rowImgs[i] != null)
+                            rowImgs[i].color = i == sel
+                                ? new Color(1f, 0.93f, 0.82f)
+                                : new Color(1f, 0.98f, 0.94f, 0.65f);
             }
 
-            var cancel = CoastUiArt.GlossyPill(crt, "Cancel", new Color(0.55f, 0.57f, 0.64f), 16, 5);
-            var crt2 = cancel.rectTransform; crt2.anchorMin = crt2.anchorMax = new Vector2(0.5f, 0f); crt2.pivot = new Vector2(0.5f, 0f);
-            crt2.anchoredPosition = new Vector2(0f, 14f); crt2.sizeDelta = new Vector2(240f, 48f); cancel.raycastTarget = true;
-            var ct = CoastHudLayout.MakeText(crt2, "T", Loc.T("취소", "Cancel"), 20, TextAnchor.MiddleCenter, Vector2.zero, Vector2.one, new Vector2(0f, 3f), Vector2.zero);
-            ct.color = Color.white; ct.fontStyle = FontStyle.Bold;
-            cancel.gameObject.AddComponent<Button>().onClick.AddListener(() => { Close(); onCancel?.Invoke(); });
+            // 본문 — 시안처럼 가운데 이름 + 배지 + 효과 줄
+            float nameY = list.Count <= 1 ? -150f : -120f;
+            nameT = CoastHudLayout.MakeText(crt, "Name", "", 34, TextAnchor.MiddleCenter,
+                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-160f, nameY - 50f), new Vector2(120f, nameY));
+            nameT.color = StoryPopupKit.Ink; nameT.fontStyle = FontStyle.Bold; nameT.raycastTarget = false;
+            nameT.resizeTextForBestFit = true; nameT.resizeTextMinSize = 18; nameT.resizeTextMaxSize = CoastHudLayout.Scaled(34);
+
+            var badge = CoastUiArt.Panel(crt, "Badge", StoryPopupKit.BadgeOrange, 22); badge.raycastTarget = false;
+            badgeRt = badge.rectTransform; badgeRt.anchorMin = badgeRt.anchorMax = new Vector2(0.5f, 1f); badgeRt.pivot = new Vector2(0.5f, 0.5f);
+            badgeRt.anchoredPosition = new Vector2(110f, nameY - 25f); badgeRt.sizeDelta = new Vector2(48f, 48f);
+            badgeT = CoastHudLayout.MakeText(badgeRt, "T", "x1", 18, TextAnchor.MiddleCenter,
+                Vector2.zero, Vector2.one, new Vector2(0f, 2f), Vector2.zero);
+            badgeT.color = Color.white; badgeT.fontStyle = FontStyle.Bold;
+            CoastUiArt.OutlineText(badgeT, new Color(0.45f, 0.2f, 0.1f, 0.45f), 1.2f);
+
+            EventCardKit.Sparkle(crt, new Vector2(0.5f, 1f), new Vector2(-170f, nameY - 20f), 14, StoryPopupKit.Sparkle);
+            EventCardKit.Sparkle(crt, new Vector2(0.5f, 1f), new Vector2(-195f, nameY - 8f), 10, StoryPopupKit.Sparkle);
+
+            fxT = CoastHudLayout.MakeText(crt, "Fx", "", 15, TextAnchor.MiddleCenter,
+                new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(24f, nameY - 95f), new Vector2(-24f, nameY - 55f));
+            fxT.color = StoryPopupKit.Ink; fxT.raycastTarget = false;
+            fxT.resizeTextForBestFit = true; fxT.resizeTextMinSize = 11; fxT.resizeTextMaxSize = CoastHudLayout.Scaled(15);
+
+            if (list.Count > 1)
+            {
+                // 여러 요리 — 아래 목록으로 선택
+                nameT.gameObject.SetActive(false);
+                badge.gameObject.SetActive(false);
+                fxT.gameObject.SetActive(false);
+                var listHost = new GameObject("List", typeof(RectTransform)).GetComponent<RectTransform>();
+                listHost.SetParent(crt, false);
+                listHost.anchorMin = new Vector2(0f, 0f); listHost.anchorMax = new Vector2(1f, 1f);
+                listHost.offsetMin = new Vector2(28f, 100f); listHost.offsetMax = new Vector2(-28f, -96f);
+                rowImgs = new Image[list.Count];
+                float y = 0f;
+                for (int i = 0; i < list.Count; i++)
+                {
+                    int idx = i;
+                    var def = list[i].def; int n = list[i].n;
+                    var row = CoastUiArt.CutePill(listHost, "R" + i, new Color(1f, 0.98f, 0.94f, 0.65f), 14, 0);
+                    rowImgs[i] = row;
+                    var rt = row.rectTransform; rt.anchorMin = new Vector2(0f, 1f); rt.anchorMax = new Vector2(1f, 1f);
+                    rt.pivot = new Vector2(0.5f, 1f); rt.anchoredPosition = new Vector2(0f, y); rt.sizeDelta = new Vector2(0f, 76f);
+                    row.raycastTarget = true;
+                    var nm = CoastHudLayout.MakeText(rt, "N", "✨ " + LifeItems.Name(def), 20, TextAnchor.MiddleLeft,
+                        Vector2.zero, Vector2.one, new Vector2(14f, 18f), new Vector2(-64f, 0f));
+                    nm.color = StoryPopupKit.Ink; nm.fontStyle = FontStyle.Bold;
+                    var b = CoastUiArt.Panel(rt, "B", StoryPopupKit.BadgeOrange, 14); b.raycastTarget = false;
+                    var brr = b.rectTransform; brr.anchorMin = brr.anchorMax = new Vector2(1f, 0.5f); brr.pivot = new Vector2(1f, 0.5f);
+                    brr.anchoredPosition = new Vector2(-8f, 8f); brr.sizeDelta = new Vector2(40f, 40f);
+                    var bt = CoastHudLayout.MakeText(brr, "T", "x" + n, 15, TextAnchor.MiddleCenter,
+                        Vector2.zero, Vector2.one, new Vector2(0f, 2f), Vector2.zero);
+                    bt.color = Color.white; bt.fontStyle = FontStyle.Bold;
+                    var ef = CoastHudLayout.MakeText(rt, "E", "🌱 " + LifeItems.EffectText(def), 12, TextAnchor.LowerLeft,
+                        Vector2.zero, Vector2.one, new Vector2(14f, 6f), new Vector2(-14f, 34f));
+                    ef.color = StoryPopupKit.Ink;
+                    row.gameObject.AddComponent<Button>().onClick.AddListener(() => ShowDish(idx));
+                    y -= 80f;
+                }
+            }
+
+            ShowDish(0);
+
+            void Pick()
+            {
+                CoastPrefs.Vibrate();
+                string id = list[sel].def.id;
+                Close();
+                onPicked?.Invoke(id);
+            }
+
+            StoryPopupKit.SoftPill(crt, "Cancel", Loc.T("취소", "Cancel"), StoryPopupKit.SoftBlue,
+                new Vector2(-130f, 22f), new Vector2(200f, 56f), () => { Close(); onCancel?.Invoke(); }, backIcon: true);
+            StoryPopupKit.SoftPill(crt, "Eat", Loc.T("먹기", "Eat"), StoryPopupKit.SoftPink,
+                new Vector2(130f, 22f), new Vector2(200f, 56f), Pick, forkIcon: true);
+        }
+
+        /// Dev/캡쳐용 — 세이브와 무관하게 시안 단일 카드(삼계탕 ×2)를 띄운다.
+        public static void OpenDemo(Action onClose = null)
+        {
+            Close();
+            var crt = StoryPopupKit.Frame("MealPick", 466, new Vector2(620f, 420f), out _canvas, 40f);
+            StoryPopupKit.TitleMeal(crt, Loc.T("오늘 뭐 먹을까?", "What shall we eat?"), 20f);
+
+            const float nameY = -150f;
+            var nameT = CoastHudLayout.MakeText(crt, "Name", "✨ " + Loc.T("삼계탕", "Ginseng Chicken Soup"), 34, TextAnchor.MiddleCenter,
+                new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(-160f, nameY - 50f), new Vector2(100f, nameY));
+            nameT.color = StoryPopupKit.Ink; nameT.fontStyle = FontStyle.Bold; nameT.raycastTarget = false;
+
+            var badge = CoastUiArt.Panel(crt, "Badge", StoryPopupKit.BadgeOrange, 22); badge.raycastTarget = false;
+            var badgeRt = badge.rectTransform; badgeRt.anchorMin = badgeRt.anchorMax = new Vector2(0.5f, 1f); badgeRt.pivot = new Vector2(0.5f, 0.5f);
+            badgeRt.anchoredPosition = new Vector2(120f, nameY - 25f); badgeRt.sizeDelta = new Vector2(48f, 48f);
+            var badgeT = CoastHudLayout.MakeText(badgeRt, "T", "x2", 18, TextAnchor.MiddleCenter,
+                Vector2.zero, Vector2.one, new Vector2(0f, 2f), Vector2.zero);
+            badgeT.color = Color.white; badgeT.fontStyle = FontStyle.Bold;
+            CoastUiArt.OutlineText(badgeT, new Color(0.45f, 0.2f, 0.1f, 0.45f), 1.2f);
+
+            EventCardKit.Sparkle(crt, new Vector2(0.5f, 1f), new Vector2(-175f, nameY - 18f), 14, StoryPopupKit.Sparkle);
+            EventCardKit.Sparkle(crt, new Vector2(0.5f, 1f), new Vector2(-198f, nameY - 6f), 10, StoryPopupKit.Sparkle);
+
+            var fx = CoastHudLayout.MakeText(crt, "Fx",
+                "🌱 " + Loc.T("배부름+40 · 컨디션+18 · 스트레스-5 · 체력+5", "Full+40 · Cond+18 · Stress-5 · Sta+5"),
+                15, TextAnchor.MiddleCenter,
+                new Vector2(0f, 1f), new Vector2(1f, 1f), new Vector2(24f, nameY - 95f), new Vector2(-24f, nameY - 55f));
+            fx.color = StoryPopupKit.Ink; fx.raycastTarget = false;
+
+            StoryPopupKit.SoftPill(crt, "Cancel", Loc.T("취소", "Cancel"), StoryPopupKit.SoftBlue,
+                new Vector2(-130f, 22f), new Vector2(200f, 56f), () => { Close(); onClose?.Invoke(); }, backIcon: true);
+            StoryPopupKit.SoftPill(crt, "Eat", Loc.T("먹기", "Eat"), StoryPopupKit.SoftPink,
+                new Vector2(130f, 22f), new Vector2(200f, 56f), () => { Close(); onClose?.Invoke(); }, forkIcon: true);
         }
 
         public static void Close()

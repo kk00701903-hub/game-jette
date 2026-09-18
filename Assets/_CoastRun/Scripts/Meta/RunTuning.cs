@@ -64,7 +64,9 @@ namespace CoastRun
             HasSeason = true;
             Season = Timeline.SeasonOf(s.week);
 
-            Mode = s.runMode;
+            // 109차(사용자): 스토리 모드 러닝은 **항상 스케이트보드**를 탄다(보드는 앞을 보고 바닥에 붙어 간다 — CoastPlayerVisual).
+            //   해금 전용 「스케이트보드 회차」(runMode == Skateboard)만 속도·코인 ×1.3, 기본 회차는 보드를 타도 배율 1.0.
+            Mode = RunMode.Skateboard;
             bool skate = s.runMode == RunMode.Skateboard;
             SpeedMul = skate ? 1.3f : 1f;
             CoinMul = skate ? 1.3f : 1f;

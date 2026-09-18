@@ -17,6 +17,7 @@ namespace CoastRun
             public Transform[] wheels;
             // 86차: 장애물 회피·충돌
             public float stun, wobble, hitCool, lookCool; public ObstacleHazard lastHit; public Renderer[] rends; public Color[] rendCols;
+            public CoinPickup lastCoin; public float coinCool;
         }
 
         private PlayerController _player;
@@ -260,6 +261,12 @@ namespace CoastRun
                     var hit = ObstacleAhead(r, r.lane, -0.6f, 0.9f, true);
                     if (hit != null && hit != r.lastHit) HitReact(r, hit, Mathf.Abs(rel));
                 }
+                if (r.coinCool > 0f) r.coinCool -= dt;
+                else
+                {
+                    var coin = CoinNear(r, r.lane, -0.5f, 0.9f);
+                    if (coin != null && coin != r.lastCoin) CoinReact(r, coin);
+                }
                 if (r.stun > 0f) want = Mathf.Min(want, 0.42f);
                 r.speedMul = Mathf.MoveTowards(r.speedMul, want, dt * (r.stun > 0f ? 4f : 0.6f));
                 r.dist += ps * r.speedMul * dt;
@@ -344,12 +351,45 @@ namespace CoastRun
             foreach (var c in h.GetComponentsInChildren<Collider>(true)) { if (c.GetComponent<NearMissZone>() != null) continue; top = Mathf.Max(top, c.bounds.size.y); }
             return top;
         }
-        private void HitReact(Rival r, ObstacleHazard h, float relAbs)
+        private void HitReact(Rival r, ObstacleHazard h, float _)
         {
             r.lastHit = h; r.hitCool = 1.4f; r.stun = 0.9f; r.wobble = 0.7f;
             r.hopVel = Mathf.Max(r.hopVel, 1.6f);
-            var pos = r.root.position + Vector3.up * 0.6f;
-            JuiceDirector.Instance?.PlayRivalHit(pos, Mathf.Clamp01(1f - relAbs / 14f));
+            // 112차: 주인공과 같은 장애물 팡(HitStop 없이) + 납작 소멸
+            h.PopForRival(r.root);
+        }
+
+        private CoinPickup CoinNear(Rival r, int lane, float minAhead, float maxAhead)
+        {
+            float lx = lane * _laneOffset;
+            CoinPickup best = null; float bestDz = float.MaxValue;
+            float now = Time.time;
+            var list = CoinPickup.Active;
+            for (int k = 0; k < list.Count; k++)
+            {
+                var c = list[k];
+                if (c == null || !c.isActiveAndEnabled) continue;
+                if (now - c.RivalBurstStamp < 0.8f) continue;
+                var col = c.GetComponent<Collider>(); if (col == null || !col.enabled) continue;
+                var b = col.bounds;
+                if (r.dist < b.min.z - 0.3f || r.dist > b.max.z + 0.3f) continue;
+                float dz = b.center.z - r.dist;
+                if (dz < minAhead || dz > maxAhead) continue;
+                float halfW = Mathf.Max(0.35f, b.extents.x);
+                if (Mathf.Abs(b.center.x - lx) > halfW + 0.45f) continue;
+                float adz = Mathf.Abs(dz);
+                if (adz < bestDz) { bestDz = adz; best = c; }
+            }
+            return best;
+        }
+
+        private void CoinReact(Rival r, CoinPickup coin)
+        {
+            r.lastCoin = coin;
+            r.coinCool = 0.35f;
+            coin.RivalBurstStamp = Time.time;
+            var pos = coin.transform.position + Vector3.up * 0.35f;
+            JuiceDirector.Instance?.PlayCoinBurstOnly(pos, CoastPalette.CoinYellow);
         }
 
         public int PlayerRank()
